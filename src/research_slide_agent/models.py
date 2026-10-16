@@ -33,6 +33,9 @@ class Citation(Model):
 class Block(Model):
     id: str
     text: str = Field(min_length=1, max_length=1800)
+    level: int = Field(default=0, ge=0, le=2)
+    bullet: bool = False
+    slot: Literal["body", "body_right"] = "body"
     source_references: list[SourceRef] = Field(default_factory=list)
 
 

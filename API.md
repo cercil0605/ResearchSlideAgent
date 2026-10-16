@@ -34,6 +34,12 @@ SlideSpec全体は `schemas/slidespec-1.0.json` と `artifacts/demo.spec.json` �
 
 ## HTTP
 
+`get_template_info.layouts` のlayout_idは全マスターのレイアウトを順に並べたファイル全体のIDです。
+各レイアウトにmaster_part、template_slots、slots、themeを返します。`template_slots=true` は固定枠を使う生成経路です。
+Blockには任意のlevel（0–2、既定0）、bullet（既定false）、slot（body/body_right、既定body）を指定できます。
+レベルはPPTXに定義された段落書式に対応します。該当枠・書式がない場合や文字が収まらない場合は拒否します。
+座標やフォントサイズの入力項目は追加していません。古いBlockは既定値で読み込めます。
+
 - `GET /health`: 起動状態。秘密情報なし。
 - `GET /.well-known/oauth-protected-resource[/mcp]`: RFC9728 metadata。
 - `GET /login`, `GET /oauth/callback`: browser PKCE/OIDC login。

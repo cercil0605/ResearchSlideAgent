@@ -2,7 +2,7 @@
 
 研究室の既存マスターを維持し、編集可能な研究発表PPTXを生成するPython/MCPアプリです。追加のLLM APIは呼びません。意味的な構成・文章はChatGPTが作り、サーバーが配置と承認・生成を管理します。
 
-**現状はローカル検証済みの初期実装です。実研究室マスター、Google連携したOAuth、ChatGPT内UI、Raspberry Pi実機、Microsoft PowerPointでの受入試験は未実施です。全要件の完成を宣言する段階ではありません。** 詳細は [TESTING.md](TESTING.md)。
+**現状は初期実装です。教授の実見本から書式テンプレートを抽出し、Pi実機で生成・LibreOfficeプレビューを確認しています。Google連携したOAuth、ChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。全要件の完成を宣言する段階ではありません。** 詳細は [TESTING.md](TESTING.md)。
 
 ## Raspberry Piでの採用構成
 
@@ -50,13 +50,20 @@ Inspectorで **Streamable HTTP**、URL `http://127.0.0.1:8000/mcp` を指定し�
 
 ### 実マスターへの差し替え
 
-`examples/lab-template.pptx` はマスターに検証用フッターを持つ合成テンプレートです。実際のPPTXを `templates/lab-template.pptx` などに配置し、`RSA_TEMPLATE` で指定してください。テンプレートからマスターを描き直す実装ではありません。
+教授のPPTXの準備方法とPDF由来ルールの運用は [書式テンプレートと発表内容ルール](docs/TEMPLATE_AND_CONTENT_RULES.md) を参照。
+抽出済み実マスター `templates/lab-template.pptx` と出典情報 `.profile.json` はGit管理し、Dockerイメージに同梱します。内容・構成の手本PDFは `reference_materials/content-pdfs/` に置き、原本PPTX・PDF・生成プレビューはGitとDockerビルド対象から除外します。
+開発時は `$update-presentation-rules` でPDF由来のルールを更新できます。書式はテーマ・マスター・レイアウトを正本とし、内容ルールと分けます。
+実見本から5種類のレイアウトを抽出済みです。サーバーの既定テンプレートは `templates/lab-template.pptx`。
+`uv run python scripts/prepare_lab_template.py` で原本から再作成し、`uv run python scripts/template_smoke.py` で6枚の合成スライドとPDFを検証できます。
+固定枠・和文/欧文の書式・箇条書き階層を使う生成経路を追加しました。Office実機の書式受入は別途必要です。
+
+`examples/lab-template.pptx` はマスターに検証用フッターを持つ合成テンプレートで、テスト・デモ専用です。別の実マスターを使う場合は `RSA_TEMPLATE` で指定します。テンプレートからマスターを描き直す実装ではありません。
 
 ```bash
 RSA_TEMPLATE=/absolute/path/lab-template.pptx RSA_DEV=1 uv run rsa serve
 ```
 
-ワーカーにも同じ設定を指定。`get_template_info` が返す本文とタイトルのプレースホルダーを持つlayout_idを選びます。テンプレートを変更したら仕様を新しいバージョンで保存して再承認してください。内容が収まらない場合は自動縮小せず、最大2回の領域拡張後に停止してページ分割を求めます。
+ワーカーにも同じ設定を指定。`get_template_info` が返す `preferred_layout_ids` から用途に合うレイアウトを選びます。テンプレートを変更したら仕様を新しいバージョンで保存して再承認してください。実マスターの固定枠に内容が収まらない場合は、縮小・領域拡張をせず停止してページ分割を求めます。合成テンプレート用の従来経路では最大2回の領域拡張を許可します。
 
 ## ChatGPTとPlugin
 
@@ -77,10 +84,10 @@ RSA_TEMPLATE=/absolute/path/lab-template.pptx RSA_DEV=1 uv run rsa serve
 詳細は [deploy/PORTAINER.md](deploy/PORTAINER.md)。最短の流れ:
 
 1. `.github/workflows/ci.yml` で作成するイメージを使うか、Piで `docker build -t research-slide-agent:local .`。
-2. 実マスターをPiの `/srv/research-slide-agent/lab-template.pptx` へ配置。
+2. 実マスターはイメージ同梱のものを使用。ホストへの別配置は不要です。
 3. [OAuth設定](deploy/AUTH.md) とHTTPSリバースプロキシを用意。
 4. Portainerの **Stacks → Add stack → Web editor** に `deploy/portainer-stack.yml` を貼り付け、`.env.example` の値を環境変数として設定してDeploy。
-5. サーバーと同じPiホストのリバースプロキシから `127.0.0.1:8000` に転送。別コンテナのプロキシを使う場合は同じDockerネットワークに接続し `api:8000` に転送するようStackを変更します。
+5. サーバーと同じPiホストのリバースプロキシまたはCloudflare Tunnelから `127.0.0.1:8010` に転送。Portainerの8000番との競合を避けています。別コンテナのプロキシを使う場合は同じDockerネットワークに接続し `api:8000` に転送するようStackを変更します。
 
 GitHubへのpush、GHCRへの公開、Piへの接続、Portainer更新、Google認証設定はこの開発では実施していません。
 
@@ -102,7 +109,6 @@ GitHubへのpush、GHCRへの公開、Piへの接続、Portainer更新、Google�
 | `RSA_ATTACHMENT_HOSTS` | 添付ファイルの取得元ホストの完全一致リスト。空なら直接取込不可 |
 | `RSA_WORKER_LIMIT` | 1または2。Piは1を推奨 |
 | `RSA_IMAGE` | Compose/Portainerで利用するイメージ |
-| `RSA_TEMPLATE_HOST` | Piホスト上の実マスターパス |
 
 ## 対応範囲と制約
 

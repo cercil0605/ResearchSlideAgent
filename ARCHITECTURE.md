@@ -23,6 +23,12 @@ APIと生成ワーカーは同一Piの共有Docker volumeを使い、SQLite WAL�
 
 ## 仕様と承認
 
+実見本から抽出したテンプレートでは、`rsa:`で役割を示すレイアウトのプレースホルダーを使う。
+layout_idは全マスターのレイアウトを順に並べたID。Blockのlevel/bullet/slotは意味的な指定だけを受け付け、
+座標・寸法・和文/欧文フォント・段落の書式はPPTXから取得する。固定枠では縮小・拡張せず溢れを拒否する。
+python-pptxの再保存でXML宣言やrelationship順が変わるため、構造上同一であることを検査してから
+master/layout/themeの元バイト列を復元し、最後にバイト一致を確認する。実際の書式変更を復元で隠さない。
+
 `spec_version` は単調増加。保存時にexpected_versionを照合する。承認は(project, version, stage, target, digest)で保存。仕様を書き換えると新バージョンとなり、旧承認は新規ジョブに使えない。
 
 構成承認前はページ承認を作れない。生成には構成と全ページの現在版の承認が必要。承認URLのGETは承認しない。認証済みブラウザのPOSTだけがCSRFとoriginを確認して承認を記録する。レビュー要求は30分・1回限り。OAuthセッションも30分。MCPに承認実行ツールは公開しない。

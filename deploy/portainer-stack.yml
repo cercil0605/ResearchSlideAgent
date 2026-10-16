@@ -13,7 +13,6 @@ x-runtime: &runtime
   cap_drop: [ALL]
   volumes:
     - research_data:/data
-    - ${RSA_TEMPLATE_HOST:-./examples/lab-template.pptx}:/templates/lab-template.pptx:ro
   environment: &env
     RSA_ENV: production
     RSA_DEV: "0"
@@ -33,7 +32,7 @@ x-runtime: &runtime
 services:
   api:
     <<: *runtime
-    ports: ["127.0.0.1:8000:8000"]
+    ports: ["127.0.0.1:8010:8000"]
     command: ["rsa", "serve"]
     mem_limit: 512m
     cpus: 1

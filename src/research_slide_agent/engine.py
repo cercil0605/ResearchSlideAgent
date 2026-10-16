@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import unicodedata
 import zipfile
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +26,15 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Inches, Pt
 
 from .models import SlideSpec
+from .template_styles import (
+    layouts_of,
+    paragraph_style,
+    restore_template_parts,
+    slot_font,
+    slot_font_size,
+    slots_of,
+    write_slot,
+)
 
 NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -55,7 +65,8 @@ class Theme:
 
 
 def theme_of(prs, layout_id=1):
-    master = prs.slide_layouts[layout_id].slide_master
+    layout = layouts_of(prs)[layout_id]
+    master = layout.slide_master
     theme_parts = [r.target_part for r in master.part.rels.values() if r.reltype.endswith("/theme")]
     root = etree.fromstring(theme_parts[0].blob)
     fonts = root.xpath("//a:minorFont/a:latin/@typeface", namespaces=NS)
@@ -84,10 +95,14 @@ def theme_of(prs, layout_id=1):
         foreground = max(
             [colors.get("dk1", "000000"), colors.get("lt1", "FFFFFF")], key=lambda c: contrast(c, background)
         )
+    slots = slots_of(layout)
+    body_slot = slots.get("body") or slots.get("visual") or slots.get("key_message")
     return Theme(
-        fonts[0] if fonts else "Aptos",
-        size("titleStyle", 32),
-        size("bodyStyle", 24),
+        (slot_font(body_slot) if body_slot is not None else None) or (fonts[0] if fonts else "Aptos"),
+        slot_font_size(slots["title"])
+        if "title" in slots and slots["title"]._element.xpath("./p:txBody/a:lstStyle/a:lvl1pPr/a:defRPr/@sz")
+        else size("titleStyle", 32),
+        slot_font_size(body_slot) if body_slot is not None else size("bodyStyle", 24),
         colors,
         background,
         foreground,
@@ -107,7 +122,7 @@ def contrast(a, b):
 def template_info(path: Path):
     prs = Presentation(path)
     layouts = []
-    for i, layout in enumerate(prs.slide_layouts):
+    for i, layout in enumerate(layouts_of(prs)):
         placeholders = [
             {
                 "index": p.placeholder_format.idx,
@@ -116,8 +131,21 @@ def template_info(path: Path):
             }
             for p in layout.placeholders
         ]
-        layouts.append({"layout_id": i, "name": layout.name, "placeholders": placeholders})
-    t = theme_of(prs, 0)
+        slots = slots_of(layout)
+        layouts.append(
+            {
+                "layout_id": i,
+                "name": layout.name,
+                "placeholders": placeholders,
+                "master_part": str(layout.slide_master.part.partname),
+                "slots": list(slots),
+                "template_slots": bool(slots),
+                "theme": theme_of(prs, i).__dict__,
+            }
+        )
+    preferred = [entry["layout_id"] for entry in layouts if entry["template_slots"]]
+    default = next((entry["layout_id"] for entry in layouts if "body" in entry["slots"]), 0)
+    t = theme_of(prs, default)
     return {
         "template_id": "lab",
         "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -125,6 +153,8 @@ def template_info(path: Path):
         "height": prs.slide_height,
         "masters": len(prs.slide_masters),
         "layouts": layouts,
+        "preferred_layout_ids": preferred,
+        "default_layout_id": default,
         "theme": t.__dict__,
     }
 
@@ -385,10 +415,155 @@ def native_chart(slide, spec, box, theme):
     return shape
 
 
+def _check_slot(prototype, paragraphs):
+    """Conservative fit using the actual slot margins, level indents and line spacing."""
+    tf = prototype.text_frame
+    available = (prototype.height - tf.margin_top - tf.margin_bottom) / 12700
+    required = 0.0
+    expanded = [(line, level, bullet) for text, level, bullet in paragraphs for line in text.split("\n")]
+    for text, level, _ in expanded:
+        style = paragraph_style(prototype, level)
+        size = slot_font_size(prototype, level)
+        width = (prototype.width - tf.margin_left - tf.margin_right - int(style.get("marL", 0))) / 12700
+        lines = sum(max(1, math.ceil(units(line) * size / max(width, 1))) for line in text.split("\n"))
+        spacing = style.find("a:lnSpc", style.nsmap)
+        line_height = size
+        if spacing is not None and len(spacing):
+            value = spacing[0]
+            line_height = (
+                size * int(value.get("val")) / 100000
+                if value.tag.endswith("spcPct")
+                else int(value.get("val")) / 100
+            )
+        required += lines * line_height
+        for tag in ("a:spcBef", "a:spcAft"):
+            space = style.find(tag, style.nsmap)
+            if space is not None and len(space):
+                value = space[0]
+                required += (
+                    size * int(value.get("val")) / 100000
+                    if value.tag.endswith("spcPct")
+                    else int(value.get("val")) / 100
+                )
+    if required > available:
+        raise LayoutError(
+            f"TEXT_OVERFLOW: {prototype.name}; split the slide, template geometry and fonts were kept"
+        )
+
+
+def _named_slide(prs, layout, item, theme, images):
+    slots = slots_of(layout)
+    slide = prs.slides.add_slide(layout)
+    live = {}
+    for shape in slide.placeholders:
+        prototype = next(
+            p for p in layout.placeholders if p.placeholder_format.idx == shape.placeholder_format.idx
+        )
+        shape.left, shape.top, shape.width, shape.height = (
+            prototype.left,
+            prototype.top,
+            prototype.width,
+            prototype.height,
+        )
+        shape.name = prototype.name
+        live[prototype.name.removeprefix("rsa:")] = shape
+    title = slide.shapes.title
+    if title is None:
+        raise LayoutError("Template needs a title placeholder")
+    title.name = f"rsa:title:{item.slide_id}"
+    title_prototype = slots["title"]
+    explicit = title_prototype._element.xpath("./p:txBody/a:lstStyle/a:lvl1pPr/a:defRPr/@sz")
+    if explicit:
+        _check_slot(title_prototype, [(item.title, 0, False)])
+        write_slot(title, title_prototype, [(item.title, 0, False)])
+    else:
+        check_fit(item.title, Box(title.left, title.top, title.width, title.height), theme.title_size)
+        title.text = item.title  # Keep master-derived font/color and original title geometry.
+    content_slots = [p for role, p in slots.items() if role != "title"]
+    bounds = Box(
+        min(p.left for p in content_slots),
+        min(p.top for p in content_slots),
+        max(p.left + p.width for p in content_slots) - min(p.left for p in content_slots),
+        max(p.top + p.height for p in content_slots) - min(p.top for p in content_slots),
+    )
+    paragraphs = {"key_message": [(item.key_message, 0, False)]}
+    for block in item.body_blocks:
+        if block.slot not in slots:
+            raise LayoutError(f"Layout has no {block.slot} slot; choose a suitable layout")
+        paragraphs.setdefault(block.slot, []).extend(
+            (line, block.level, block.bullet) for line in block.text.split("\n")
+        )
+    visual = any([item.diagram_spec, item.table_spec, item.chart_spec, item.image_references])
+    if visual and "visual" not in slots:
+        raise LayoutError("Layout has no visual slot; choose a figure layout")
+    if item.citations:
+        if "citations" not in slots:
+            raise LayoutError("Layout has no citation slot")
+        labels = list(dict.fromkeys(c.label for c in item.citations))
+        paragraphs["citations"] = [(" ".join(labels), 0, False)]
+    for role, shape in list(live.items()):
+        if role == "title":
+            continue
+        if role in paragraphs:
+            _check_slot(slots[role], paragraphs[role])
+            write_slot(shape, slots[role], paragraphs[role])
+            shape.name = "rsa:key_message" if role == "key_message" else f"rsa:slot:{role}"
+        else:
+            shape._element.getparent().remove(shape._element)
+    if visual:
+        s = slots["visual"]
+        box = Box(s.left, s.top, s.width, s.height)
+        if item.diagram_spec:
+            diagram_shapes(slide, item.diagram_spec, box, theme)
+        elif item.table_spec:
+            native_table(slide, item.table_spec, box, theme)
+        elif item.chart_spec:
+            native_chart(slide, item.chart_spec, box, theme)
+        else:
+            for i, reference in enumerate(item.image_references):
+                if not images or reference.source_id not in images:
+                    raise LayoutError("Image requires a registered original PNG/JPEG source")
+                from PIL import Image
+
+                cell_w = box.w // len(item.image_references)
+                caption_h = int(theme.body_size * 1.4 * 12700)
+                with Image.open(images[reference.source_id]) as image:
+                    ratio = min(cell_w / image.width, (box.h - caption_h) / image.height)
+                    width, height = int(image.width * ratio), int(image.height * ratio)
+                picture = slide.shapes.add_picture(
+                    str(images[reference.source_id]),
+                    box.x + i * cell_w + (cell_w - width) // 2,
+                    box.y,
+                    width,
+                    height,
+                )
+                picture.name = f"rsa:image:{reference.id}"
+                text_box(
+                    slide,
+                    f"rsa:caption:{reference.id}",
+                    reference.caption,
+                    Box(box.x + i * cell_w, box.y + box.h - caption_h, cell_w, caption_h),
+                    theme,
+                )
+    # python-pptx does not clone slide-number placeholders automatically.
+    page_prototype = next(
+        (p for p in layout.placeholders if p.placeholder_format.type == PP_PLACEHOLDER.SLIDE_NUMBER), None
+    )
+    if page_prototype is not None:
+        element = deepcopy(page_prototype._element)
+        element.nvSpPr.cNvPr.set("id", str(max(s.shape_id for s in slide.shapes) + 1))
+        element.nvSpPr.cNvPr.set("name", "rsa:page_number")
+        for text in element.xpath(".//a:t"):
+            text.text = str(item.slide_order)
+        slide.shapes._spTree.insert_element_before(element, "p:extLst")
+    return slide, bounds
+
+
 def _generate_once(
     template: Path, spec: SlideSpec, output: Path, images: dict[str, Path] | None = None, repair=0
 ):
     prs = Presentation(template)
+    uses_slots = any(slots_of(layout) for layout in layouts_of(prs))
     for element in list(prs.slides._sldIdLst):
         prs.part.drop_rel(element.rId)
         prs.slides._sldIdLst.remove(element)
@@ -398,10 +573,35 @@ def _generate_once(
         "template_sha256": hashlib.sha256(template.read_bytes()).hexdigest(),
     }
     for item in sorted(spec.slides, key=lambda s: s.slide_order):
-        if item.layout_id >= len(prs.slide_layouts):
+        if item.layout_id >= len(layouts_of(prs)):
             raise LayoutError("Unknown template layout")
-        layout = prs.slide_layouts[item.layout_id]
+        layout = layouts_of(prs)[item.layout_id]
+        if uses_slots and not slots_of(layout):
+            raise LayoutError("Choose a named template layout returned by get_template_info")
         theme = theme_of(prs, item.layout_id)
+        if slots_of(layout):
+            slide, bounds = _named_slide(prs, layout, item, theme, images)
+            slide.notes_slide.notes_text_frame.text = json.dumps(
+                {
+                    "slide_id": item.slide_id,
+                    "spec_digest": spec.digest(),
+                    "source_references": [r.model_dump() for r in item.source_references],
+                    "citations": [c.model_dump() for c in item.citations],
+                },
+                ensure_ascii=False,
+            )
+            manifest["slides"].append(
+                {
+                    "slide_id": item.slide_id,
+                    "part": str(slide.part.partname),
+                    "layout_id": item.layout_id,
+                    "body_box": bounds.__dict__,
+                    "placement": "template_slots",
+                }
+            )
+            continue
+        if any(b.level or b.bullet or b.slot != "body" for b in item.body_blocks):
+            raise LayoutError("Paragraph hierarchy requires a template with named body slots")
         if theme.body_size < 17:
             raise LayoutError("MASTER_FONT_TOO_SMALL: choose an approved layout with a readable body font")
         if contrast(theme.foreground, theme.background) < 4.5:
@@ -507,6 +707,7 @@ def _generate_once(
         )
     output.parent.mkdir(parents=True, exist_ok=True)
     prs.save(output)
+    restore_template_parts(template, output)
     manifest["structure"] = inspect_pptx(output)
     manifest["quality"] = verify(template, output, spec, manifest)
     manifest["quality"]["auto_repair_attempts"] = repair
@@ -560,7 +761,7 @@ def verify(template, output, spec, manifest):
     for slide, item, m in zip(
         prs.slides, sorted(spec.slides, key=lambda s: s.slide_order), manifest["slides"]
     ):
-        if slide.slide_layout.part.partname != prs.slide_layouts[item.layout_id].part.partname:
+        if slide.slide_layout.part.partname != layouts_of(prs)[item.layout_id].part.partname:
             issues.append("Wrong slide layout")
         text = "\n".join(s.text for s in slide.shapes if s.has_text_frame)
         if (
@@ -584,7 +785,7 @@ def verify(template, output, spec, manifest):
                 if list(actual.values) != expected.values:
                     issues.append("Approved numeric values differ")
         b = Box(**m["body_box"])
-        shapes = [s for s in slide.shapes if not s.name.startswith("rsa:title:")]
+        shapes = [s for s in slide.shapes if not s.name.startswith(("rsa:title:", "rsa:page_number"))]
         for s in shapes:
             if (
                 s.left < b.x - 100

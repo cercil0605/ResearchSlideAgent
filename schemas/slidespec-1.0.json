@@ -13,6 +13,27 @@
           "title": "Text",
           "type": "string"
         },
+        "level": {
+          "default": 0,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Level",
+          "type": "integer"
+        },
+        "bullet": {
+          "default": false,
+          "title": "Bullet",
+          "type": "boolean"
+        },
+        "slot": {
+          "default": "body",
+          "enum": [
+            "body",
+            "body_right"
+          ],
+          "title": "Slot",
+          "type": "string"
+        },
         "source_references": {
           "items": {
             "$ref": "#/$defs/SourceRef"

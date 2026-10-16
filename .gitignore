@@ -8,3 +8,4 @@ var/
 .env.*
 !.env.example
 artifacts/
+slide_sample.pptx

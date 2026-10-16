@@ -22,7 +22,30 @@
 - ARM64コンテナ内で合成データを使い、MCP→browser cookie/CSRF付き2段階承認→worker→全頁preview→PPTXダウンロードを通し検証。
 - ARM64 Linux/Python 3.12のDocker build。非root・read-only・network noneで5枚生成と全頁LibreOffice/Poppler previewを実行。
 
-pytestの最新件数と結果は `artifacts/test-results.txt` を参照。最終実行は39件成功。Starlette TestClient依存内のanyio BlockingPortalに関するDeprecationWarningが1件あります。
+pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piでの全体実行は43件成功（うち1件はローカル原本がある場合の実見本試験）。Starlette TestClient依存内のanyio BlockingPortalに関するDeprecationWarningが1件あります。
+
+## 教授の見本を用いたPi実機検証
+
+- `slide_sample.pptx` の全42枚をPDF化し、全頁の本文抽出と画像確認を実施。29–42枚目は原本で非表示として区別。
+- 内容・構成の12項目の推奨を、根拠ページ付きで配布Skillの参照Markdownへ保存。
+- 原本のマスター2つとテーマのXML・関係ファイルを保持した、5枚・5レイアウトのテンプレートを抽出。
+- 未使用レイアウトを正規化し、本文・要点・引用・図表・左右列の固定枠を設定。原本の全配置を同一化したという意味ではない。
+- 箇条書きの階層、和文/欧文フォント、枠位置の保持、未定義枠・溢れ・実際のマスター変更の拒否をテスト。
+- 6枚の合成スライド（表紙、本文、図、二段組、表、グラフ）と全頁PDF/PNGを生成して確認。
+- 同じ書式の40枚は生成4.11秒、PDF/1600px PNG化28.27秒。Python最大RSS 91,512 KiB、子プロセス最大RSS 270,920 KiB。
+  これらは同時合計の最大メモリではない。Pi 4 ARM64、ホストPython 3.12/LibreOfficeによる合成内容の単発実測であり、本番コンテナや全研究資料への性能保証ではない。
+- `artifacts/template-forty/presentation.metrics.json` に実測を保存。最終テンプレートと計測時成果物のmaster/layout/themeはバイト一致を確認。
+- 原本の研究タイトル等をアプリケーションメタデータからも削除。共有テンプレートに動画や研究本文を含めず、原本ファイルは変更していない。
+- 游ゴシックがPiにないためプレビューは代替フォント。Mac/WindowsのMicrosoft PowerPointでの受入は未実施。
+
+## 実マスターを同梱したコンテナの検証
+
+- `templates/lab-template.pptx`（160,642 bytes）と `.profile.json`（2,756 bytes）をGit管理対象にし、Dockerイメージへ同梱。原本PPTX・参考PDF・生成プレビューはGitとビルド対象から除外。
+- Pi上で `research-slide-agent:local` のARM64ビルド成功。ビルドコンテキストは約1.52 MB。原本やホストテンプレートのマウントなしで、同梱ファイルのSHA-256と5種類のレイアウトを使った生成を確認。
+- UID 10001、read-only、network none、cap-drop ALLで6枚のPPTXと全6ページのPDF/PNG生成が成功。検証ログは `artifacts/docker-build.log` と `artifacts/docker-template-check.log`。
+- ComposeとPortainer Stackの構文検証成功。永続データだけをvolumeへ保存し、ホスト公開ポートを8010へ変更。実サービスの配備は未実施。
+- このPiのDockerは `MemoryLimit=false`、`SwapLimit=false`。検証時の `--memory 2g` は警告付きで無視されたため、メモリ上限が適用された条件での試験ではない。Stackの `mem_limit` もこのホストでは適用されない。
+- CIに同梱マスターから6枚を生成・レンダリングする検証を追加。ローカル原本がないcheckoutでも書式テンプレートを利用する。
 
 ## 再実行
 
@@ -44,9 +67,9 @@ HTTP試験はloopbackのlisten権限が必要です。ネットワーク禁止sa
 
 | 項目 | 状態 |
 |---|---|
-| 実研究室マスター/フォント/多様なレイアウト | 未提供のため未検証。合成マスターを使用 |
+| 実研究室マスター/フォント/多様なレイアウト | 実見本から5種類を抽出しPiで検証。フォント代替とOffice実機の確認は残る |
 | Microsoft PowerPointで開く・図形やグラフを手編集 | 実機未検証。OPC構造とLibreOfficeで確認 |
-| Raspberry Pi本体での40枚の時間・最大RSS・熱 | 未計測。ARM64 Linuxコンテナまで確認 |
+| Raspberry Pi本体での40枚の時間・最大RSS・熱 | 合成40枚の時間とプロセス別最大RSSを実測。熱・本番コンテナは未計測 |
 | Google login→認可サーバー→ChatGPT OAuth | 認証情報/公開endpoint未提供のため未検証 |
 | MCP Inspector画面での手動接続 | 未実施。公式Python Clientの実HTTP試験で代替 |
 | ChatGPTのScan Tools、fileParamsの実添付、MCP Apps iframe | 未検証。fallback uploadあり |
@@ -60,7 +83,7 @@ HTTP試験はloopbackのlisten権限が必要です。ネットワーク禁止sa
 ## 完了条件との対応
 
 1 ローカルMCP実接続: 検証済み。
-2 マスター保持: 合成fixtureで検証済み、実マスター待ち。
+2 マスター保持: 合成fixtureと教授の実見本で検証。原本の両マスター・テーマをバイト単位で保持。
 3 編集可能性: native構造は検証済み、PowerPoint実機待ち。
 4 ChatGPT承認フロー: サーバー自動試験済み、ChatGPT接続待ち。
 5 指定ページ修正: 単純text shapeで検証済み。

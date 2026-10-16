@@ -1,0 +1,142 @@
+{
+  "source_sha256": "de2fe26ff1a007e2f72d9258563bc4554a408fc06ab5054c5fd0cd8835f1afc3",
+  "template_sha256": "22a0afffd3817213a4c9cdaa279a2996de5e4ac209b5a5df5a0e5e18da30e213",
+  "source_pages": {
+    "body_geometry": 3,
+    "body_styles": [
+      8,
+      28
+    ],
+    "citation_style": 7,
+    "cover": 1
+  },
+  "original_master_and_theme_preserved": true,
+  "normalized_layout_parts": [
+    "ppt/slideLayouts/slideLayout10.xml",
+    "ppt/slideLayouts/slideLayout11.xml",
+    "ppt/slideLayouts/slideLayout6.xml",
+    "ppt/slideLayouts/slideLayout8.xml",
+    "ppt/slideLayouts/slideLayout9.xml"
+  ],
+  "layouts": [
+    {
+      "layout_id": 5,
+      "name": "RSA 表紙",
+      "source_page": 1
+    },
+    {
+      "layout_id": 7,
+      "name": "RSA 本文",
+      "slots": {
+        "key_message": [
+          271929,
+          709527,
+          5915025,
+          685800
+        ],
+        "body": [
+          271929,
+          1578207,
+          5915025,
+          2957123
+        ],
+        "citations": [
+          271929,
+          4718210,
+          5915025,
+          264795
+        ]
+      }
+    },
+    {
+      "layout_id": 8,
+      "name": "RSA 本文と図",
+      "slots": {
+        "key_message": [
+          271929,
+          709527,
+          5915025,
+          685800
+        ],
+        "body": [
+          271929,
+          1578207,
+          2866072,
+          2957123
+        ],
+        "visual": [
+          3320881,
+          1578207,
+          2866072,
+          2957123
+        ],
+        "citations": [
+          271929,
+          4718210,
+          5915025,
+          264795
+        ]
+      }
+    },
+    {
+      "layout_id": 9,
+      "name": "RSA 二段組",
+      "slots": {
+        "key_message": [
+          271929,
+          709527,
+          5915025,
+          685800
+        ],
+        "body": [
+          271929,
+          1578207,
+          2866072,
+          2957123
+        ],
+        "body_right": [
+          3320881,
+          1578207,
+          2866072,
+          2957123
+        ],
+        "citations": [
+          271929,
+          4718210,
+          5915025,
+          264795
+        ]
+      }
+    },
+    {
+      "layout_id": 10,
+      "name": "RSA 図表",
+      "slots": {
+        "key_message": [
+          271929,
+          709527,
+          5915025,
+          685800
+        ],
+        "visual": [
+          271929,
+          1578207,
+          5915025,
+          2957123
+        ],
+        "citations": [
+          271929,
+          4718210,
+          5915025,
+          264795
+        ]
+      }
+    }
+  ],
+  "fonts": [
+    "Yu Gothic",
+    "Arial"
+  ],
+  "font_substitution_in_pi_preview": true,
+  "normalization": "Reserved a key-message row and citation row; split content bounds for reusable layouts."
+}

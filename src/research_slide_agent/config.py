@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 class Settings:
     data_dir: Path = field(default_factory=lambda: Path(os.getenv("RSA_DATA_DIR", "var")))
     template: Path = field(
-        default_factory=lambda: Path(os.getenv("RSA_TEMPLATE", "examples/lab-template.pptx"))
+        default_factory=lambda: Path(os.getenv("RSA_TEMPLATE", "templates/lab-template.pptx"))
     )
     base_url: str = field(default_factory=lambda: os.getenv("RSA_BASE_URL", "http://127.0.0.1:8000"))
     dev: bool = field(default_factory=lambda: os.getenv("RSA_DEV", "0") == "1")
