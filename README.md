@@ -4,6 +4,10 @@
 
 **現状は初期実装です。教授の実見本から書式テンプレートを抽出し、Pi実機で生成・LibreOfficeプレビューを確認しています。Google連携したOAuth、ChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。全要件の完成を宣言する段階ではありません。** 詳細は [TESTING.md](TESTING.md)。
 
+Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDKによる検証をCIへ追加しました。
+PiのPDFプレビューは参考表示です。正しいフォントと表を保つ最終PDFはPowerPointから書き出してください。
+[原因・修正内容・見た目を保つ運用](docs/POWERPOINT_COMPATIBILITY.md)。
+
 ## Raspberry Piでの採用構成
 
 Portainer Stackで `api` と `worker` を常駐。SQLite WALの永続キューとDocker volumeに状態・資料を保存します。Cloud Tasks/Firestore/Storageの代替です。生成とLibreOfficeはARM64コンテナで実行します。まずワーカー並列数1、研究室上限2を維持します。
@@ -14,7 +18,11 @@ GitHub Actionsはテストと `linux/arm64,linux/amd64` のイメージ作成・
 
 ## ローカル起動
 
-Python 3.12以上、uv、Node.js 22、LibreOffice、Popplerが必要です。
+プラグインなしで完成例を見るには、イメージをビルドした後に `bash scripts/try_eggs.sh` を実行します。
+「美味しい卵の食べ方」5枚を実マスターで生成し、`artifacts/eggs/index.html` でページ切替、PDF閲覧、PPTX取得ができます。
+OAuthやサーバー起動は不要です。[題材・出典・再実行方法](examples/eggs.sources.md)。
+
+Pythonで開発・起動する場合は、Python 3.12以上、uv、Node.js 22、LibreOffice、Popplerが必要です。
 
 ```bash
 uv sync --frozen

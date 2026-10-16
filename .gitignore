@@ -9,3 +9,5 @@ var/
 !.env.example
 artifacts/
 slide_sample.pptx
+tools/pptx-validator/bin/
+tools/pptx-validator/obj/

@@ -22,11 +22,11 @@
 - ARM64コンテナ内で合成データを使い、MCP→browser cookie/CSRF付き2段階承認→worker→全頁preview→PPTXダウンロードを通し検証。
 - ARM64 Linux/Python 3.12のDocker build。非root・read-only・network noneで5枚生成と全頁LibreOffice/Poppler previewを実行。
 
-pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piでの全体実行は43件成功（うち1件はローカル原本がある場合の実見本試験）。Starlette TestClient依存内のanyio BlockingPortalに関するDeprecationWarningが1件あります。
+pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piでの全体実行は45件成功（うち1件はローカル原本がある場合の実見本試験）。Starlette TestClient依存内のanyio BlockingPortalに関するDeprecationWarningが1件あります。
 
 ## 教授の見本を用いたPi実機検証
 
-- `slide_sample.pptx` の全42枚をPDF化し、全頁の本文抽出と画像確認を実施。29–42枚目は原本で非表示として区別。
+- 初回は `slide_sample.pptx` の全42枚をLibreOfficeでPDF化して確認したが、フォント・表の崩れをユーザーが指摘。現在の正本はユーザーが差し替えたPowerPoint出力の28ページ。29–42枚目は原本で非表示。
 - 内容・構成の12項目の推奨を、根拠ページ付きで配布Skillの参照Markdownへ保存。
 - 原本のマスター2つとテーマのXML・関係ファイルを保持した、5枚・5レイアウトのテンプレートを抽出。
 - 未使用レイアウトを正規化し、本文・要点・引用・図表・左右列の固定枠を設定。原本の全配置を同一化したという意味ではない。
@@ -34,7 +34,7 @@ pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piで
 - 6枚の合成スライド（表紙、本文、図、二段組、表、グラフ）と全頁PDF/PNGを生成して確認。
 - 同じ書式の40枚は生成4.11秒、PDF/1600px PNG化28.27秒。Python最大RSS 91,512 KiB、子プロセス最大RSS 270,920 KiB。
   これらは同時合計の最大メモリではない。Pi 4 ARM64、ホストPython 3.12/LibreOfficeによる合成内容の単発実測であり、本番コンテナや全研究資料への性能保証ではない。
-- `artifacts/template-forty/presentation.metrics.json` に実測を保存。最終テンプレートと計測時成果物のmaster/layout/themeはバイト一致を確認。
+- `artifacts/template-forty/presentation.metrics.json` に実測を保存。計測時点のテンプレートと成果物のmaster/layout/themeはバイト一致を確認。後述の引用欄修正前の実測値。
 - 原本の研究タイトル等をアプリケーションメタデータからも削除。共有テンプレートに動画や研究本文を含めず、原本ファイルは変更していない。
 - 游ゴシックがPiにないためプレビューは代替フォント。Mac/WindowsのMicrosoft PowerPointでの受入は未実施。
 
@@ -46,6 +46,23 @@ pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piで
 - ComposeとPortainer Stackの構文検証成功。永続データだけをvolumeへ保存し、ホスト公開ポートを8010へ変更。実サービスの配備は未実施。
 - このPiのDockerは `MemoryLimit=false`、`SwapLimit=false`。検証時の `--memory 2g` は警告付きで無視されたため、メモリ上限が適用された条件での試験ではない。Stackの `mem_limit` もこのホストでは適用されない。
 - CIに同梱マスターから6枚を生成・レンダリングする検証を追加。ローカル原本がないcheckoutでも書式テンプレートを利用する。
+
+## プラグインなしの卵料理デモ
+
+- `bash scripts/try_eggs.sh` で同梱マスターから5枚のPPTX、全5ページのPDF/PNG、一覧画像、簡易HTMLビューアーを生成。ホストのPython・uv、OAuth、サーバー起動は不要。
+- `examples/eggs.slidespec.json` が文章・構成、`examples/eggs.sources.md` が出典と再実行手順。表2つ、手順図1つと接続線をネイティブ構造で生成し、master/layout/themeのバイト一致を検証。
+- 初回生成で引用欄の高さ計算が10.5 ptを仮定し、実際の12 pt・行間130%と枠内余白に足りない不具合を検出。抽出レシピを実際の文字サイズ・行間・上下余白から算出するよう修正。原本マスター・テーマと文字書式は維持し、正規化した本文/引用の領域配分だけを修正した。
+- 引用付き5枚を生成する回帰テストを追加し、44件成功。ビューアー用の生成物は `artifacts/eggs/` に保存し、Git対象外。
+
+## Macでの修復警告と手本PDFの差し替え
+
+- Microsoft公式 `DocumentFormat.OpenXml` 3.5.1（.NET SDK 8.0.426/ARM64）で原本を読み取り専用検証し、XMLエラー0件。修正前の抽出テンプレートは118件、卵デモは95件だった。
+- 原因は文字書式を結合する際の `a:latin/a:ea/a:cs` の順序と `a:buClrTx` の重複。抽出処理を修正し、原本の両マスター・テーマのバイト一致を維持。18レイアウトの位置・文字・書式属性も変更せず、要素順序と同一重複だけを修正した。
+- 追加検査でグラフ軸IDの負数を検出。棒・折れ線・散布図の定義と全参照を、UInt32とOfficeのInt32上限を満たす正整数へ揃えた。
+- 修正後は抽出テンプレート、卵5枚、図表6枚、折れ線、散布図の5ファイル全てでSDKエラー0件。`artifacts/compatibility/openxml-before.json` / `openxml-after.json` に記録。
+- 回帰テストを追加し、既存のグラフ3種類のテストを拡張。全45件成功。CIでもMicrosoft SDKによる検証を必須にした。これはOffice実機での無警告・描画一致の確認とは別。
+- ユーザーの新PDFは28ページ、4,623,928 bytes、SHA-256 `b9547268fc0a86d077de6514bdcee3dd3701491be6a12f03851b72dcff179d16`。CreatorがPowerPoint、ProducerがmacOS Quartzで、游ゴシック等のサブセット埋め込みを確認。全28ページの本文・画像を確認し、内容ルール12項目のIDと根拠ページを維持して参照元を更新。
+- LibreOffice出力には `fidelity: approximate` と `powerpoint_verified: false` を付け、ローカルビューアーでも参考表示を明示。最終PDFは正しく表示されるPowerPointから書き出す運用とする。詳細は [互換性調査](docs/POWERPOINT_COMPATIBILITY.md)。
 
 ## 再実行
 

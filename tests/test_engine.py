@@ -56,7 +56,15 @@ def test_chart_types(settings, tmp_path, kind):
             "y_label": "Y",
         }
     )
-    generate(settings.template, spec, tmp_path / f"{kind}.pptx")
+    output = tmp_path / f"{kind}.pptx"
+    generate(settings.template, spec, output)
+    chart = next(s.chart for s in Presentation(output).slides[0].shapes if s.has_chart)
+    root = chart._chartSpace
+    definitions = root.xpath(".//c:catAx/c:axId/@val | .//c:valAx/c:axId/@val")
+    all_ids = root.xpath(".//c:axId/@val | .//c:crossAx/@val")
+    assert len(set(definitions)) == 2
+    assert set(all_ids) == set(definitions)
+    assert all(0 <= int(value) <= 2**31 - 1 for value in all_ids)
 
 
 def test_40_slides(settings, tmp_path):

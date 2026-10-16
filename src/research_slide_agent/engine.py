@@ -371,21 +371,40 @@ def native_table(slide, data, box, theme):
             cell = table.cell(r, c)
             check_fit(value, Box(0, 0, box.w // len(row), box.h // len(rows)), theme.body_size)
             cell.text = value
-            cell.fill.solid()
-            cell.fill.fore_color.rgb = RGBColor.from_string(
-                theme.colors["accent1"] if r == 0 else theme.background
-            )
-            fg = (
-                theme.foreground
-                if r
-                else max(
-                    [theme.colors["dk1"], theme.colors["lt1"]],
-                    key=lambda x: contrast(x, theme.colors["accent1"]),
-                )
+            cell.fill.background()
+            # Explicit cell borders override the default PowerPoint table style.
+            # Keep white row separators rather than removing their spacing.
+            properties = cell._tc.get_or_add_tcPr()
+            for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
+                for old in properties.findall(tag, properties.nsmap):
+                    properties.remove(old)
+            for index, edge in enumerate(("L", "R", "T", "B")):
+                line = OxmlElement("a:ln" + edge)
+                line.set("w", "12700")
+                if edge in {"L", "R"}:
+                    line.append(OxmlElement("a:noFill"))
+                else:
+                    fill = OxmlElement("a:solidFill")
+                    color = OxmlElement("a:srgbClr")
+                    color.set("val", "000000" if r == 0 or (r == 1 and edge == "T") else "FFFFFF")
+                    fill.append(color)
+                    line.append(fill)
+                properties.insert(index, line)
+            numeric = r > 0 and re.fullmatch(
+                r"[+\-−]?(?:\d+(?:,\d{3})*(?:\.\d*)?|\.\d+)(?:[eE][+\-]?\d+)?%?", value.strip()
             )
             for p in cell.text_frame.paragraphs:
+                p.alignment = PP_ALIGN.RIGHT if numeric else PP_ALIGN.LEFT
                 p.font.name, p.font.size = theme.font, Pt(theme.body_size)
-                p.font.color.rgb = RGBColor.from_string(fg)
+                p.font.color.rgb = RGBColor.from_string(theme.foreground)
+                if r == 0:
+                    p.font.bold = True
+                rpr = p.font._rPr
+                ea = rpr.find("a:ea", rpr.nsmap)
+                if ea is None:
+                    ea = OxmlElement("a:ea")
+                    rpr.insert_element_before(ea, "a:cs", "a:sym", "a:hlinkClick", "a:hlinkMouseOver", "a:rtl", "a:extLst")
+                ea.set("typeface", theme.font)
     return table_shape
 
 
@@ -412,6 +431,13 @@ def native_chart(slide, spec, box, theme):
     for axis, label in [(chart.category_axis, spec.x_label), (chart.value_axis, spec.y_label)]:
         axis.has_title = True
         axis.axis_title.text_frame.text = label
+    # python-pptx 1.0.2 writes negative axis IDs. Use small positive IDs for
+    # both the UInt32 schema and Office's stricter Int32 maximum, keeping all
+    # axis definitions and cross-references consistent within this chart.
+    axes = chart._chartSpace.xpath(".//c:axId | .//c:crossAx")
+    ids = {value: str(i + 1) for i, value in enumerate(dict.fromkeys(e.get("val") for e in axes))}
+    for element in axes:
+        element.set("val", ids[element.get("val")])
     return shape
 
 
@@ -500,7 +526,7 @@ def _named_slide(prs, layout, item, theme, images):
         if "citations" not in slots:
             raise LayoutError("Layout has no citation slot")
         labels = list(dict.fromkeys(c.label for c in item.citations))
-        paragraphs["citations"] = [(" ".join(labels), 0, False)]
+        paragraphs["citations"] = [("".join(labels), 0, False)]
     for role, shape in list(live.items()):
         if role == "title":
             continue
@@ -856,6 +882,7 @@ def render(pptx: Path, directory: Path, timeout=240):
         "images": [p.name for p in images],
         "page_count": page_count,
         "renderer": "LibreOffice",
+        "fidelity": "approximate",
         "powerpoint_verified": False,
     }
 

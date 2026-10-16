@@ -2,6 +2,7 @@
 
 2026-10-16。Microsoft、python-pptx、OpenAI、Cloudflareの公式資料と現実装を照合した整理。
 提供された `slide_sample.pptx` から書式テンプレートを作成し、本文・箇条書き用の固定枠で生成する経路を追加した。
+手本PDFはユーザー提供のPowerPoint出力28ページへ差し替え済み。生成PPTXのXML修正と表示上の制約は [互換性の調査と運用](POWERPOINT_COMPATIBILITY.md) を参照。
 公開設定やMicrosoft PowerPoint上の実機確認はまだ行っていない。
 
 ## 書式の定義
@@ -59,6 +60,7 @@
 根拠: [Microsoft: マスターとレイアウトによるテンプレート作成](https://support.microsoft.com/en-us/powerpoint/create-and-save-a-powerpoint-template)。
 
 Mac・Windows・Piのプレビューで必要なフォントが利用できるかも確認する。
+PiのLibreOfficeプレビューは参考表示とし、最終PDFは正しく表示されるPowerPointから出力する。
 フォント名の指定だけでは別端末にフォントは追加されない。埋込み可能性はフォントによって異なり、
 PowerPointの埋込みがPiのLibreOfficeでそのまま使えるとは、この実装では確認していない。
 勝手に代替フォントへ変えず、利用できないものを報告する。
@@ -86,6 +88,7 @@ PowerPointの埋込みがPiのLibreOfficeでそのまま使えるとは、この
 表紙はp.1のタイトル・所属欄・ブランド画像と元レイアウトの区切り線を利用する。
 本文の外側の範囲はp.3、本文・箇条書きはp.8、下位項目はp.28、引用はp.7から抽出する。
 表紙タイトル28 pt、通常タイトル24 pt、本文・第1階層18 pt、下位項目16 ptを利用する。
+引用欄は原本から取得した12 pt・行間130%と枠内余白に合わせ、一行を収められる高さを確保する。
 出典追跡は `.profile.json` に記録する。局所的な強調色や全ページの配置を一つの標準に潰したものではない。
 
 内容の違う発表に再利用するため、本文範囲内を要点・本文/図表・引用の固定枠に分けた。

@@ -9,9 +9,42 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Inches
 
 from research_slide_agent.engine import LayoutError, generate, template_info
-from research_slide_agent.models import Block
+from research_slide_agent.models import Block, SlideSpec
 from research_slide_agent.sample import sample_spec
 from research_slide_agent.template_styles import restore_template_parts
+
+
+def load_recipe():
+    module = importlib.util.spec_from_file_location("prepare_lab_template", "scripts/prepare_lab_template.py")
+    recipe = importlib.util.module_from_spec(module)
+    module.loader.exec_module(recipe)
+    return recipe
+
+
+def test_style_merge_keeps_valid_font_order_and_unique_bullet_color(settings):
+    prs = Presentation(settings.template)
+    body = prs.slides.add_slide(prs.slide_layouts[1]).placeholders[1]
+    body.text = "書式継承の確認"
+    master = body.part.slide_layout.slide_master
+    inherited = master._element.xpath("./p:txStyles/p:bodyStyle/a:lvl1pPr/a:defRPr")[0]
+    cs = inherited.find("a:cs", inherited.nsmap)
+    if cs is None:
+        cs = OxmlElement("a:cs")
+        inherited.append(cs)
+    cs.set("typeface", "+mn-cs")
+    ppr = body.text_frame.paragraphs[0]._p.get_or_add_pPr()
+    ppr.append(OxmlElement("a:buClrTx"))
+    run = body.text_frame.paragraphs[0].runs[0]
+    run.font.name = "Yu Gothic"
+    ea = OxmlElement("a:ea")
+    ea.set("typeface", "Yu Gothic")
+    run._r.get_or_add_rPr().append(ea)
+    style = load_recipe().style_from_paragraph(body, 0)
+    assert len(style.findall("a:buClrTx", style.nsmap)) == 1
+    rpr = style.find("a:defRPr", style.nsmap)
+    fonts = [e.tag.rsplit("}", 1)[-1] for e in rpr if e.tag.rsplit("}", 1)[-1] in {"latin", "ea", "cs"}]
+    assert fonts == ["latin", "ea", "cs"]
+    assert rpr.find("a:ea", rpr.nsmap).get("typeface") == "Yu Gothic"
 
 
 @pytest.fixture
@@ -116,11 +149,24 @@ def test_restore_rejects_real_master_changes(settings, tmp_path):
         restore_template_parts(settings.template, target)
 
 
+def test_bundled_template_supports_citations_and_egg_demo(tmp_path):
+    spec = SlideSpec.model_validate_json(Path("examples/eggs.slidespec.json").read_text())
+    output = tmp_path / "eggs.pptx"
+    manifest = generate(Path("templates/lab-template.pptx"), spec, output)
+    assert manifest["quality"]["status"] == "passed"
+    prs = Presentation(output)
+    assert len(prs.slides) == 5
+    for index in (2, 3):
+        citation = next(s for s in prs.slides[index].shapes if s.name == "rsa:slot:citations")
+        assert spec.slides[index].citations[0].label == citation.text
+        assert citation.text_frame.paragraphs[0].runs[0].font.size.pt == 12
+    assert any(s.has_table for s in prs.slides[2].shapes)
+    assert any(s.has_table for s in prs.slides[4].shapes)
+
+
 @pytest.mark.skipif(not Path("slide_sample.pptx").exists(), reason="Private professor sample is local only")
 def test_actual_professor_template_extraction(tmp_path):
-    module = importlib.util.spec_from_file_location("prepare_lab_template", "scripts/prepare_lab_template.py")
-    recipe = importlib.util.module_from_spec(module)
-    module.loader.exec_module(recipe)
+    recipe = load_recipe()
     output = tmp_path / "template.pptx"
     report = recipe.extract(Path("slide_sample.pptx"), output)
     with zipfile.ZipFile("slide_sample.pptx") as source, zipfile.ZipFile(output) as result:

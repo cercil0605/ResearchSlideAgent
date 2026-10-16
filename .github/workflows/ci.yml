@@ -20,12 +20,19 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: ui/package-lock.json
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
       - run: sudo apt-get update && sudo apt-get install -y libreoffice-impress poppler-utils fonts-noto-cjk
       - run: npm ci --ignore-scripts && npm run build
         working-directory: ui
       - run: uv sync --frozen && uv run ruff check src tests && uv run pytest -q
       - name: Verify bundled lab template
         run: uv run python scripts/template_smoke.py
+      - name: Validate PowerPoint XML with the Microsoft SDK
+        run: |
+          uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/eggs
+          dotnet run --project tools/pptx-validator --configuration Release -- templates/lab-template.pptx artifacts/template-check/presentation.pptx artifacts/eggs/presentation.pptx
   image:
     if: github.event_name != 'pull_request'
     needs: test

@@ -12,5 +12,7 @@ work
 __pycache__
 .pytest_cache
 .ruff_cache
+tools/pptx-validator/bin
+tools/pptx-validator/obj
 .env
 .env.*

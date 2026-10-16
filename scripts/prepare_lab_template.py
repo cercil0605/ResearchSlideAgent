@@ -51,6 +51,14 @@ def style_from_paragraph(shape, index, size=None):
             rpr.append(deepcopy(child))
     if size is not None:
         rpr.set("sz", str(size))
+    # Merging inherited and direct properties can move latin/ea after cs.
+    # CT_TextCharacterProperties is an ordered sequence, not a property map.
+    run_order = [
+        "ln", "noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill",
+        "effectLst", "effectDag", "highlight", "uLnTx", "uLn", "uFillTx", "uFill",
+        "latin", "ea", "cs", "sym", "hlinkClick", "hlinkMouseOver", "rtl", "extLst",
+    ]
+    rpr[:] = sorted(rpr, key=lambda e: run_order.index(e.tag.rsplit("}", 1)[-1]))
     rpr.tag = f"{{{rpr.nsmap['a']}}}defRPr"
     for old in style.findall("a:defRPr", style.nsmap):
         style.remove(old)
@@ -63,7 +71,7 @@ def style_from_paragraph(shape, index, size=None):
             points.set("val", "0")
             spacing.append(points)
             style.append(spacing)
-    if style.find("a:buClr", style.nsmap) is None:
+    if not any(style.find(tag, style.nsmap) is not None for tag in ("a:buClr", "a:buClrTx")):
         color = OxmlElement("a:buClrTx")
         style.append(color)
     if not any(style.find(tag, style.nsmap) is not None for tag in ("a:buChar", "a:buAutoNum", "a:buNone")):
@@ -156,7 +164,15 @@ def extract(source, output):
     margin = body_source.text_frame.margin_left
     gap = margin * 2
     key_h = round(18 * 1.3 * 2 * 12700 + 2 * body_source.text_frame.margin_top)
-    cite_h = round(10.5 * 1.3 * 12700 + 2 * body_source.text_frame.margin_top)
+    # The inspected citation actually uses 12 pt. Reserve its real line height
+    # and both text-frame margins, rather than assuming the 10.5 pt fallback.
+    cite_size = int(cite.find("a:defRPr", cite.nsmap).get("sz")) / 100
+    cite_spacing = int(cite.find("a:lnSpc/a:spcPct", cite.nsmap).get("val")) / 100000
+    cite_h = round(
+        cite_size * cite_spacing * 12700
+        + body_source.text_frame.margin_top
+        + body_source.text_frame.margin_bottom
+    ) + 1  # One EMU avoids floating-point rejection at the exact boundary.
     rest_y = y + key_h + gap
     rest_h = y + h - rest_y - cite_h - gap
     half_w = (w - gap) // 2

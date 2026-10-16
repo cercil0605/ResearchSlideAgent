@@ -27,7 +27,7 @@ class Citation(Model):
 
     @property
     def label(self) -> str:
-        return f"［{self.author}，{self.year}］"
+        return f" [{self.author} '{self.year % 100:02d}]"
 
 
 class Block(Model):
