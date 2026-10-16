@@ -1,0 +1,1 @@
+{"name":"research-lab-local","interface":{"displayName":"Research Lab"},"plugins":[{"name":"research-slide-agent","source":{"source":"local","path":"./plugins/research-slide-agent"},"policy":{"installation":"AVAILABLE","authentication":"ON_INSTALL"},"category":"Productivity"}]}

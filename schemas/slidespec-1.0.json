@@ -1,0 +1,538 @@
+{
+  "$defs": {
+    "Block": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1800,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "source_references": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "Block",
+      "type": "object"
+    },
+    "Chart": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "bar",
+            "line",
+            "scatter"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "categories": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Categories",
+          "type": "array"
+        },
+        "x_values": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "X Values"
+        },
+        "series": {
+          "items": {
+            "$ref": "#/$defs/Series"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "title": "Series",
+          "type": "array"
+        },
+        "x_label": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "X Label",
+          "type": "string"
+        },
+        "y_label": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Y Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "categories",
+        "series",
+        "x_label",
+        "y_label"
+      ],
+      "title": "Chart",
+      "type": "object"
+    },
+    "Citation": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/SourceRef"
+        },
+        "author": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Author",
+          "type": "string"
+        },
+        "year": {
+          "maximum": 2200,
+          "minimum": 1800,
+          "title": "Year",
+          "type": "integer"
+        },
+        "target_id": {
+          "title": "Target Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "author",
+        "year",
+        "target_id"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "Diagram": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "flowchart",
+            "system",
+            "comparison",
+            "timeline"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "direction": {
+          "default": "horizontal",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/Node"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "title": "Nodes",
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/Edge"
+          },
+          "maxItems": 24,
+          "title": "Edges",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "nodes"
+      ],
+      "title": "Diagram",
+      "type": "object"
+    },
+    "Edge": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "maxLength": 30,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "ImageRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "caption": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Caption",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source_id",
+        "caption"
+      ],
+      "title": "ImageRef",
+      "type": "object"
+    },
+    "Metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "audience": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Audience",
+          "type": "string"
+        },
+        "purpose": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Purpose",
+          "type": "string"
+        },
+        "duration_minutes": {
+          "maximum": 180,
+          "minimum": 1,
+          "title": "Duration Minutes",
+          "type": "integer"
+        },
+        "language": {
+          "default": "ja",
+          "title": "Language",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "audience",
+        "purpose",
+        "duration_minutes"
+      ],
+      "title": "Metadata",
+      "type": "object"
+    },
+    "Node": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 140,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "kind": {
+          "default": "process",
+          "enum": [
+            "process",
+            "decision",
+            "terminator"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "emphasis": {
+          "default": false,
+          "title": "Emphasis",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "Node",
+      "type": "object"
+    },
+    "Series": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "values": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "values"
+      ],
+      "title": "Series",
+      "type": "object"
+    },
+    "Slide": {
+      "additionalProperties": false,
+      "properties": {
+        "slide_id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "title": "Slide Id",
+          "type": "string"
+        },
+        "slide_order": {
+          "maximum": 40,
+          "minimum": 1,
+          "title": "Slide Order",
+          "type": "integer"
+        },
+        "layout_id": {
+          "minimum": 0,
+          "title": "Layout Id",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "key_message": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Key Message",
+          "type": "string"
+        },
+        "body_blocks": {
+          "items": {
+            "$ref": "#/$defs/Block"
+          },
+          "maxItems": 6,
+          "title": "Body Blocks",
+          "type": "array"
+        },
+        "diagram_spec": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Diagram"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "table_spec": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Table"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "chart_spec": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Chart"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "image_references": {
+          "items": {
+            "$ref": "#/$defs/ImageRef"
+          },
+          "maxItems": 2,
+          "title": "Image References",
+          "type": "array"
+        },
+        "citations": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "maxItems": 12,
+          "title": "Citations",
+          "type": "array"
+        },
+        "source_references": {
+          "items": {
+            "$ref": "#/$defs/SourceRef"
+          },
+          "title": "Source References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "slide_id",
+        "slide_order",
+        "layout_id",
+        "title",
+        "key_message"
+      ],
+      "title": "Slide",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        },
+        "locator": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Locator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "locator"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "Table": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 6,
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "title": "Rows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "columns",
+        "rows"
+      ],
+      "title": "Table",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "presentation_id": {
+      "title": "Presentation Id",
+      "type": "string"
+    },
+    "template_id": {
+      "default": "lab",
+      "title": "Template Id",
+      "type": "string"
+    },
+    "spec_version": {
+      "minimum": 1,
+      "title": "Spec Version",
+      "type": "integer"
+    },
+    "presentation_metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "slides": {
+      "items": {
+        "$ref": "#/$defs/Slide"
+      },
+      "maxItems": 40,
+      "minItems": 1,
+      "title": "Slides",
+      "type": "array"
+    }
+  },
+  "required": [
+    "presentation_id",
+    "spec_version",
+    "presentation_metadata",
+    "slides"
+  ],
+  "title": "SlideSpec",
+  "type": "object"
+}

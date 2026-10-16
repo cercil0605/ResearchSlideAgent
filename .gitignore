@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+ui/node_modules/
+var/
+.env
+.env.*
+!.env.example
+artifacts/

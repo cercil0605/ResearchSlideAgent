@@ -1,0 +1,11 @@
+.venv
+.git
+var
+artifacts
+ui/node_modules
+work
+__pycache__
+.pytest_cache
+.ruff_cache
+.env
+.env.*

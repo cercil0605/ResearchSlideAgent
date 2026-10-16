@@ -1,0 +1,7 @@
+# ADR 0003: Browser approval, federated authorization server
+
+2026-10-16 / Accepted; real-provider integration pending
+
+モデルからのapprovedフラグを採用しない。サーバーに保存したversion/hashをレビューし、独立したログイン済みブラウザのCSRF保護POSTで承認する。構成と全ページが同じversionで承認されるまでqueue登録を拒否する。
+
+Googleは上流IdP、専用OAuth認可サーバーがMCP用tokenを発行する。既存基盤またはKeycloak等を利用し、手製OAuth brokerは作らない。ブラウザとMCPのclientを分ける。productionで設定不足なら起動拒否。実GoogleログインとChatGPT連携は資格情報未提供のため未検証。

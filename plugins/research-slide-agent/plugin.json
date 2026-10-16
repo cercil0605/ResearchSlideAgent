@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "research-slide-agent",
+  "version": "0.1.0",
+  "description": "Create editable research slides using the laboratory PowerPoint master and versioned human approvals.",
+  "keywords": ["research", "powerpoint", "academic"],
+  "extensions": {"com.openai": {"interface": {"displayName": "Research Slide Agent", "shortDescription": "研究室マスターで編集可能な研究発表を作成", "longDescription": "資料に基づいて構成・内容を相談し、2段階の承認を経て編集可能なPowerPointを生成します。", "category": "Productivity", "capabilities": ["Read", "Write"]}}}
+}

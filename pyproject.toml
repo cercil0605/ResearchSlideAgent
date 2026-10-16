@@ -1,0 +1,26 @@
+[project]
+name = "research-slide-agent"
+version = "0.1.0"
+description = "Template-preserving editable research presentations over MCP"
+requires-python = ">=3.12"
+dependencies = ["python-pptx>=1.0.2,<2", "pydantic>=2.11,<3", "mcp>=2.3,<3", "starlette>=0.46,<1", "uvicorn>=0.35,<1", "httpx>=0.28,<1", "PyJWT[crypto]>=2.10,<3", "pillow>=11,<13", "pypdf>=6,<7", "openpyxl>=3.1,<4"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-asyncio>=1,<2", "ruff>=0.14,<1", "jsonschema>=4,<5"]
+
+[project.scripts]
+rsa = "research_slide_agent.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
