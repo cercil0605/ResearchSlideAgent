@@ -69,13 +69,24 @@ class Store:
         with self.connect() as con:
             if "template_sha" not in {row["name"] for row in con.execute("PRAGMA table_info(specs)")}:
                 con.execute("ALTER TABLE specs ADD COLUMN template_sha TEXT")
+            if "origin" not in {row["name"] for row in con.execute("PRAGMA table_info(files)")}:
+                con.execute("ALTER TABLE files ADD COLUMN origin TEXT")
 
     def source_metadata(self, owner, project, file_id, author, year):
         if not author or not author.strip() or len(author) > 80 or not 1800 <= year <= 2200:
             raise StateError("Valid author/year required")
+        author = author.strip()
         with self.connect() as con:
             p = self._project(con, owner, project)
-            if p["spec"] and file_id in p["spec"]:
+            rows = con.execute("SELECT id,origin FROM files WHERE project=?", (project,)).fetchall()
+            source = next((r for r in rows if r["id"] == file_id), None)
+            if source is None:
+                raise StateError("FILE_NOT_FOUND")
+            if source["origin"]:
+                raise StateError("DERIVED_SOURCE_METADATA: update the parent PDF's author/year")
+            children = [r["id"] for r in rows if r["origin"]
+                        and json.loads(r["origin"])["source_id"] == file_id]
+            if p["spec"] and any(fid in p["spec"] for fid in [file_id, *children]):
                 raise StateError(
                     "SOURCE_ALREADY_REFERENCED: register a new corrected source and update the spec"
                 )
@@ -84,6 +95,9 @@ class Store:
             )
             if not result.rowcount:
                 raise StateError("FILE_NOT_FOUND")
+            for child in children:
+                con.execute("UPDATE files SET author=?,year=? WHERE id=? AND project=?",
+                            (author, year, child, project))
         return {"source_id": file_id, "author": author, "year": year}
 
     @contextmanager
@@ -146,7 +160,7 @@ class Store:
                 for citation in slide.citations:
                     src = sources[citation.source.source_id]
                     if src["author"] != citation.author or src["year"] != citation.year:
-                        raise StateError("SOURCE_METADATA_MISMATCH: confirm author and year in browser")
+                        raise StateError("SOURCE_METADATA_MISMATCH: use set_source_metadata with verified author/year")
                 for image in slide.image_references:
                     if image.source_id not in sources or sources[image.source_id]["kind"] not in {
                         "png",
@@ -173,23 +187,42 @@ class Store:
             "digest": spec.digest(),
         }
 
-    def register(self, owner, project, name, data, author=None, year=None):
+    def register(self, owner, project, name, data, author=None, year=None, *, _origin=None):
         kind = validate_file(name, data)
         if author is not None and (not author.strip() or len(author) > 80):
             raise StateError("Invalid source author")
+        if author is not None:
+            author = author.strip()
         if year is not None and not 1800 <= int(year) <= 2200:
             raise StateError("Invalid source year")
         file_id = uid()
         path = self.root / project / "inputs" / f"{file_id}.{kind}"
         with self.connect() as con:
             self._project(con, owner, project)
-            files = con.execute("SELECT size FROM files WHERE project=?", (project,)).fetchall()
-            if len(files) >= 10 or sum(r["size"] for r in files) + len(data) > MAX_TOTAL:
+            origin = None
+            if _origin is not None:
+                parent = con.execute("SELECT * FROM files WHERE id=? AND project=?",
+                                     (_origin["source_id"], project)).fetchone()
+                if parent is None or parent["kind"] != "pdf" or parent["sha"] != _origin["sha256"] or kind != "png":
+                    raise StateError("PDF_CROP_PARENT_INVALID")
+                author, year = parent["author"], parent["year"]
+                origin = json.dumps(_origin, sort_keys=True)
+                previous = con.execute("SELECT id,name,kind,sha FROM files WHERE project=? AND origin=?",
+                                       (project, origin)).fetchone()
+                if previous:
+                    return {"source_id": previous["id"], "name": previous["name"], "kind": previous["kind"],
+                            "sha256": previous["sha"], "origin": _origin}
+            files = con.execute("SELECT size,origin FROM files WHERE project=?", (project,)).fetchall()
+            if sum(r["size"] for r in files) + len(data) > MAX_TOTAL:
                 raise StateError("PROJECT_FILE_LIMIT")
+            if origin is None and sum(r["origin"] is None for r in files) >= 10:
+                raise StateError("PROJECT_FILE_LIMIT: at most 10 uploaded sources")
+            if origin is not None and sum(r["origin"] is not None for r in files) >= 80:
+                raise StateError("PROJECT_ASSET_LIMIT: at most 80 derived images")
             path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             path.write_bytes(data)
             con.execute(
-                "INSERT INTO files VALUES(?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO files(id,project,name,kind,size,sha,path,author,year,origin) VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (
                     file_id,
                     project,
@@ -200,21 +233,22 @@ class Store:
                     str(path.relative_to(self.root)),
                     author,
                     year,
+                    origin,
                 ),
             )
             if kind == "pptx":
                 con.execute("UPDATE projects SET latest_pptx=? WHERE id=?", (file_id, project))
-        return {"source_id": file_id, "name": name, "kind": kind, "sha256": hashlib.sha256(data).hexdigest()}
+        result = {"source_id": file_id, "name": name, "kind": kind, "sha256": hashlib.sha256(data).hexdigest()}
+        if _origin is not None:
+            result["origin"] = _origin
+        return result
 
     def files(self, owner, project):
         with self.connect() as con:
             self._project(con, owner, project)
-            return [
-                dict(row)
-                for row in con.execute(
-                    "SELECT id,name,kind,size,sha,author,year FROM files WHERE project=?", (project,)
-                )
-            ]
+            rows = con.execute("SELECT id,name,kind,size,sha,author,year,origin FROM files WHERE project=?",
+                               (project,)).fetchall()
+            return [{**dict(row), "origin": json.loads(row["origin"]) if row["origin"] else None} for row in rows]
 
     def file(self, owner, project, file_id):
         with self.connect() as con:
@@ -224,6 +258,7 @@ class Store:
                 raise StateError("FILE_NOT_FOUND")
             result = dict(row)
         result["path"] = self.root / result["path"]
+        result["origin"] = json.loads(result["origin"]) if result["origin"] else None
         return result
 
     def patch_plan(self, owner, project, file_id, changes):

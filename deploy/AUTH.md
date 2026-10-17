@@ -61,6 +61,13 @@ Accessがoriginへ渡す `Cf-Access-Jwt-Assertion` のRS256署名、チームiss
 署名付きアップロード・ダウンロードURLも同じAccess認証と所有者一致が必要です。
 ChatGPTの埋め込みビューアーでブラウザのAccess cookieが利用できない場合は、外部ブラウザでダウンロードURLを開きます。
 
+ChatGPTの添付は `register_chatgpt_file` でMCPサーバーが取得します。別HTTP PUTの本人認証に依存せず、
+既存の認証済みMCP呼出し内で処理します。`RSA_ATTACHMENT_HOSTS` に実際の添付取得先の完全一致ホストを設定します。
+`get_file_transfer_info` で空設定を確認でき、`ATTACHMENT_ORIGIN_NOT_ALLOWED` は不足しているホスト名のみ返します。
+ホストの正当性を管理者が確認して設定し、APIコンテナを再作成してください。署名URL全体をログ・チャットへ貼らないでください。
+`ATTACHMENT_HTTP_401/403` は添付取得元の応答であり、Accessへの再ログインが解決策とは限りません。
+新しいfile引数で再試行して切り分けます。任意ホストの許可、Access認証の解除、MCPトークンの取得元への転送はしません。
+
 `/health` とリソースメタデータだけはoriginでassertionなしに応答し、Docker healthcheckを可能にします。
 Cloudflareを経由したアクセスにはAccess側の設定が適用されます。
 

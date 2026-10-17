@@ -12,6 +12,7 @@ APIと生成ワーカーは同一Piの共有Docker volumeを使い、SQLite WAL�
 | モジュール | 責務 |
 |---|---|
 | models.py | SlideSpec 1.0/1.1、見本・段落／ラン選択、意味的図表、参照、引用、JSON Schema |
+| pdf_assets.py | 登録PDFのCropBox画像化、表示に沿った正規化領域の切り出し。既存PopplerをAPI側で再利用 |
 | engine.py | 生成経路の選択、旧テンプレート互換処理、LibreOffice/Poppler、OPC差分編集 |
 | prototypes.py | 正本ページの複製、直接書式と表の保持、適合検査、生成来歴 |
 | files.py | 容量・拡張子・マジック・ZIP・XML・外部参照検査、ページ単位の資料抽出 |
@@ -41,7 +42,7 @@ replacementsで段落とランの見本を選択する。位置・色・字形�
 正本と仕様から期待XMLを再構成して出力を検証し、コードコミット・ソースhash・正本SHA・仕様版を
 manifestとPPTX内へ記録する。生成は検査済みの一時ファイルを完成後に置換する。
 PPTX生成・構造検査の成功でcompletedとなり、get_jobは期限付きダウンロードURLを返す。
-PDF・PNGプレビューの生成・表示やモデルによる画像確認は行わない。
+完成PPTXのPDF・PNGプレビューは生成しない。原論文のページ画像・図の切り出しはAPI側の独立した処理とする。
 get_generation_reportは書式適合と来歴を返す。
 
 `spec_version` は単調増加。保存時にexpected_versionを照合する。

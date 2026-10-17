@@ -55,5 +55,7 @@
 
 PPTX生成と構造検査の成功でcompletedになる。`get_job.download_url` を提示する。
 現在のMCPは完成PPTXのプレビューを生成・表示しない。モデルによる完成物レビューは必須にしない。
-原論文の図表を理解・選定するためのページ画像閲覧とは区別する。PDF画像化・cropのMCP操作は未実装。
+原論文は `render_pdf_page` で閲覧し、`crop_pdf_region` で選択領域をPNG登録できる。
+image_referencesには返された画像source_id、出典には元PDFのcitation_source_idとページ・図番号を指定する。
+本文切断や原図を短文だけで代替することはしない。Strictの枠と編集可能な図形の制約は維持する。
 構造検査とPowerPoint実機の確認は区別する。

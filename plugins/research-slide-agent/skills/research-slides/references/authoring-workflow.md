@@ -29,7 +29,7 @@
 - 実験は目的、参加者、条件・手順、指標とその意味を説明する（G08、R05）。
 - 結果は根拠となる図表と読み取る点を対応させ、観測と解釈、有意と非有意を区別する（G09、R08）。
 - 元論文に重要な図表があれば利用候補を選び、図番号・locator・用途を対応させる。
-  未対応の取得操作が必要なら、その制約と登録済み画像の利用方法を伝える。図番号や短文だけで原図の代替にしない。
+  `render_pdf_page` でページ画像を見て `crop_pdf_region` で原図を登録する。図番号や短文だけで原図の代替にしない。
 
 この設計はChatGPTの責任であり、MCPへ短いキーワードだけ渡して論文の説明を補わせない。
 
@@ -65,8 +65,14 @@
 現在のStrictでは図枠のない見本に図を追加できない。教授ルールをすべて満たしたと報告せず、制約を明示する。
 
 ## 生成手順
-1. `create_project`。資料は `register_chatgpt_file` の公式file引数、または `create_upload` のbrowser_urlから登録する。
-   架空のファイルIDは使わない。`get_project` / `read_source` で提供内容と具体的なlocatorを確認する。
+1. `create_project` → `get_file_transfer_info`。添付PDFは `register_chatgpt_file` の公式file引数で一度だけ登録する。
+   author/yearが論文から確認できれば同時に設定し、後から判明した場合は `set_source_metadata` を元PDFに一度使う。
+   著者・年を推測しない。`get_project` / `read_source` で登録内容と具体的なlocatorを確認する。架空のIDを使わない。
+   転送エラーはtool名とコードで切り分ける。ATTACHMENT_ORIGIN_NOT_ALLOWEDは管理者による
+   RSA_ATTACHMENT_HOSTS設定の不足であり、ユーザーのMCP再ログインや図ごとの手動登録では解決しない。
+   ATTACHMENT_HTTP_401/403等は添付取得元の応答であり、MCP認証の失敗と断定しない。新しいfile引数で再試行する。
+   `create_upload` は予備経路で、PUT URLだけでは本人認証を代替しない。自動転送不可を確認した場合のみ
+   browser_urlの手動登録を案内し、論文PDFだけを登録してもらう。切り出した図の再アップロードを要求しない。
 2. `save_slide_spec` にページ全体の仕様を保存する。spec_versionは保存済み版+1、expected_versionは保存済み版。
 3. `enqueue_generation` → `get_job`。新規生成・再生成・PPTXパッチに承認手順は不要。
    短い間隔で無限に確認しない。PPTX生成と構造検査が成功するとcompletedになる。
@@ -82,6 +88,15 @@
 図は概要・提案手法・結果図の枠を選ぶ。`diagram_spec` は正本の枠とラベルを使った編集可能な簡単な配置図。
 対応する図の種類と制約は入力手順を参照する。未対応の複雑な図・グラフ・動画を実装済みと報告しない。
 写真等は登録済み元画像を `image_references` で指定し、図題と出典を併記する。
+論文原図は `render_pdf_page(presentation_id, source_id, page)` の実画像を見て領域を選ぶ。
+`crop_pdf_region` のregionは表示されたページ画像に対する0～1のleft/top/right/bottom、原点は左上。
+PDFの回転とCropBoxは表示に反映済み。ページは1始まり。座標はPDF canvasやスライド座標ではない。
+返された画像で切り出し内容を確認し、不足や本文混入があれば領域を修正する。
+返されたsource_idをimage_referencesに使い、citation_source_id（元PDF）をsource_references/citationsに指定する。
+locatorにはページとFigure番号等を記録する。著者・年は元PDFで管理し、各切り出し図へ再入力しない。
+切り出しはPDFを再送せず実行でき、同じ領域・DPIの再試行は同じ画像IDを返す。
+アップロード資料10件とは別枠で派生画像80件まで、両者の合計容量は100 MiB。上限時に図を黙って省かない。
+この処理は原図の画像化であり、編集可能なPowerPoint図形への自動変換ではない。
 引用は ` [著者 '25]`、年は内部で4桁。citations/source_referencesを指定し、対応する近傍欄のtextにも引用表記を含める。
 
 TEXT_OVERFLOW / TABLE_OVERFLOW / LAYOUT_REQUIRES_USER_CHANGEでは、該当欄を確認して短縮案またはページ分割案を示す。
