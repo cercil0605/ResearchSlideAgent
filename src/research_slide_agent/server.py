@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import functools
+import hashlib
 import inspect
 import ipaddress
 import json
@@ -14,13 +16,14 @@ import httpx
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp_types import ToolAnnotations
+from mcp_types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 from starlette.concurrency import run_in_threadpool
 
 from .auth import current_owner
 from .engine import inspect_pptx, template_info
 from .files import MAX_FILE, extract
 from .models import Model, SlideSpec
+from .pdf_assets import PdfRegion, render_page
 from .rules import RULES_RESOURCE_URI, SERVER_INSTRUCTIONS, authoring_context
 from .store import StateError
 
@@ -38,34 +41,79 @@ class OpenAIFile(Model):
 
 async def download_attachment(file: OpenAIFile):
     """Only explicitly trusted download origins. Never fetch arbitrary paper links or redirects."""
-    hosts = set(filter(None, os.getenv("RSA_ATTACHMENT_HOSTS", "").split(",")))
-    url = urlparse(file.download_url)
+    hosts = attachment_hosts()
+    try:
+        url = urlparse(file.download_url)
+        port = url.port
+    except ValueError as exc:
+        raise StateError("ATTACHMENT_URL_INVALID") from exc
     if (
         url.scheme != "https"
         or url.hostname not in hosts
         or url.username
         or url.password
-        or url.port not in (None, 443)
+        or port not in (None, 443)
     ):
         raise StateError(
-            "ATTACHMENT_ORIGIN_NOT_ALLOWED: use the authenticated browser upload or configure the exact trusted download hostname"
+            "ATTACHMENT_ORIGIN_NOT_ALLOWED: administrator must configure the exact trusted download host "
+            f"{str(url.hostname)[:150]} in RSA_ATTACHMENT_HOSTS, then retry register_chatgpt_file"
         )
-    addresses = socket.getaddrinfo(url.hostname, 443, type=socket.SOCK_STREAM)
-    if any(not ipaddress.ip_address(item[4][0]).is_global for item in addresses):
-        raise StateError("Private attachment addresses forbidden")
+    try:
+        addresses = await run_in_threadpool(socket.getaddrinfo, url.hostname, 443, type=socket.SOCK_STREAM)
+    except OSError as exc:
+        raise StateError("ATTACHMENT_DNS_FAILED: cannot resolve the configured download host") from exc
+    if not addresses or any(not ipaddress.ip_address(item[4][0]).is_global for item in addresses):
+        raise StateError("ATTACHMENT_ADDRESS_FORBIDDEN: only public download addresses are allowed")
     chunks, total = [], 0
-    async with httpx.AsyncClient(timeout=30, follow_redirects=False, trust_env=False) as client:
-        async with client.stream("GET", file.download_url) as response:
-            if response.status_code != 200:
-                raise StateError("Attachment download failed or redirected")
-            async for chunk in response.aiter_bytes():
-                total += len(chunk)
-                if total > MAX_FILE:
-                    raise StateError("Attachment exceeds 20 MiB")
-                chunks.append(chunk)
-    if not file.file_name:
-        raise StateError("File name is missing; use browser upload")
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=False, trust_env=False) as client:
+            async with client.stream("GET", file.download_url) as response:
+                if 300 <= response.status_code < 400:
+                    raise StateError("ATTACHMENT_REDIRECT_REFUSED: request a fresh direct download file parameter")
+                if response.status_code != 200:
+                    raise StateError(f"ATTACHMENT_HTTP_{response.status_code}: attachment download failed; "
+                                     "request a fresh file parameter and retry; this is not an MCP login error")
+                async for chunk in response.aiter_bytes():
+                    total += len(chunk)
+                    if total > MAX_FILE:
+                        raise StateError("ATTACHMENT_TOO_LARGE: exceeds 20 MiB")
+                    chunks.append(chunk)
+    except httpx.TimeoutException as exc:
+        raise StateError("ATTACHMENT_TIMEOUT: retry with a fresh file parameter") from exc
+    except httpx.RequestError as exc:
+        raise StateError("ATTACHMENT_NETWORK_FAILED: cannot reach the configured download host") from exc
     return b"".join(chunks)
+
+
+def attachment_hosts():
+    return {host.strip().lower() for host in os.getenv("RSA_ATTACHMENT_HOSTS", "").split(",") if host.strip()}
+
+
+def attachment_name(file: OpenAIFile, data: bytes):
+    if file.file_name:
+        return file.file_name
+    # file_name and mime_type are optional under the official fileParams contract.
+    if data.startswith(b"%PDF-"):
+        ext = "pdf"
+    elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+        ext = "png"
+    elif data.startswith(b"\xff\xd8\xff"):
+        ext = "jpg"
+    else:
+        ext = {"text/csv": "csv",
+               "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx"}.get(file.mime_type)
+    if not ext:
+        raise StateError("ATTACHMENT_TYPE_UNKNOWN: supply file_name or a supported mime_type")
+    return f"source-{hashlib.sha256(file.file_id.encode()).hexdigest()[:16]}.{ext}"
+
+
+def image_result(data, metadata):
+    return CallToolResult(
+        content=[TextContent(text=json.dumps(metadata, ensure_ascii=False)),
+                 ImageContent(data=base64.b64encode(data).decode(), mime_type="image/png")],
+        structuredContent=metadata,
+    )
 
 
 def tool(mcp, **options):
@@ -165,7 +213,9 @@ def make_mcp(store, settings, auth):
 
     @tool(mcp, annotations=write, meta=meta)
     def create_upload(presentation_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Issue a short-lived upload capability and authenticated browser alternative. PUT raw bytes with X-Filename."""
+        """Fallback only. In Cloudflare mode PUT also requires Access identity; a capability alone is insufficient.
+        Prefer register_chatgpt_file for ChatGPT attachments. Never forward MCP credentials to file hosts.
+        """
         owner = current_owner(ctx)
         store.project(owner, presentation_id)
         cap = auth.sign("upload", {"owner": owner, "project": presentation_id}, ttl=600)
@@ -176,16 +226,64 @@ def make_mcp(store, settings, auth):
             "expires_in": 600,
             "browser_url": f"{settings.base_url}/project/{presentation_id}",
             "max_bytes": MAX_FILE,
+            "requires_owner_authentication": settings.cloudflare,
         }
+
+    @tool(mcp, annotations=read, meta=meta)
+    def get_file_transfer_info(*, ctx: Context) -> dict[str, Any]:
+        """Check attachment transport configuration before asking a user to upload files again.
+        Empty hosts require administrator configuration, not per-figure manual uploads.
+        """
+        return {"method": "register_chatgpt_file", "configured_download_hosts": sorted(attachment_hosts()),
+                "download_hosts_configured": bool(attachment_hosts()), "max_bytes": MAX_FILE,
+                "upload_url_requires_owner_authentication": settings.cloudflare,
+                "configuration": "RSA_ATTACHMENT_HOSTS: comma-separated exact trusted download hostnames"}
 
     @tool(mcp, annotations=write, meta={**meta, "openai/fileParams": ["file"]})
     async def register_chatgpt_file(
-        presentation_id: str, file: OpenAIFile, *, ctx: Context
+        presentation_id: str, file: OpenAIFile, author: str | None = None, year: int | None = None, *, ctx: Context
     ) -> dict[str, Any]:
-        """Register a ChatGPT file parameter. Trusted download origins must be configured; otherwise use browser upload."""
+        """Register the attached PDF once via official fileParams. Optional author/year must match the paper.
+        Diagnose transfer errors before using browser fallback. Use render_pdf_page/crop_pdf_region for figures.
+        """
         store.project(current_owner(ctx), presentation_id)
         data = await download_attachment(file)
-        return store.register(current_owner(ctx), presentation_id, file.file_name, data)
+        return store.register(current_owner(ctx), presentation_id, attachment_name(file, data), data, author, year)
+
+    @tool(mcp, annotations=write, meta=meta)
+    def set_source_metadata(presentation_id: str, source_id: str, author: str, year: int, *, ctx: Context) -> dict[str, Any]:
+        """Set verified paper author/year once, also inherited by its derived figures. No per-image entry.
+        Existing referenced sources cannot be changed; never guess unknown metadata.
+        """
+        return store.source_metadata(current_owner(ctx), presentation_id, source_id, author, year)
+
+    def pdf_source(presentation_id, source_id, ctx):
+        source = store.file(current_owner(ctx), presentation_id, source_id)
+        if source["kind"] != "pdf":
+            raise StateError("PDF_SOURCE_REQUIRED: use a registered PDF from this project")
+        return source
+
+    @tool(mcp, annotations=read, meta=meta)
+    def render_pdf_page(presentation_id: str, source_id: str, page: int = 1, dpi: int = 144, *, ctx: Context) -> CallToolResult:
+        """Return an actual PNG image of a paper page plus pixel dimensions. Page is 1-based; DPI 72..300.
+        Inspect it to choose normalized top-left bounds for crop_pdf_region. Does not register a new source.
+        """
+        source = pdf_source(presentation_id, source_id, ctx)
+        data, metadata = render_page(source["path"], page, dpi)
+        return image_result(data, {"source_id": source_id, "sha256": source["sha"], **metadata})
+
+    @tool(mcp, annotations=write, meta=meta)
+    def crop_pdf_region(presentation_id: str, source_id: str, page: int, region: PdfRegion,
+                        dpi: int = 200, *, ctx: Context) -> CallToolResult:
+        """Crop and register an original figure, returning its source_id and an actual PNG for inspection.
+        Bounds are 0..1 on render_pdf_page's displayed CropBox, top-left origin, rotation included.
+        Reuse returned source_id in image_references; cite the parent PDF with page/Figure locator.
+        """
+        source = pdf_source(presentation_id, source_id, ctx)
+        data, metadata = render_page(source["path"], page, dpi, region)
+        origin = {"operation": "pdf_crop_v1", "source_id": source_id, "sha256": source["sha"], **metadata}
+        result = store.register(current_owner(ctx), presentation_id, f"figure-p{page}.png", data, _origin=origin)
+        return image_result(data, {**result, "citation_source_id": source_id, **metadata})
 
     @tool(mcp, annotations=read, meta=meta)
     def read_source(presentation_id: str, source_id: str, page: int = 1, *, ctx: Context) -> dict[str, Any]:

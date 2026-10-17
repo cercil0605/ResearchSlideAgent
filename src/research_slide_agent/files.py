@@ -89,7 +89,7 @@ def validate_file(name: str, data: bytes) -> str:
         reader = PdfReader(io.BytesIO(data), strict=True)
         if reader.is_encrypted or len(reader.pages) > 500:
             raise InputError("Encrypted or overlong PDF")
-        # PDFs are text sources only; never run scripts, attachments or URL actions.
+        # Text extraction and isolated rasterization only; never execute PDF actions or extract attachments.
     elif ext in {"png", "jpg", "jpeg"}:
         expected = "PNG" if ext == "png" else "JPEG"
         try:

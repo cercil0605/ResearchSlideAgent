@@ -186,7 +186,7 @@ def create_app(settings: Settings | None = None):
     async def home(request):
         return page(
             "Research Slide Agent",
-            "<p>MCP endpoint: <code>/mcp</code></p><p>ChatGPTでプロジェクトを作成し、ツールが返したURLで資料を登録します。</p>",
+            "<p>MCP endpoint: <code>/mcp</code></p><p>ChatGPTへ論文を添付するとMCPに登録できます。この画面は自動転送できない場合の手動登録用です。</p>",
         )
 
     async def project_page(request):
@@ -197,20 +197,42 @@ def create_app(settings: Settings | None = None):
         pid = request.path_params["project"]
         p = store.project(owner, pid)
         files = store.files(owner, pid)
-        body = f"""<p>Project: {html.escape(pid)} / Version: {p["version"]}</p>
-<p>最大10ファイル、各20 MiB、合計100 MiB。資料は7日後に削除します。再アップロードしたPPTXを最新版として扱います。</p>
-<form id="upload"><input id="file" type="file" required accept=".pdf,.pptx,.png,.jpg,.jpeg,.csv,.xlsx"><br>
-<label>引用著者（不明なら空欄）<input id="author"></label><label>年<input id="year" type="number"></label><button>登録</button></form>
-<p id="status" role="status"></p><pre>{html.escape(json.dumps(files, ensure_ascii=False, indent=2))}</pre>
-<p>登録後、チャットから get_project を呼び直してください。引用メタデータは資料と照合して入力してください。</p>"""
+        body = """<p>論文は通常ChatGPTへの添付から自動転送します。ここでは転送できない資料をまとめて手動登録できます。</p>
+<p>論文PDFを登録すれば、図はMCP内で切り出せます。図ごとのアップロードや引用情報の入力は不要です。</p>
+<p>アップロード資料は最大10件、各20 MiB。切り出し図は別枠で最大80件、合計100 MiB。保存期間は7日間です。</p>
+<form id="upload"><label>登録する資料（複数選択可）<input id="file" type="file" multiple required accept=".pdf,.pptx,.png,.jpg,.jpeg,.csv,.xlsx"></label><br>
+<button id="upload-button">選択した資料を登録</button></form>
+<p id="status" role="status" aria-live="polite"></p><ul id="upload-results"></ul>
+<p>登録後はChatGPTで制作を続けられます。著者・年はChatGPTが論文と照合して設定できます。</p>
+<h2>登録済み資料</h2><table><thead><tr><th>ファイル</th><th>種別</th><th>出典</th></tr></thead><tbody>"""
+        names = {f["id"]: f["name"] for f in files}
         for f in files:
+            parent = f["origin"]["source_id"] if f["origin"] else None
+            citation = f"{f['author'] or '未設定'} / {f['year'] or '未設定'}"
+            if parent:
+                citation = f"{names.get(parent, '元PDF')} p.{f['origin']['page']} から切り出し"
+            body += f"<tr><td>{html.escape(f['name'])}</td><td>{html.escape(f['kind'])}</td><td>{html.escape(citation)}</td></tr>"
+        body += "</tbody></table><details><summary>引用情報を手動で修正</summary>"
+        for f in files:
+            if f["origin"]:
+                continue
             fid = html.escape(f["id"])
-            body += f'<form class="metadata" data-id="{fid}"><label>資料 {html.escape(f["name"])} の著者<input name="author" required></label><label>年<input name="year" type="number" required></label><button>引用情報を確認して保存</button></form>'
-        script = f"""document.getElementById('upload').onsubmit=async e=>{{e.preventDefault();const file=document.getElementById('file').files[0];
-const h={{'X-Filename':encodeURIComponent(file.name),'X-CSRF':{json.dumps(csrf)},'X-Author':encodeURIComponent(document.getElementById('author').value),'X-Year':document.getElementById('year').value}};
-const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:h,body:file}});document.getElementById('status').textContent=JSON.stringify(await r.json());if(r.ok)location.reload();}};"""
+            body += f'<form class="metadata" data-id="{fid}"><label>{html.escape(f["name"])} の著者<input name="author" value="{html.escape(f["author"] or "", quote=True)}" required maxlength="80"></label><label>年<input name="year" value="{f["year"] or ""}" type="number" min="1800" max="2200" required></label><button>引用情報を保存</button></form>'
+        body += f"</details><p><small>Project: {html.escape(pid)} / Version: {p['version']}</small></p>"
+        script = f"""document.getElementById('upload').onsubmit=async e=>{{e.preventDefault();
+const input=document.getElementById('file'),button=document.getElementById('upload-button'),status=document.getElementById('status');
+const files=Array.from(input.files),failed=[];button.disabled=true;
+try{{for(let i=0;i<files.length;i++){{const file=files[i];status.textContent=`登録中 ${{i+1}} / ${{files.length}}`;
+const item=document.createElement('li');document.getElementById('upload-results').appendChild(item);
+try{{const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:{{'X-Filename':encodeURIComponent(file.name),'X-CSRF':{json.dumps(csrf)}}},body:file}});
+const result=await r.json();if(!r.ok)throw new Error(result.error||'登録できませんでした');item.textContent=file.name+'：登録済み';}}
+catch(error){{failed.push(file);item.textContent=file.name+'：'+error.message;}}}}
+if(failed.length){{const pending=new DataTransfer();failed.forEach(file=>pending.items.add(file));input.files=pending.files;
+status.textContent='一部の登録に失敗しました。失敗した資料だけを再試行できます。';}}
+else{{status.textContent='登録完了。ChatGPTで制作を続けられます。';location.reload();}}}}
+finally{{button.disabled=false;}}}};"""
         script += f"""document.querySelectorAll('form.metadata').forEach(form=>form.onsubmit=async e=>{{e.preventDefault();const r=await fetch(location.pathname+'/source/'+form.dataset.id+'/metadata',{{method:'POST',headers:{{'Content-Type':'application/json','X-CSRF':{json.dumps(csrf)}}},body:JSON.stringify({{author:form.elements.author.value,year:Number(form.elements.year.value)}})}});document.getElementById('status').textContent=JSON.stringify(await r.json());if(r.ok)location.reload();}});"""
-        return page("資料登録", body, script)
+        return page("資料の手動登録", body, script)
 
     async def upload(request):
         from urllib.parse import unquote
