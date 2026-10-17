@@ -23,6 +23,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
+      - run: node --test scripts/publish-deployment.test.cjs
       - run: sudo apt-get update && sudo apt-get install -y libreoffice-impress poppler-utils fonts-noto-cjk
       - run: npm ci --ignore-scripts && npm run build
         working-directory: ui
@@ -59,3 +60,20 @@ jobs:
           platforms: linux/arm64,linux/amd64
           build-args: RSA_CODE_COMMIT=${{ github.sha }}
           tags: ${{ steps.image.outputs.name }}:latest,${{ steps.image.outputs.name }}:${{ github.sha }}
+  deployment:
+    if: github.ref == 'refs/heads/main'
+    needs: image
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish tested image for Portainer
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const publish = require('./scripts/publish-deployment.cjs');
+            await publish({github, context, core});

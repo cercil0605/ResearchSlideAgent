@@ -55,6 +55,32 @@ workerは起動時/毎時、作成7日後のプロジェクトを削除。`rsa c
 
 ## 更新・ロールバック
 
+### CIと連携した定期確認
+
+`main`のCIはテストとARM64/AMD64イメージの公開に成功すると、`deploy/production`ブランチの
+`compose.yaml`を更新する。このファイルは両サービスのイメージを同じコミットSHAに固定する。
+古いmainのCIが後から終わっても、現在のmainと違うSHAは公開しない。
+GitHub Actionsの`deployment`ジョブだけが`contents: write`を使い、Pi上のrunnerは使わない。
+
+Portainerでこの連携を使う場合は、StackをGit repositoryから作り、次を設定する。
+
+- Repository: `https://github.com/cercil0605/ResearchSlideAgent`
+- Reference: `refs/heads/deploy/production`
+- Compose path: `compose.yaml`
+- GitOps updates: Polling、例5分
+- Re-pull image: 有効
+- Force redeployment: 無効（新しいデプロイが公開されたときだけ更新）
+
+非公開repoのGit認証とGHCRのpull認証は別々に登録する。環境変数は`.env.example`に従う。
+公開済みComposeではイメージが固定されるため、`RSA_IMAGE`の環境変数による上書きはしない。
+Portainerのバージョン・エディションでGitOpsの利用可否を確認する。
+GitHubからPortainerへ接続する必要はなく、Portainerの公開設定を追加する必要もない。
+
+ロールバックはPortainerで一時的にGitOps更新を止め、`deploy/production`の直前のコミットを
+Referenceに指定して再配置する。運用再開時はReferenceを上記ブランチに戻す。
+
+### 手動更新
+
 CIでtest/build後、PortainerのRSA_IMAGEをcommit SHAタグへ変更し再Deploy。実行中のworkerにはstop_grace_period 10分を設定。最終確認前に旧イメージとvolumeを破棄しない。ロールバックは旧タグへ戻す。SQLite schema変更を伴う更新は両方のプロセスを止め、整合したDBバックアップを取得してから行う。
 
 イメージ監視による自動更新を使う場合は `RSA_IMAGE=ghcr.io/cercil0605/researchslideagent:latest` とし、
