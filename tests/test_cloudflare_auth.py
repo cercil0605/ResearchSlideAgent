@@ -51,7 +51,7 @@ def call(client, name, **arguments):
     return rpc(client, "tools/call", {"name": name, "arguments": arguments})
 
 
-def test_cloudflare_generation_and_browser_approval(cloudflare):
+def test_cloudflare_generation_without_approval(cloudflare):
     app, settings, token = cloudflare
     with TestClient(app, base_url=settings.base_url, headers={"Cf-Access-Jwt-Assertion": token()}) as client:
         profile = call(client, "get_profile")["structuredContent"]
@@ -62,20 +62,6 @@ def test_cloudflare_generation_and_browser_approval(cloudflare):
         spec = sample_spec(pid, 1)
         saved = call(client, "save_slide_spec", presentation_id=pid, spec=spec.model_dump(), expected_version=0)
         assert not saved.get("isError")
-        assert call(client, "enqueue_generation", presentation_id=pid)["isError"]
-        for stage, slide_id in [("outline", ""), ("slide", spec.slides[0].slide_id)]:
-            review = call(client, "request_approval", presentation_id=pid, stage=stage, slide_id=slide_id)
-            path = "/review/" + review["structuredContent"]["review_id"]
-            assert client.get(path).status_code == 200
-            cookie = app.state.auth.unsign("browser", client.cookies["rsa_session"])
-            assert cookie["owner"] == profile["id"]
-            assert client.post(path, json={}).status_code == 401
-            assert client.post(path, json={}, headers={
-                "X-CSRF": cookie["csrf"], "Origin": "https://attacker.example",
-            }).status_code == 401
-            assert client.post(path, json={}, headers={
-                "X-CSRF": cookie["csrf"], "Origin": settings.base_url,
-            }).status_code == 200
         job = call(client, "enqueue_generation", presentation_id=pid)["structuredContent"]
         assert process_one(app.state.store, settings)
         assert call(client, "get_job", job_id=job["id"])["structuredContent"]["state"] == "completed"
@@ -127,7 +113,7 @@ def test_cloudflare_cookies_and_capabilities_cannot_bypass_identity(cloudflare):
         # A valid second identity cannot use Alice's session or signed upload URL.
         client.headers["Cf-Access-Jwt-Assertion"] = token(sub="bob-id", email="bob@example.org")
         assert client.put(path, content=b"a,b", headers={"X-Filename": "other.csv"}).status_code == 401
-        assert client.post("/review/anything", json={}).status_code == 401
+        assert client.post(f"/project/{pid}/source/anything/metadata", json={}).status_code == 401
         # An old session and capability without a fresh Access assertion grant no access.
         del client.headers["Cf-Access-Jwt-Assertion"]
         assert client.get("/project/" + pid).status_code == 401

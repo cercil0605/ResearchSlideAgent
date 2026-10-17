@@ -6,7 +6,7 @@
 
 | Piの実装 | 東京asia-northeast1の移行先・要件 |
 |---|---|
-| StoreのSQLite transaction | Firestore transaction。承認version/hash、owner上限、全体上限、lease/fencingを保持 |
+| StoreのSQLite transaction | Firestore transaction。仕様version/hash、owner上限、全体上限、lease/fencingを保持 |
 | Docker volume inputs/artifacts | Cloud Storage。owner/project namespace、7日lifecycle、期限付きURL、期限後API拒否 |
 | queued polling worker | Cloud Tasks。payloadはjob_idのみ、最大3試行、重複配信をdigestとleaseで排他 |
 | APIコンテナ | Cloud Run public HTTPS + OAuth resource server |

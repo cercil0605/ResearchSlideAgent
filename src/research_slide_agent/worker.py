@@ -2,11 +2,10 @@ import hashlib
 import json
 import logging
 import signal
-import subprocess
 import time
 from logging.handlers import TimedRotatingFileHandler
 
-from .engine import LayoutError, generate, patch_text, render
+from .engine import LayoutError, generate, inspect_pptx, patch_text
 from .models import SlideSpec
 from .store import StateError
 
@@ -25,7 +24,7 @@ def process_one(store, settings):
         payload = job["payload"]
         if payload["kind"] == "generate":
             if hashlib.sha256(settings.template.read_bytes()).hexdigest() != payload["template_sha256"]:
-                raise StateError("TEMPLATE_CHANGED_REAPPROVAL_REQUIRED")
+                raise StateError("TEMPLATE_CHANGED_RESAVE_REQUIRED")
             spec = SlideSpec.model_validate(payload["spec"])
             images = {
                 f["id"]: store.file(job["owner"], job["project"], f["id"])["path"]
@@ -46,14 +45,9 @@ def process_one(store, settings):
                 [{k: v for k, v in c.items() if k != "previous_text"} for c in payload["changes"]],
             )
         store.finish(job["id"], job["lease_token"], "validating")
-        preview = (
-            render(pptx, path / "preview")
-            if settings.require_render
-            else {"images": [], "status": "not_rendered_test_only"}
-        )
+        inspect_pptx(pptx)
         output = {
             "pptx": str(pptx.relative_to(store.root)),
-            "preview": preview,
             "directory": str(path.relative_to(store.root)),
         }
         store.finish(job["id"], job["lease_token"], "completed", output=output)
@@ -61,8 +55,8 @@ def process_one(store, settings):
         code = "LAYOUT_REQUIRES_USER_CHANGE" if isinstance(exc, LayoutError) else "INVALID_JOB_STATE"
         store.finish(job["id"], job["lease_token"], "failed", error=code,
                      output={"guidance": str(exc)[:400]})
-    except (OSError, subprocess.SubprocessError, RuntimeError):
-        store.finish(job["id"], job["lease_token"], "failed", error="RENDER_OR_IO_FAILURE", transient=True)
+    except (OSError, RuntimeError):
+        store.finish(job["id"], job["lease_token"], "failed", error="IO_FAILURE", transient=True)
     log.info(
         json.dumps(
             {

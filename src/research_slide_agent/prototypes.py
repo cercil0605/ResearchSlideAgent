@@ -428,7 +428,7 @@ def generate_prototypes(template, spec, output, images=None):
     entries = {e["prototype_id"]: e for e in profile["prototypes"]}
     prs = Presentation(template)
     info = provenance(template, spec)
-    manifest = {**info, "provenance": info, "slides": [], "visual_review": "pending"}
+    manifest = {**info, "provenance": info, "slides": [], "visual_review": "not_performed"}
     with ZipFile(template) as src:
         parts = {n: src.read(n) for n in src.namelist()
                  if not n.startswith(("ppt/slides/", "ppt/notesSlides/"))}
@@ -556,5 +556,5 @@ def verify_prototypes(template, output, spec, manifest, images=None):
     if issues:
         raise LayoutError("; ".join(issues))
     return {"status": "passed", "format_conformance": "canonical_slide_xml_and_shared_parts",
-            "text_fit": "conservative_estimate", "visual_review": "pending",
+            "text_fit": "conservative_estimate", "visual_review": "not_performed",
             "powerpoint_verified": False, "auto_repair_attempts": 0}

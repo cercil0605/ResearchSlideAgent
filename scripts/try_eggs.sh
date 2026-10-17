@@ -14,5 +14,5 @@ docker run --rm --read-only --network none \
   --mount "type=bind,source=$repo_dir/examples/eggs.slidespec.json,target=/work/eggs.slidespec.json,readonly" \
   --mount "type=bind,source=$repo_dir/artifacts/canonical-eggs,target=/output" \
   --workdir /work research-slide-agent:local \
-  python render_spec.py eggs.slidespec.json --output /output --render
-printf '\nブラウザで開く: %s/artifacts/canonical-eggs/index.html\n' "$repo_dir"
+  python render_spec.py eggs.slidespec.json --output /output
+printf '\nPPTX: %s/artifacts/canonical-eggs/presentation.pptx\n' "$repo_dir"

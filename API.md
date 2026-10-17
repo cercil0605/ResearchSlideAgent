@@ -9,22 +9,20 @@ MCPは `/mcp` のStreamable HTTP。公式SDKがinitialize、tools/list、tools/c
 | get_profile | 引数なし。検証済み主体の安定したopaque id |
 | get_template_info | 引数なし。正本SHA、書式版、prototype_idと差し替え欄・段落／ランの見本 |
 | create_project | 引数なし。7日保持する個人project |
-| get_project | presentation_id。現在版・承認・資料一覧 |
+| get_project | presentation_id。現在版・資料一覧 |
 | save_slide_spec | presentation_id, spec:SlideSpec, expected_version |
 | patch_slide | presentation_id, slide_id, replacement:Slide, expected_version。仕様1枚を新バージョンで置換 |
-| request_approval | presentation_id, stage:"outline"/"slide", slide_id。ユーザーに示すレビューURL |
 | create_upload | presentation_id。10分のPUT URLとbrowser_url |
 | register_chatgpt_file | presentation_id, file:{download_url,file_id,mime_type?,file_name?} |
 | read_source | presentation_id, source_id, page=1。PDF頁/PPTXスライド/XLSXシートを1始まりで取得 |
-| enqueue_generation | presentation_id, patch_id?。承認・上限をサーバーで検査 |
-| get_job | job_id。queued/running/validating/completed/failed |
+| enqueue_generation | presentation_id, patch_id?。正本・パッチ元・上限をサーバーで検査 |
+| get_job | job_id。queued/running/validating/completed/failed。completed時は10分のdownload_urlを返す |
 | retry_job | job_id。最大3回まで |
-| get_preview | job_id。10分のページ画像・PPTX URL |
-| get_preview_image | job_id, page（1始まり）。PNGをMCP imageコンテンツでモデルへ返す |
-| get_generation_report | job_id。正本適合検査と生成来歴。画像確認とは別 |
-| show_viewer | job_id。同じ結果とMCP Apps UIメタデータ |
+| get_preview | job_id。互換用。10分のPPTX URL、imagesは空配列 |
+| get_generation_report | job_id。正本適合検査と生成来歴 |
+| show_viewer | job_id。状態・ダウンロード用MCP Apps UI（ページ画像なし） |
 | inspect_uploaded_pptx | presentation_id, source_id。slide_number/shape_id/name/sha256 |
-| propose_pptx_patch | presentation_id, source_id, changes。パッチ計画とレビューURL |
+| propose_pptx_patch | presentation_id, source_id, changes。保存したパッチ計画のpatch_id |
 
 changesの要素:
 
@@ -32,7 +30,7 @@ changesの要素:
 {"slide_number":1,"shape_id":3,"expected_sha256":"returned-by-inspect","text":"ユーザーと合意した新しい文章"}
 ```
 
-SlideSpec全体は `schemas/slidespec.json` と `examples/research-format.slidespec.json` を参照。座標は入力しない。出力専用のapproval_statusを入力に混ぜると拒否する。references/citationsはプロジェクトの登録済みsource_idを要求。著者・年はユーザー登録値と一致させる。引用の意味的妥当性は人が承認する。
+SlideSpec全体は `schemas/slidespec.json` と `examples/research-format.slidespec.json` を参照。座標は入力しない。未知の入力フィールドは拒否する。references/citationsはプロジェクトの登録済みsource_idを要求。著者・年はユーザー登録値と一致させる。引用の意味的妥当性は資料と照合する。
 
 引用の可視表記は教授指定の ` [著者 '25]`（半角スペース＋半角角括弧＋ASCIIアポストロフィ＋年下2桁）。
 入力と保存データの `year` は4桁のまま保持する。「ら」はauthorに含まれる場合だけ表示し、推測して補わない。
@@ -49,8 +47,9 @@ replacementsは見本の欄名→段落配列。各段落は`prototype_paragraph
 表はtable_spec、図は対応するdiagram_specまたは登録済みimage_references。
 引用表記は対応する近傍のreplacementsにも含める。詳細は [入力手順](plugins/research-slide-agent/skills/research-slides/references/canonical-skeleton.md)。
 
-`get_preview_image`の結果はtext（ページ番号・画像SHA・確認pending）とimage（base64 PNG）。
-モデルが直接読める内容として返し、画像取得成功を視覚確認済みと記録しない。
+新規生成・再生成・PPTXパッチに承認は不要。PPTX生成・構造検査の成功でcompletedとなる。
+PDF・PNGプレビューの生成・表示とモデルによる画像確認は行わない。
+既存DBはそのまま利用でき、旧承認テーブル／列は互換性のため保持する。旧ジョブの出力もPPTXを取得できる。
 `get_generation_report`はコミット・ソースhash・正本SHA・書式版・仕様版／digestと書式適合検査を返す。
 手動パッチには生成レポートがない場合があり、正本適合済みとして報告しない。
 
@@ -67,8 +66,6 @@ schema 1.0の合成／旧テンプレート経路は互換性試験用に保持�
 - `PUT /project/{id}/upload`: cookie/CSRF/Origin、raw bytes、X-Filename(UTF-8 percent encoded)、X-Author/X-Year任意。
 - `PUT /upload/{id}?cap=...`: 期限付きのupload capability。資料本文のみ、引用メタデータはブラウザで確認。
 - `POST /project/{id}/source/{source}/metadata`: browser cookie/CSRF/Origin、JSON `{author,year}`。仕様で参照済みの資料の変更は拒否。
-- `GET /review/{id}`: 保存済み仕様を表示。
-- `POST /review/{id}`: browser cookie、X-CSRF、正確なOriginが必要。モデル用のBearerだけでは承認不可。
 - `GET /artifact/{job}/{name}?cap=...`: 所有権確認済みの署名URL。期限切れプロジェクトは拒否。
 
 ファイル本文とトークンをログに含めない。proxyにもクエリ文字列・Cookie・Authorizationを記録させない。
@@ -81,4 +78,4 @@ Cloudflare方式のMCPツールは `oauth2`、`scopes: []` を宣言し、独自
 
 ## エラー
 
-STATE/SPEC_VERSION_CONFLICT、APPROVAL_REQUIRED、OUTLINE_APPROVAL_REQUIRED、TEMPLATE_CHANGED_REAPPROVAL_REQUIRED、USER_JOB_LIMIT、PROJECT_NOT_FOUND_OR_EXPIRED、EDIT_CONFLICT等。HTTPには状態に応じて400/401、MCPにはisErrorを返す。ジョブは失敗状態と短いエラーコードを返す。内容不足をLLM APIで補完する処理はない。
+SPEC_VERSION_CONFLICT、TEMPLATE_CHANGED_RESAVE_REQUIRED、PATCH_NOT_FOUND_OR_BASE_CHANGED、USER_JOB_LIMIT、PROJECT_NOT_FOUND_OR_EXPIRED、EDIT_CONFLICT等。HTTPには状態に応じて400/401、MCPにはisErrorを返す。ジョブは失敗状態と短いエラーコードを返す。内容不足をLLM APIで補完する処理はない。

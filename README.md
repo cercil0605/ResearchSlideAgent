@@ -1,11 +1,11 @@
 # Research Slide Agent
 
-研究室の既存マスターを維持し、編集可能な研究発表PPTXを生成するPython/MCPアプリです。追加のLLM APIは呼びません。意味的な構成・文章はChatGPTが作り、サーバーが配置と承認・生成を管理します。
+研究室の既存マスターを維持し、編集可能な研究発表PPTXを生成するPython/MCPアプリです。追加のLLM APIは呼びません。意味的な構成・文章はChatGPTが作り、サーバーが配置と生成を管理します。
 
-**修正版スケルトンを正本にしてページを複製し、内容を差し替えます。LibreOfficeプレビューと書式検査に対応しています。Cloudflare Access／外部OAuth、リモートChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。** 詳細は [TESTING.md](TESTING.md)。
+**修正版スケルトンを正本にしてページを複製し、内容を差し替えます。PPTX生成と構造検査の成功でcompletedとなり、ダウンロードリンクを返します。承認・プレビュー・モデルによる画像確認は不要です。Cloudflare Access／外部OAuth、リモートChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。** 詳細は [TESTING.md](TESTING.md)。
 
 Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDKによる検証をCIへ追加しました。
-PiのPDFプレビューは参考表示です。正しいフォントと表を保つ最終PDFはPowerPointから書き出してください。
+正しいフォントと表を保つ最終PDFはPowerPointから書き出してください。
 [原因・修正内容・見た目を保つ運用](docs/POWERPOINT_COMPATIBILITY.md)。
 
 ## フォルダとGit管理
@@ -22,28 +22,29 @@ PiのPDFプレビューは参考表示です。正しいフォントと表を保
 | `var/` | ローカルサーバーの資料・ジョブ・DB。Git対象外。生成物の一時置き場とは分ける |
 
 `artifacts/`のデータは必要な成果物を保存した後に削除できます。現在は修正版の生成例と検証記録だけを残しています。
+既存DBのリセットは不要です。旧承認テーブル／列を保持し、生成条件から除外しています。
 詳細と再生成コマンドは [artifacts/README.md](artifacts/README.md)。
 `.venv/`、Pythonのキャッシュ、`ui/node_modules/`、Open XML検証器の`bin/obj`もGit対象外です。
 
 ## Raspberry Piでの採用構成
 
-Portainer Stackで `api` と `worker` を常駐。SQLite WALの永続キューとDocker volumeに状態・資料を保存します。Cloud Tasks/Firestore/Storageの代替です。生成とLibreOfficeはARM64コンテナで実行します。まずワーカー並列数1、研究室上限2を維持します。
+Portainer Stackで `api` と `worker` を常駐。SQLite WALの永続キューとDocker volumeに状態・資料を保存します。Cloud Tasks/Firestore/Storageの代替です。生成はARM64コンテナで実行します。まずワーカー並列数1、研究室上限2を維持します。
 
 GitHub Actionsはテストと `linux/arm64,linux/amd64` のイメージ作成・GHCR登録に使います。Portainerで検証済みコミットタグを指定して更新します。研究資料をActionsのジョブ入力や成果物に送る構成にはしていません。
 
-1人利用はCloudflare Tunnel + AccessのManaged OAuthを推奨します。Accessで自分のメールだけを許可し、ChatGPTと承認ブラウザの本人確認をまとめます。
+1人利用はCloudflare Tunnel + AccessのManaged OAuthを推奨します。Accessで自分のメールだけを許可し、ChatGPTと資料登録ブラウザの本人確認をまとめます。
 別のOAuthサーバーは不要です。`.env.example` にイメージ・公開URL・認証方式・Accessチームドメイン／AUD・許可メール・セッション鍵を設定します。
 Cloudflareの画面設定と初回のChatGPTログインは [deploy/AUTH.md](deploy/AUTH.md) を参照してください。
 
-推奨する開始条件はPi 5、64-bit OS、RAM 8 GB、SSD、冷却です。これは設計上の目安であり実測要件ではありません。Pi 4/4 GBでもワーカー1件なら試験対象になりますが、40枚のレンダリング時間とメモリは実機で測ってください。[運用方法の比較](docs/RASPBERRY_PI.md)。
+推奨する開始条件はPi 5、64-bit OS、RAM 8 GB、SSD、冷却です。これは設計上の目安であり実測要件ではありません。Pi 4/4 GBでもワーカー1件なら試験対象になりますが、40枚の生成時間とメモリは実機で測ってください。[運用方法の比較](docs/RASPBERRY_PI.md)。
 
 ## ローカル起動
 
 プラグインなしで完成例を見るには、イメージをビルドした後に `bash scripts/try_eggs.sh` を実行します。
-「美味しい卵の食べ方」5枚を実マスターで生成し、`artifacts/canonical-eggs/index.html` でページ切替、PDF閲覧、PPTX取得ができます。
+「美味しい卵の食べ方」5枚のPPTXを実マスターで生成します。
 OAuthやサーバー起動は不要です。[題材・出典・再実行方法](examples/eggs.sources.md)。
 
-Pythonで開発・起動する場合は、Python 3.12以上、uv、Node.js 22、LibreOffice、Popplerが必要です。
+Pythonで開発・起動する場合は、Python 3.12以上、uv、Node.js 22が必要です。
 
 ```bash
 uv sync --frozen
@@ -51,12 +52,12 @@ cd ui
 npm ci --ignore-scripts
 npm run build
 cd ..
-uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research --render
+uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research
 uv run pytest -q
 ```
 
-`artifacts/canonical-research/` に正本書式のPPTX・PDF・全13ページの画像が生成されます。数値はソフトウェア試験用で、研究事実を主張するものではありません。
-旧生成経路の合成デモが必要な場合だけ `uv run rsa demo --render` を使います。その合成テンプレートも `artifacts/` に生成されます。
+`artifacts/canonical-research/` に正本書式のPPTXが生成されます。数値はソフトウェア試験用で、研究事実を主張するものではありません。
+旧生成経路の合成デモが必要な場合だけ `uv run rsa demo` を使います。その合成テンプレートも `artifacts/` に生成されます。
 
 ターミナルを2つ開いて、同じディレクトリで起動します。
 
@@ -90,9 +91,9 @@ Inspectorで **Streamable HTTP**、URL `http://127.0.0.1:8000/mcp` を指定し�
 収まらない場合は短縮・分割を求めます。表の色・罫線・文字サイズ等の改変を検査で検出します。
 
 ```bash
-uv run python scripts/prepare_skeleton_template.py --render-preview
-uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs --render
-uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research --render
+uv run python scripts/prepare_skeleton_template.py
+uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
+uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research
 ```
 
 正本とprofileはGit管理してDockerに同梱するため、生成時に元の添付ファイルは不要です。
@@ -103,9 +104,8 @@ uv run python scripts/render_spec.py examples/research-format.slidespec.json --o
 詳細なページ対応・入力・制約は [書式テンプレートと発表内容ルール](docs/TEMPLATE_AND_CONTENT_RULES.md)。
 
 `get_generation_report`でコードコミット・ソースハッシュ・正本SHA・仕様版と書式検査を取得できます。
-`get_preview_image`はURLではなくPNGのMCP imageコンテンツをモデルへ返します。
-全ページの画像を実際に確認し、修正が必要なら短縮／分割して再生成します。URLの表示だけでは確認済みと扱いません。
-LibreOfficeは参考表示で、PowerPoint実機による確認は別途必要です。
+`get_job` はcompleted時に期限付き `download_url` を返します。
+プレビューの生成・表示・モデルによる画像確認は行いません。構造検査はPowerPoint実機での表示確認を意味しません。
 
 ## ChatGPTとPlugin
 
@@ -115,9 +115,9 @@ LibreOfficeは参考表示で、PowerPoint実機による確認は別途必要�
 2. ChatGPTからリモート接続する場合は、Cloudflare TunnelでPiのAPIを公開HTTPSにし、Accessで本人だけを許可してManaged OAuthを有効にします。`localhost` はChatGPTのクラウドから到達できません。
 3. [ChatGPT Plugins](https://chatgpt.com/plugins) の **Add custom MCP server** でHTTPSの `/mcp` をOAuth接続として登録します。CloudflareのDCRと、画面に表示された正確なredirect URIの許可を設定します。初回接続／ツール利用時にAccessの画面でログインします。
 4. `uv run python scripts/configure_plugin.py --url https://slides.example.org/mcp` で配布パッケージの接続先を更新。登録済み技術IDが得られた場合だけ `--app-id plugin_asdk_app...` を追加すると `.app.json` を生成します。
-5. 新しいチャットでSkillを呼び、構成承認→各ページ承認→生成→プレビュー→部分修正を受入試験します。
+5. 新しいチャットでSkillを呼び、仕様保存→生成→PPTX取得→部分修正を受入試験します。
 
-サーバーが返す承認URLはユーザー自身の認証済みブラウザで開きます。モデルは承認APIを呼びません。UI非対応クライアントはツール結果にある状態・プレビュー・ダウンロードURLを利用できます。
+新規生成・再生成・PPTXパッチに承認は不要です。MCP Apps UIは状態とPPTX取得を表示します。
 
 ファイル連携は公式 `openai/fileParams` を宣言しています。ただし実際のChatGPTから渡されるホストは未確認です。`RSA_ATTACHMENT_HOSTS` に管理者が確認した正確なホスト名を設定するまで外部ダウンロードを拒否します。代わりに `create_upload` の `browser_url` で直接アップロードできます。著者・年は同じページでユーザーが確認して保存します。
 
@@ -149,7 +149,7 @@ LibreOfficeは参考表示で、PowerPoint実機による確認は別途必要�
 | `RSA_OAUTH_ISSUER` | 従来OAuth方式のみ。認可サーバーの正確なissuer |
 | `RSA_JWKS_URL` | 従来OAuth方式のみ。同サーバーのHTTPS JWKS |
 | `RSA_OAUTH_AUDIENCE` | 従来OAuth方式のみ。MCP用のaudience |
-| `RSA_WEB_CLIENT_ID` | 従来OAuth方式のみ。ブラウザ承認用OAuthクライアントID |
+| `RSA_WEB_CLIENT_ID` | 従来OAuth方式のみ。資料登録ブラウザ用OAuthクライアントID |
 | `RSA_ALLOWED_SUBS` | 従来OAuth方式のみ。認可サーバーの許可済み安定sub |
 | `RSA_SESSION_KEY` | 32文字以上のランダム値。API再起動でも維持する |
 | `RSA_ATTACHMENT_HOSTS` | 添付ファイルの取得元ホストの完全一致リスト。空なら直接取込不可 |
@@ -163,8 +163,8 @@ LibreOfficeは参考表示で、PowerPoint実機による確認は別途必要�
 - 正本の1.1経路は、3列・本文最大3行のネイティブ表、簡単な配置図、元画像に対応します。旧1.0経路のグラフ等は合成デモ・互換性試験用です。
 - 部分修正は、明示フォントを持つ単純なトップレベルのテキスト図形のみ。複数ラン・グループ・SmartArt・表/グラフの部分更新は停止する。
 - 再生成は正本の見本ページを複製します。手動編集を維持したいときは再アップロードと部分修正を使います。
-- 文字幅検査は保守的な推定。図形接続・領域・重なり・引用・元データ・承認済み本文の構造検査とレンダリング実行を行いますが、図の意味や描画品質を完全自動判定しません。
-- 構成・各ページ・部分修正の承認はバージョンとハッシュに紐付く。`approved=true` はスキーマ違反。
+- 文字幅検査は保守的な推定。図形接続・領域・重なり・引用・元データ・保存した本文の構造検査を行いますが、図の意味や描画品質を完全自動判定しません。
+- 仕様・部分修正はバージョンとハッシュに紐付く。`approved=true` はスキーマ違反。
 - プロジェクト作成から7日で拒否・削除。共有テンプレートは対象外。
 - GCP版は今回のPi優先方針により未実装。[移行時の要件](deploy/GCP.md)。このSQLite版をそのままCloud Runに配置してはいけません。
 

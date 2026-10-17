@@ -32,7 +32,6 @@ class Settings:
         default_factory=lambda: frozenset(filter(None, os.getenv("RSA_ALLOWED_SUBS", "").split(",")))
     )
     session_key: str = field(default_factory=lambda: os.getenv("RSA_SESSION_KEY", ""))
-    require_render: bool = True
     worker_limit: int = field(default_factory=lambda: int(os.getenv("RSA_WORKER_LIMIT", "1")))
     lease_seconds: int = 1800
 

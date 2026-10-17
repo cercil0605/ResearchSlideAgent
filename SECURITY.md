@@ -18,9 +18,9 @@ Google上流のsubではなく認可サーバーの安定subを許可リスト�
 
 Cloudflare方式のブラウザは検証したAccess本人へアプリのセッションを発行し、各要求でAccessの本人とcookieのownerの一致を確認する。
 従来OAuth方式のブラウザはPKCE(S256)、state、nonce、IDトークンのissuer/audience/sub/nonce照合を使う。
-両方式ともSameSite=Lax/HttpOnly/Secure cookie、CSRF token、Origin照合を維持する。人の承認POSTをMCPツールに公開しない。レビューはversion/hash/期限/1回性を照合する。
+両方式ともSameSite=Lax/HttpOnly/Secure cookie、CSRF token、Origin照合を維持する。資料登録・引用情報更新のブラウザ操作を保護する。
 
-プロジェクト、仕様、入力、ジョブ、プレビュー全て所有者を照合。一時URLは10分のbearer capability。発行時に所有者を確認し、利用時にもそのownerとproject/job/期限を再照合する。URLを知る人は期限内に利用できるので、共有は慎重にする。capを発行するMCP利用者も資料を登録できるが、人の承認権限は得られない。
+プロジェクト、仕様、入力、ジョブ、成果物全て所有者を照合。一時URLは10分のbearer capability。発行時に所有者を確認し、利用時にもそのownerとproject/job/期限を再照合する。URLを知る人は期限内に利用できるので、共有は慎重にする。
 
 Cloudflare方式ではcap URLにも現在のAccess assertionとowner一致を要求するため、URLだけでは取得・登録できない。
 認証方式／Access組織を変更した際の既存ownerの自動移行は行わない。
@@ -35,7 +35,7 @@ ChatGPT添付は管理者の明示した完全一致HTTPSホストのみ。priva
 
 ## コンテナ
 
-非root、read-only rootfs、cap_drop ALL、no-new-privileges、tmpfs、メモリ/CPU/PID上限。Docker socketをAPI/workerへmountしない。LibreOfficeはユーザー別の一時プロファイルで起動し時間を制限する。未知のPPTXを処理するため、ホストには信頼済み研究室ユーザー以外の負荷を混在させない。レンダラーのネットワークをOS/proxyのegressルールで拒否することも推奨。配布stackのworker network_modeはnone。
+非root、read-only rootfs、cap_drop ALL、no-new-privileges、tmpfs、メモリ/CPU/PID上限。Docker socketをAPI/workerへmountしない。未知のPPTXを処理するため、ホストには信頼済み研究室ユーザー以外の負荷を混在させない。配布stackのworker network_modeはnone。
 
 ## 保持・ログ
 

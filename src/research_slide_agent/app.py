@@ -97,7 +97,7 @@ def create_app(settings: Settings | None = None):
 
     async def login(request):
         next_path = request.query_params.get("next", "/")
-        if not next_path.startswith(("/review/", "/project/")):
+        if not next_path.startswith("/project/"):
             next_path = "/"
         if settings.cloudflare:
             response = RedirectResponse(next_path, 303)
@@ -186,7 +186,7 @@ def create_app(settings: Settings | None = None):
     async def home(request):
         return page(
             "Research Slide Agent",
-            "<p>MCP endpoint: <code>/mcp</code></p><p>ChatGPTでプロジェクトを作成し、ツールが返したURLで資料登録・承認を進めます。</p>",
+            "<p>MCP endpoint: <code>/mcp</code></p><p>ChatGPTでプロジェクトを作成し、ツールが返したURLで資料を登録します。</p>",
         )
 
     async def project_page(request):
@@ -247,25 +247,6 @@ const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:h,body:fi
             )
         )
 
-    async def review_page(request):
-        session = browser_or_redirect(request)
-        if isinstance(session, Response):
-            return session
-        owner, csrf = session
-        rid = request.path_params["review"]
-        r = store.review_data(owner, rid)
-        body = f"""<p>段階: {html.escape(r["stage"])} / Version: {r["version"]}</p><p>保存済みの仕様を確認して承認してください。研究内容・数値・引用の確認も含みます。</p>
-<pre>{html.escape(json.dumps(r["content"], ensure_ascii=False, indent=2))}</pre>
-<button id="approve">このバージョンを承認</button><p id="status" role="status"></p>"""
-        script = f"""document.getElementById('approve').onclick=async()=>{{const r=await fetch(location.pathname,{{method:'POST',headers:{{'Content-Type':'application/json','X-CSRF':{json.dumps(csrf)}}},body:'{{}}'}});document.getElementById('status').textContent=JSON.stringify(await r.json());if(r.ok)document.getElementById('approve').disabled=true;}};"""
-        return page("スライド仕様の承認", body, script)
-
-    async def approve(request):
-        owner, csrf = auth.browser(request)
-        csrf_check(request, csrf, request.headers.get("x-csrf"))
-        await limited_body(request, 1024)
-        return JSONResponse(store.approve_from_browser(owner, request.path_params["review"]))
-
     async def artifact(request):
         job_id, name = request.path_params["job"], request.path_params["name"]
         claims = auth.unsign("artifact", request.query_params.get("cap", ""))
@@ -279,9 +260,6 @@ const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:h,body:fi
         if name == "presentation.pptx":
             path = store.root / output["pptx"]
             filename = "research-slides.pptx"
-        elif name in output["preview"]["images"]:
-            path = store.root / output["directory"] / "preview" / name
-            filename = None
         else:
             raise StateError("Unknown artifact")
         return FileResponse(
@@ -315,8 +293,6 @@ const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:h,body:fi
             Route("/project/{project}/upload", upload, methods=["PUT"]),
             Route("/project/{project}/source/{source}/metadata", source_metadata, methods=["POST"]),
             Route("/upload/{project}", upload, methods=["PUT"]),
-            Route("/review/{review}", review_page),
-            Route("/review/{review}", approve, methods=["POST"]),
             Route("/artifact/{job}/{name}", artifact),
             Mount("/", app=mcp_app),
         ],

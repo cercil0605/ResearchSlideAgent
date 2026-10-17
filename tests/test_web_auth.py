@@ -8,34 +8,24 @@ from starlette.testclient import TestClient
 from research_slide_agent.app import create_app
 from research_slide_agent.auth import Auth, AuthError
 from research_slide_agent.config import Settings
-from research_slide_agent.sample import sample_spec
 
 
-def test_browser_approval_requires_session_csrf_and_origin(settings):
+def test_browser_upload_requires_session_csrf_and_origin(settings):
     app = create_app(settings)
     with TestClient(app, base_url=settings.base_url, client=("127.0.0.1", 1234)) as client:
         p = app.state.store.create("dev-user")
-        app.state.store.save_spec("dev-user", p["id"], sample_spec(p["id"]), 0)
-        review = app.state.store.review("dev-user", p["id"], "outline")
-        url = "/review/" + review["review_id"]
-        assert client.post(url, json={}).status_code == 401
-        assert client.get(url).status_code == 200
-        assert client.post(url, json={}, headers={"Origin": settings.base_url}).status_code == 401
+        url = "/project/" + p["id"] + "/upload"
+
+        def upload(headers=None):
+            return client.put(url, content=b"a,b", headers={"X-Filename": "data.csv", **(headers or {})})
+
+        assert upload().status_code == 401
+        assert client.get("/project/" + p["id"]).status_code == 200
+        assert upload({"Origin": settings.base_url}).status_code == 401
         _, csrf = app.state.auth.browser(type("Request", (), {"cookies": client.cookies})())
-        assert (
-            client.post(
-                url, json={}, headers={"X-CSRF": csrf, "Origin": "https://attacker.example"}
-            ).status_code
-            == 401
-        )
-        assert (
-            client.post(url, json={}, headers={"X-CSRF": csrf, "Origin": settings.base_url}).status_code
-            == 200
-        )
-        assert (
-            client.post(url, json={}, headers={"X-CSRF": csrf, "Origin": settings.base_url}).status_code
-            == 400
-        )
+        assert upload({"X-CSRF": csrf, "Origin": "https://attacker.example"}).status_code == 401
+        assert upload({"X-CSRF": csrf, "Origin": settings.base_url}).status_code == 201
+
 
 
 def test_upload_capability_and_expired_artifact(settings):

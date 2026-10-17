@@ -39,13 +39,13 @@ PDFのSHA-256と根拠は配布ルールMarkdownで管理する。既存の手�
 1. Piで、指定PPTXのテーマ・マスター・レイアウトを使って編集可能なPPTXを生成する。
 2. 正しいフォントが使えるMac/WindowsのPowerPointで開き、修復警告、文字、表、改行を確認する。
 3. そのPowerPointの「ファイル → エクスポート」または「名前を付けて保存」からPDFを書き出す。
-4. そのPDFを最終配布用とする。PiのLibreOfficeプレビューは途中確認用に使う。
+4. そのPDFを最終配布用とする。サーバーでのプレビュー生成は行わない。
 
 PDFを差し替えても、Piにフォントがインストールされたり、生成物のPDF変換エンジンがPowerPointへ変わったりはしない。
 Piで `fc-match 'Yu Gothic'` はNoto Sans、`fc-match Arial` はLiberation Sansを返した。
 フォントが揃っても、別の変換エンジンによる表・行間・図形の差まで解消する保証はない。
 原本の見た目の完全再現を、現在のPi/LibreOffice構成の機能として保証しない。
-プレビュー情報は `fidelity: approximate`、`powerpoint_verified: false` とし、ローカルビューアーでも参考表示と明示する。
+構造検査結果では `powerpoint_verified: false` とし、PowerPoint実機の表示確認済みとは扱わない。
 
 フォント埋め込みはPowerPointで可能な範囲で使う。別の文章へ編集するテンプレートでは全字の埋め込みが適しているが、フォントごとの埋め込み可否を確認する。
 今回のPDFに埋め込まれたサブセットを取り出し、汎用フォントとして流用する運用にはしない。

@@ -22,13 +22,12 @@ bash scripts/try_eggs.sh
 ```
 
 別環境では先に `docker build -t research-slide-agent:local .` を実行する。コードやマスターを変更した後も再ビルドする。
-Python 3.12以上・uv・LibreOffice・Popplerがある開発環境では、Dockerを使わず次でも実行できる。
+Python 3.12以上・uvがある開発環境では、Dockerを使わず次でも実行できる。
 
 ```bash
-uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs --render
+uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
 ```
 
 `artifacts/canonical-eggs/index.html` をブラウザで開くと各ページを切り替えられる。
-`presentation.pptx` は編集用、`preview/presentation.pdf` は閲覧用。
-このPDFはLibreOfficeの参考表示で、PowerPointとの一致は保証しない。最終PDFはPowerPointから書き出す。
-これはローカルで直接生成エンジンを試す手順であり、MCPサーバーの承認状態は操作しない。
+`presentation.pptx` を編集・閲覧する。最終PDFが必要な場合はPowerPointから書き出す。
+これはローカルで直接生成エンジンを試す手順であり、MCPサーバーへの接続は不要。

@@ -7,7 +7,7 @@
 | PortainerでAPI+workerを常駐 | 対話からの随時生成、再試行、履歴、認証 | 今回採用。既存管理方法を使える |
 | GitHub-hosted Actionsでテスト・multiarch build、Portainerで更新 | Pi上のビルド負荷を下げる | 推奨。CIは研究資料を処理しない |
 | Piのself-hosted Actions runner | private repoでのビルド/デプロイ | 実現可能。ただし初期構成では不要 |
-| Actions workflow_dispatchを生成キューにする | API受付・個人資料・2段階承認 | 採用しない。ジョブ状態/資料保持/認証が二重になる |
+| Actions workflow_dispatchを生成キューにする | API受付・個人資料・版管理 | 採用しない。ジョブ状態/資料保持/認証が二重になる |
 | GCP Cloud Run/Tasks | 複数台・可用性・負荷増加 | Pi運用の実測後に判断。現実装はGCP非対応 |
 
 [GitHub公式runner仕様](https://docs.github.com/en/actions/reference/runners/self-hosted-runners) はLinux ARM64を記載しています。対応ステータスは変更されるので登録画面で確認。登録するなら **Settings → Actions → Runners → New self-hosted runner → Linux / ARM64** で表示される公式コマンドを使用し、systemd serviceで常駐します。Portainerで第三者runner imageを常駐させる必要はありません。

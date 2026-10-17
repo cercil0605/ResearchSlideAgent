@@ -30,8 +30,8 @@ AUDは公開URLではなくAccessアプリの識別子です。公開URLとチ�
    元のHostを保持します。別コンテナの `cloudflared` からは共有network上の `http://api:8000` を使います。
    アプリのポートをLAN／インターネットへ直接公開しません。
 2. Zero Trust → Access controls → Applicationsで、このホスト名全体を保護するアプリを追加します。
-   `/mcp` だけでなく `/project/*`、`/review/*`、`/artifact/*`、`/upload/*` も同じアプリで保護します。
-   AllowポリシーのEmailsには自分のメールだけを指定します。BypassやService AuthでMCP・承認を通す設定にはしません。
+   `/mcp` だけでなく `/project/*`、`/artifact/*`、`/upload/*` も同じアプリで保護します。
+   AllowポリシーのEmailsには自分のメールだけを指定します。BypassやService AuthでMCP・資料登録を通す設定にはしません。
 3. アプリのApplication Audience (AUD) Tagを `RSA_CF_AUDIENCE` へコピーします。
 4. Advanced settings → **Managed OAuth** を有効にします。ChatGPT用にDynamic Client Registrationを有効にし、
    Allowed redirect URIsにはChatGPTのMCP管理画面に表示される正確なredirect URIを登録します。
@@ -44,7 +44,7 @@ MCPのリソースメタデータが、外部クライアントから取得で�
 OAuth discoveryを自分のプロキシやWAFでログインHTMLに置き換えないでください。
 アプリもリソースメタデータを返しますが、OAuthの認可・トークン・登録エンドポイントはCloudflareが担当します。
 
-## ChatGPTと承認画面の動作
+## ChatGPTと資料登録画面の動作
 
 ChatGPTにはHTTPSの `/mcp` を **OAuth** 接続として登録します。No authenticationにはしません。
 初回接続または初回ツール実行時の案内からAccessのログイン画面へ進み、本人が認証します。
@@ -55,11 +55,11 @@ Accessがoriginへ渡す `Cf-Access-Jwt-Assertion` のRS256署名、チームiss
 アプリトークン種別、許可メール、空でないユーザーsubを検証します。メールヘッダーだけは信用せず、service tokenは拒否します。
 所有者IDは `cloudflare:<Accessのsub>` で固定し、MCPとブラウザで同じIDを使います。
 
-承認URLを開くブラウザもAccessで本人認証します。アプリの `/login` は別のOAuthへ飛ばず、
-検証した本人へSecure/HttpOnly/SameSite cookieを発行します。承認POSTはこのcookie、CSRF、Origin照合を引き続き要求します。
+資料登録ブラウザもAccessで本人認証します。アプリの `/login` は別のOAuthへ飛ばず、
+検証した本人へSecure/HttpOnly/SameSite cookieを発行します。資料登録・引用情報更新はこのcookie、CSRF、Origin照合を引き続き要求します。
 各要求で新しいAccess assertionを必要とするため、アプリのcookieだけでは認証を迂回できません。
 署名付きアップロード・ダウンロードURLも同じAccess認証と所有者一致が必要です。
-ChatGPTの埋め込みビューアーでブラウザのAccess cookieが利用できない場合は、外部ブラウザでプレビュー／ダウンロードURLを開きます。
+ChatGPTの埋め込みビューアーでブラウザのAccess cookieが利用できない場合は、外部ブラウザでダウンロードURLを開きます。
 
 `/health` とリソースメタデータだけはoriginでassertionなしに応答し、Docker healthcheckを可能にします。
 Cloudflareを経由したアクセスにはAccess側の設定が適用されます。
@@ -68,7 +68,7 @@ Cloudflareを経由したアクセスにはAccess側の設定が適用されま�
 
 - 未ログインのMCP要求がログインHTMLではなく、OAuth discoveryを指す401を返す。
 - ChatGPTから初回接続→Accessで本人認証→`get_profile`→プロジェクト作成ができる。
-- MCPと承認ブラウザの利用者が一致し、資料登録→構成・ページ承認→生成→PPTX取得ができる。
+- MCPと資料登録ブラウザの利用者が一致し、資料登録→仕様保存→生成→PPTX取得ができる。
 - アプリ独自のログイン画面／Keycloakへ遷移しない。
 - 許可外メール、別AUD、別チーム、改ざん／期限切れJWT、JWTなし、Service Authを拒否する。
 - cookieや署名付きURLだけではoriginへ直接アクセスできず、別の許可利用者でも他人の成果物を取得できない。
@@ -128,8 +128,8 @@ RSA_SESSION_KEY=<32文字以上のランダム値>
 - 許可外ユーザー、他audience、ID token、期限切れ、別projectのアクセス拒否。
 - ChatGPTで事前登録clientを接続。管理画面の実際のredirect URIを登録。
 - ツールschemaのScan Tools、fileParams、get_profileのoutputSchemaを確認。
-- 構成承認URL、ページ承認URLを別ブラウザで開き、生成前の拒否を確認。
-- cookieが無い/CSRFが無い/別originからの承認拒否を確認。
-- ChatGPT UIの初期化、進捗、画像、再実行、ダウンロード、修正メッセージを確認。
+- 承認なしで生成し、completed時のPPTXダウンロードを確認。
+- cookieが無い/CSRFが無い/別originからの資料登録拒否を確認。
+- ChatGPT UIの初期化、進捗、再実行、ダウンロードを確認。
 
 [OpenAI公式認証ガイド](https://developers.openai.com/plugins/build/auth)、[MCP Authorization](https://modelcontextprotocol.io/specification/latest/basic/authorization)、[Google OIDC](https://developers.google.com/identity/openid-connect/openid-connect)、[Keycloak OIDC](https://www.keycloak.org/securing-apps/oidc-layers)。

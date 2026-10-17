@@ -1,4 +1,4 @@
-"""Single-host durable queue and versioned approval state for Raspberry Pi."""
+"""Single-host durable queue and versioned specifications for Raspberry Pi."""
 
 import hashlib
 import json
@@ -39,6 +39,7 @@ class Store:
                     project TEXT NOT NULL REFERENCES projects ON DELETE CASCADE,
                     version INTEGER NOT NULL, digest TEXT NOT NULL, body TEXT NOT NULL, template_sha TEXT,
                     PRIMARY KEY(project, version));
+                -- Retain legacy approval/review tables and patch columns for existing databases.
                 CREATE TABLE IF NOT EXISTS approvals(
                     project TEXT NOT NULL REFERENCES projects ON DELETE CASCADE,
                     version INTEGER NOT NULL, stage TEXT NOT NULL, target TEXT NOT NULL,
@@ -170,116 +171,7 @@ class Store:
         return {
             "spec_version": spec.spec_version,
             "digest": spec.digest(),
-            "approval_status": self.approvals(owner, project),
         }
-
-    def approvals(self, owner, project):
-        with self.connect() as con:
-            p = self._project(con, owner, project)
-            rows = con.execute(
-                "SELECT * FROM approvals WHERE project=? AND version=?", (project, p["version"])
-            ).fetchall()
-        return {
-            "spec_version": p["version"],
-            "outline_approved": any(r["stage"] == "outline" for r in rows),
-            "approved_slides": [r["target"] for r in rows if r["stage"] == "slide"],
-        }
-
-    def review(self, owner, project, stage, target=""):
-        if stage not in {"outline", "slide", "patch"}:
-            raise StateError("Invalid approval stage")
-        with self.connect() as con:
-            p = self._project(con, owner, project)
-            if stage == "patch":
-                patch = con.execute(
-                    "SELECT * FROM patches WHERE id=? AND project=?", (target, project)
-                ).fetchone()
-                if not patch:
-                    raise StateError("Patch not found")
-                digest = patch["digest"]
-            else:
-                if not p["spec"]:
-                    raise StateError("Save specification first")
-                spec = SlideSpec.model_validate_json(p["spec"])
-                digest = spec.digest()
-                if stage == "slide":
-                    if not con.execute(
-                        "SELECT 1 FROM approvals WHERE project=? AND version=? AND stage='outline'",
-                        (project, p["version"]),
-                    ).fetchone():
-                        raise StateError("OUTLINE_APPROVAL_REQUIRED")
-                    if target not in {s.slide_id for s in spec.slides}:
-                        raise StateError("Unknown slide")
-            review = uid()
-            con.execute(
-                "INSERT INTO reviews VALUES(?,?,?,?,?,?,?,0)",
-                (review, project, p["version"], stage, target, digest, time.time() + 1800),
-            )
-        return {
-            "review_id": review,
-            "review_url": f"{self.settings.base_url}/review/{review}",
-            "instruction": "Open this URL in your own browser, inspect the saved version, then approve. The model cannot approve.",
-        }
-
-    def review_data(self, owner, review):
-        with self.connect() as con:
-            r = con.execute("SELECT * FROM reviews WHERE id=?", (review,)).fetchone()
-            if not r or r["expires"] <= time.time() or r["used"]:
-                raise StateError("REVIEW_EXPIRED_OR_USED")
-            p = self._project(con, owner, r["project"])
-            if p["version"] != r["version"]:
-                raise StateError("REVIEW_STALE")
-            result = dict(r)
-            if r["stage"] == "patch":
-                patch = con.execute(
-                    "SELECT * FROM patches WHERE id=? AND project=?", (r["target"], p["id"])
-                ).fetchone()
-                result["content"] = json.loads(patch["body"])
-                if p["latest_pptx"] != patch["file_id"]:
-                    raise StateError("PATCH_BASE_CHANGED")
-            else:
-                spec = SlideSpec.model_validate_json(p["spec"])
-                result["content"] = (
-                    spec.outline()
-                    if r["stage"] == "outline"
-                    else next(s.model_dump() for s in spec.slides if s.slide_id == r["target"])
-                )
-                if spec.digest() != r["digest"]:
-                    raise StateError("REVIEW_STALE")
-            return result
-
-    def approve_from_browser(self, owner, review):
-        # Caller must authenticate a browser session and verify CSRF. No MCP tool exposes this method.
-        self.review_data(owner, review)
-        with self.connect() as con:
-            r = con.execute("SELECT * FROM reviews WHERE id=? AND used=0", (review,)).fetchone()
-            if not r:
-                raise StateError("REVIEW_ALREADY_USED")
-            p = self._project(con, owner, r["project"])
-            if p["version"] != r["version"] or r["expires"] <= time.time():
-                raise StateError("REVIEW_STALE")
-            if r["stage"] == "patch":
-                patch = con.execute("SELECT * FROM patches WHERE id=?", (r["target"],)).fetchone()
-                if not patch or patch["file_id"] != p["latest_pptx"] or patch["digest"] != r["digest"]:
-                    raise StateError("PATCH_BASE_CHANGED")
-                con.execute("UPDATE patches SET approved=1 WHERE id=?", (r["target"],))
-            else:
-                if SlideSpec.model_validate_json(p["spec"]).digest() != r["digest"]:
-                    raise StateError("REVIEW_STALE")
-                if (
-                    r["stage"] == "slide"
-                    and not con.execute(
-                        "SELECT 1 FROM approvals WHERE project=? AND version=? AND stage='outline'",
-                        (p["id"], p["version"]),
-                    ).fetchone()
-                ):
-                    raise StateError("OUTLINE_APPROVAL_REQUIRED")
-                con.execute(
-                    "INSERT OR REPLACE INTO approvals VALUES(?,?,?,?,?,?)",
-                    (p["id"], r["version"], r["stage"], r["target"], r["digest"], time.time()),
-                )
-            con.execute("UPDATE reviews SET used=1 WHERE id=?", (review,))
-        return {"status": "approved", "spec_version": r["version"]}
 
     def register(self, owner, project, name, data, author=None, year=None):
         kind = validate_file(name, data)
@@ -373,7 +265,7 @@ class Store:
                 "INSERT INTO patches VALUES(?,?,?,?,?,0)",
                 (patch_id, project, file_id, raw, hashlib.sha256(raw.encode()).hexdigest()),
             )
-        return {"patch_id": patch_id, **self.review(owner, project, "patch", patch_id)}
+        return {"patch_id": patch_id}
 
     def enqueue(self, owner, project, patch_id=None):
         with self.connect() as con:
@@ -382,8 +274,8 @@ class Store:
                 patch = con.execute(
                     "SELECT * FROM patches WHERE id=? AND project=?", (patch_id, project)
                 ).fetchone()
-                if not patch or not patch["approved"] or p["latest_pptx"] != patch["file_id"]:
-                    raise StateError("PATCH_APPROVAL_REQUIRED_OR_BASE_CHANGED")
+                if not patch or p["latest_pptx"] != patch["file_id"]:
+                    raise StateError("PATCH_NOT_FOUND_OR_BASE_CHANGED")
                 digest, payload = (
                     patch["digest"],
                     {"kind": "patch", "patch_id": patch_id, **json.loads(patch["body"])},
@@ -401,15 +293,7 @@ class Store:
                     or saved["template_sha"]
                     != hashlib.sha256(self.settings.template.read_bytes()).hexdigest()
                 ):
-                    raise StateError("TEMPLATE_CHANGED_REAPPROVAL_REQUIRED")
-                approvals = con.execute(
-                    "SELECT * FROM approvals WHERE project=? AND version=? AND digest=?",
-                    (project, p["version"], digest),
-                ).fetchall()
-                if not any(r["stage"] == "outline" for r in approvals) or {
-                    r["target"] for r in approvals if r["stage"] == "slide"
-                } != {s.slide_id for s in spec.slides}:
-                    raise StateError("APPROVAL_REQUIRED")
+                    raise StateError("TEMPLATE_CHANGED_RESAVE_REQUIRED")
                 payload = {
                     "kind": "generate",
                     "spec": json.loads(p["spec"]),

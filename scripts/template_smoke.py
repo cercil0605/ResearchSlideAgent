@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from research_slide_agent.engine import generate, render
+from research_slide_agent.engine import generate
 from research_slide_agent.models import SlideSpec
 
 
@@ -17,5 +17,4 @@ if __name__ == '__main__':
     spec = make_spec(template)
     manifest = generate(template, spec, output)
     output.with_suffix('.spec.json').write_text(spec.model_dump_json(indent=2))
-    preview = render(output, output.parent / 'preview')
-    print(json.dumps({'quality': manifest['quality'], 'preview': preview}, ensure_ascii=False))
+    print(json.dumps({'quality': manifest['quality'], 'pptx': str(output)}, ensure_ascii=False))

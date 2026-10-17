@@ -854,7 +854,7 @@ def verify(template, output, spec, manifest, images=None):
         "status": "passed",
         "text_fit": "conservative_estimate",
         "overlap": "bounding_boxes",
-        "font_rendering": "requires_visual_review",
+        "font_rendering": "not_checked",
         "auto_repair_attempts": 0,
     }
 
@@ -935,7 +935,7 @@ def patch_text(source: Path, destination: Path, changes: list[dict]):
             )
             if current["sha256"] != change["expected_sha256"]:
                 raise LayoutError(
-                    "EDIT_CONFLICT: reuploaded shape differs; inspect and obtain fresh approval"
+                    "EDIT_CONFLICT: reuploaded shape differs; inspect and create a new patch"
                 )
             texts = shape.xpath("./p:txBody/a:p/a:r/a:t", namespaces=NS)
             if (

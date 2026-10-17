@@ -12,16 +12,15 @@
 この2ファイルをGit・Dockerに同梱するため、原本ファイルを別途用意しなくても生成できる。
 
 ```bash
-uv run python scripts/prepare_skeleton_template.py --render-preview
+uv run python scripts/prepare_skeleton_template.py
 uv run python scripts/template_smoke.py
-uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs --render
-uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research --render
+uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
+uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research
 ```
 
-既定のコマンドは同梱済みの正本を検査・プレビューするため、元の添付ファイルを必要としない。
+既定のコマンドは同梱済みの正本を検査するため、元の添付ファイルを必要としない。
 新しい正本を登録するときは `--source /path/to/new-skeleton.pptx` を指定する。元ファイルやページの書式は変更しない。
-登録時に旧プレビューを削除し、`--render-preview`で現在の正本から`templates/lab-template.preview.pdf`を再生成する。
-対応する`.preview.json`に正本SHA・PDFのSHA・ページ数を記録する。
+登録時に旧プレビューを削除する。生成にプレビューは不要。
 `scripts/prepare_lab_template.py` は旧コマンド名を維持する薄い入口。42枚専用の抽出コードは削除済み。
 ルートの原本コピーは `reference_materials/local-inputs/` に保管し、実行用は `templates/` に一本化した。
 別の正本へ差し替えるときは対応欄と書式版をレビューし、profileを再生成する。SHAが一致しなければ生成を停止する。
@@ -81,16 +80,9 @@ schema 1.1はページをレイアウトから作り直さず、見本ページ�
 
 はみ出し判定はフォントと行間を使った保守的な見積りで、フォントの実描画測定ではない。
 はみ出し時に枠拡張や文字縮小は行わず、短縮／分割を求める。
-XML適合と画像確認は別で、生成直後のvisual_reviewはpending。
-
-`get_preview_image(job_id, page)`は所有権・有効期限・完了状態を検査し、PNGをMCPのimageブロックとして返す。
-モデルは全ページの画像を実際に確認して、必要なら短縮／分割後に再生成して確認する。
-`get_preview`のURL提示だけで画像確認済みと扱わない。
-ローカルStreamable HTTPで画像ブロック・PNGバイト列の取得をテストした。
-外部公開・デプロイと、リモートChatGPTクライアントでの画像表示受入は今回行っていない。
-
-LibreOfficeの描画は参考表示であり、游ゴシック等の代替が起こりうる。
-Microsoft PowerPoint実機での最終表示確認は未実施。手動パッチは正本検査済みの再生成とは区別する。
+PPTX生成・構造検査の成功でcompletedとなり、`get_job.download_url` を提示する。
+承認、PDF・PNGプレビューの生成・表示、モデルによる画像確認は生成手順に含めない。
+visual_reviewはnot_performedであり、PowerPoint実機での表示確認済みとは扱わない。
 
 ## 内容ガイドラインの管理
 

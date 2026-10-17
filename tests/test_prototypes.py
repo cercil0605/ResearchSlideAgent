@@ -201,7 +201,7 @@ def test_inventory_hash_schema_and_embedded_provenance(tmp_path):
     assert manifest["code_commit"] and manifest["generator_source_sha256"]
     assert manifest["template_sha256"] == sha(TEMPLATE.read_bytes())
     assert manifest["spec_version"] == spec.spec_version
-    assert manifest["visual_review"] == "pending"
+    assert manifest["visual_review"] == "not_performed"
     with ZipFile(output) as archive:
         raw = query(etree.fromstring(archive.read("docProps/custom.xml")), "//*[local-name()='lpwstr']/text()")[0]
         assert json.loads(raw) == manifest["provenance"]

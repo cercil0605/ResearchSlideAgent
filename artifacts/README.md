@@ -13,11 +13,11 @@
 古い42枚資料の解析画像、旧テンプレートの生成例、途中の互換性調査・ビルドログは整理済みです。
 提供原本は `reference_materials/local-inputs/` に保管し、このフォルダの生成物と分けています。
 
-再生成例（Python 3.12以上、uv、LibreOffice、Popplerが必要）:
+再生成例（Python 3.12以上、uvが必要）:
 
 ```bash
-uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs --render
-uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research --render
+uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
+uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research
 uv run python scripts/template_smoke.py
 ```
 

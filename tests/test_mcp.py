@@ -1,15 +1,12 @@
 import asyncio
-import base64
-import hashlib
-import io
 import json
 import socket
 from pathlib import Path
 
+import httpx
 import pytest
 import uvicorn
 from mcp import Client
-from PIL import Image
 
 from research_slide_agent.app import create_app
 from research_slide_agent.models import SlideSpec
@@ -35,7 +32,8 @@ async def test_real_streamable_http_workflow(settings, mode):
             tools = (await session.list_tools()).tools
             names = {t.name for t in tools}
             assert {"create_project", "save_slide_spec", "enqueue_generation", "show_viewer"} <= names
-            assert not any("approve_from" in n for n in names)
+            assert "request_approval" not in names
+            assert "get_preview_image" not in names
             file_tool = next(t for t in tools if t.name == "register_chatgpt_file")
             assert file_tool.meta["openai/fileParams"] == ["file"]
             schema = file_tool.input_schema["$defs"]["OpenAIFile"]
@@ -54,13 +52,6 @@ async def test_real_streamable_http_workflow(settings, mode):
                 {"presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0},
             )
             assert not result.is_error
-            result = await session.call_tool("enqueue_generation", {"presentation_id": pid})
-            assert result.is_error
-            for stage, target in [("outline", "")] + [("slide", s.slide_id) for s in spec.slides]:
-                r = await session.call_tool(
-                    "request_approval", {"presentation_id": pid, "stage": stage, "slide_id": target}
-                )
-                app.state.store.approve_from_browser("dev-user", r.structured_content["review_id"])
             queued = await session.call_tool("enqueue_generation", {"presentation_id": pid})
             job = queued.structured_content
             assert job["state"] == "queued"
@@ -76,9 +67,8 @@ async def test_real_streamable_http_workflow(settings, mode):
 
 
 @pytest.mark.asyncio
-async def test_canonical_generation_delivers_real_image_content(settings):
+async def test_canonical_generation_download_without_previews(settings):
     settings.template = Path("templates/lab-template.pptx")
-    settings.require_render = True
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
     settings.base_url = f"http://127.0.0.1:{listener.getsockname()[1]}"
@@ -101,37 +91,36 @@ async def test_canonical_generation_delivers_real_image_content(settings):
             saved = await session.call_tool("save_slide_spec", {
                 "presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0})
             assert not saved.is_error
-            for stage, target in [("outline", ""), ("slide", item["slide_id"])]:
-                review = await session.call_tool("request_approval", {
-                    "presentation_id": pid, "stage": stage, "slide_id": target})
-                app.state.store.approve_from_browser("dev-user", review.structured_content["review_id"])
             queued = await session.call_tool("enqueue_generation", {"presentation_id": pid})
             jid = queued.structured_content["id"]
-            premature = await session.call_tool("get_preview_image", {"job_id": jid, "page": 1})
-            assert premature.is_error
+            pending = await session.call_tool("get_job", {"job_id": jid})
+            assert "download_url" not in pending.structured_content
             await asyncio.to_thread(process_one, app.state.store, settings)
             job = app.state.store.job("dev-user", jid)
             assert job["state"] == "completed", job
-            result = await session.call_tool("get_preview_image", {"job_id": jid, "page": 1})
-            assert not result.is_error, result
-            block = next(c for c in result.content if c.type == "image")
-            data = base64.b64decode(block.data)
-            assert block.mime_type == "image/png"
-            with Image.open(io.BytesIO(data)) as image:
-                assert image.format == "PNG" and max(image.size) == 1600
-            metadata = json.loads(next(c.text for c in result.content if c.type == "text"))
-            assert metadata["image_sha256"] == hashlib.sha256(data).hexdigest()
-            assert metadata["visual_review"] == "pending"
+            result = await session.call_tool("get_job", {"job_id": jid})
+            url = result.structured_content["download_url"]
+            assert result.structured_content["expires_in"] == 600
+            output = json.loads(job["output"])
+            assert "preview" not in output
+            directory = settings.data_dir / output["directory"]
+            assert not list(directory.rglob("*.pdf")) and not list(directory.rglob("*.png"))
+            async with httpx.AsyncClient(trust_env=False) as browser:
+                response = await browser.get(url)
+                assert response.status_code == 200 and response.content.startswith(b"PK")
+            legacy = await session.call_tool("get_preview", {"job_id": jid})
+            assert legacy.structured_content["images"] == []
+            viewer = await session.call_tool("show_viewer", {"job_id": jid})
+            assert viewer.structured_content["images"] == []
             report = await session.call_tool("get_generation_report", {"job_id": jid})
             assert report.structured_content["quality"]["format_conformance"] == "canonical_slide_xml_and_shared_parts"
             assert report.structured_content["provenance"]["code_commit"]
-            for page in (0, 2):
-                invalid = await session.call_tool("get_preview_image", {"job_id": jid, "page": page})
-                assert invalid.is_error
             with app.state.store.connect() as con:
                 con.execute("UPDATE projects SET expires=0 WHERE id=?", (pid,))
-            expired = await session.call_tool("get_preview_image", {"job_id": jid, "page": 1})
+            expired = await session.call_tool("get_job", {"job_id": jid})
             assert expired.is_error
+            async with httpx.AsyncClient(trust_env=False) as browser:
+                assert (await browser.get(url)).status_code == 400
     finally:
         server.should_exit = True
         await task

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import base64
 import functools
-import hashlib
 import inspect
 import ipaddress
 import json
@@ -16,7 +14,7 @@ import httpx
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp_types import CallToolResult, ImageContent, TextContent, ToolAnnotations
+from mcp_types import ToolAnnotations
 from starlette.concurrency import run_in_threadpool
 
 from .auth import current_owner
@@ -117,9 +115,8 @@ def make_mcp(store, settings, auth):
 
     @tool(mcp, annotations=read, meta=meta)
     def get_project(presentation_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Get the current specification, version, approval state and uploaded sources."""
+        """Get the current specification, version and uploaded sources."""
         p = store.project(current_owner(ctx), presentation_id)
-        p["approval_status"] = store.approvals(current_owner(ctx), presentation_id)
         p["files"] = store.files(current_owner(ctx), presentation_id)
         return p
 
@@ -127,14 +124,14 @@ def make_mcp(store, settings, auth):
     def save_slide_spec(
         presentation_id: str, spec: SlideSpec, expected_version: int, *, ctx: Context
     ) -> dict[str, Any]:
-        """Save a semantic specification version. Invalidates approvals for older versions; never accepts approved=true."""
+        """Save a semantic specification snapshot with optimistic version checking."""
         return store.save_spec(current_owner(ctx), presentation_id, spec, expected_version)
 
     @tool(mcp, annotations=write, meta=meta)
     def patch_slide(
         presentation_id: str, slide_id: str, replacement: dict, expected_version: int, *, ctx: Context
     ) -> dict[str, Any]:
-        """Replace one slide's semantic spec, keeping other slides. Creates a new version requiring renewed approval."""
+        """Replace one slide's semantic spec, keeping other slides. Creates a new immutable version."""
         from .models import Slide
 
         p = store.project(current_owner(ctx), presentation_id)
@@ -152,13 +149,6 @@ def make_mcp(store, settings, auth):
             }
         )
         return store.save_spec(current_owner(ctx), presentation_id, spec, expected_version)
-
-    @tool(mcp, annotations=write, meta=meta)
-    def request_approval(
-        presentation_id: str, stage: str, slide_id: str = "", *, ctx: Context
-    ) -> dict[str, Any]:
-        """Request human browser approval of outline or one slide, bound to the stored spec hash and version."""
-        return store.review(current_owner(ctx), presentation_id, stage, slide_id)
 
     @tool(mcp, annotations=write, meta=meta)
     def create_upload(presentation_id: str, *, ctx: Context) -> dict[str, Any]:
@@ -194,13 +184,13 @@ def make_mcp(store, settings, auth):
     def enqueue_generation(
         presentation_id: str, patch_id: str | None = None, *, ctx: Context
     ) -> dict[str, Any]:
-        """Enqueue the approved immutable spec or browser-approved PPTX patch. Server rejects missing or stale approvals."""
+        """Enqueue the saved immutable spec or PPTX patch, checking ownership, template and patch base."""
         return store.enqueue(current_owner(ctx), presentation_id, patch_id)
 
     @tool(mcp, annotations=read, meta=meta)
     def get_job(job_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Get job state, attempts and actionable error code. completed is the only successful state."""
-        return store.job(current_owner(ctx), job_id)
+        """Get job state, attempts and errors. completed includes an expiring PowerPoint download_url."""
+        return links(job_id, ctx=ctx)["job"]
 
     @tool(mcp, annotations=write, meta=meta)
     def retry_job(job_id: str, *, ctx: Context) -> dict[str, Any]:
@@ -219,7 +209,7 @@ def make_mcp(store, settings, auth):
     def propose_pptx_patch(
         presentation_id: str, source_id: str, changes: list[dict], *, ctx: Context
     ) -> dict[str, Any]:
-        """Propose selected plain-text shape replacements with expected_sha256. Human browser approval is required."""
+        """Propose selected plain-text shape replacements with expected_sha256. Returns a patch_id ready to enqueue."""
         return store.patch_plan(current_owner(ctx), presentation_id, source_id, changes)
 
     def links(job_id, *, ctx: Context):
@@ -227,52 +217,24 @@ def make_mcp(store, settings, auth):
         job = store.job(owner, job_id)
         result = {"job": job, "images": [], "download_url": None}
         if job["state"] == "completed":
-            output = json.loads(job["output"])
-
             def link(name):
                 cap = auth.sign("artifact", {"owner": owner, "job": job_id, "name": name}, ttl=600)
                 return f"{settings.base_url}/artifact/{job_id}/{name}?{urlencode({'cap': cap})}"
 
-            result["images"] = [
-                {"page": i + 1, "url": link(name)} for i, name in enumerate(output["preview"]["images"])
-            ]
             result["download_url"] = link("presentation.pptx")
+            job["download_url"] = result["download_url"]
+            job["expires_in"] = 600
             result["expires_in"] = 600
         return result
 
     @tool(mcp, annotations=read, meta=meta)
     def get_preview(job_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Issue expiring per-page preview and PowerPoint download URLs, after ownership/expiry checks."""
+        """Compatibility endpoint for PowerPoint download URLs. images is always empty."""
         return links(job_id, ctx=ctx)
 
     @tool(mcp, annotations=read, meta=meta)
-    def get_preview_image(job_id: str, page: int, *, ctx: Context) -> CallToolResult:
-        """Return one rendered page as MCP image content for the model to inspect, not a URL.
-
-        Call for every page after completion. Delivery does not mean visual review passed.
-        """
-        job = store.job(current_owner(ctx), job_id)
-        if job["state"] != "completed":
-            raise StateError("JOB_NOT_COMPLETED")
-        output = json.loads(job["output"])
-        names = output["preview"]["images"]
-        if not 1 <= page <= len(names):
-            raise StateError("PREVIEW_PAGE_OUT_OF_RANGE_OR_NOT_RENDERED")
-        path = (store.root / output["directory"] / "preview" / names[page - 1]).resolve()
-        if not path.is_relative_to(store.root.resolve()):
-            raise StateError("INVALID_ARTIFACT_PATH")
-        data = path.read_bytes()
-        metadata = {"job_id": job_id, "page": page, "page_count": len(names),
-                    "image_sha256": hashlib.sha256(data).hexdigest(),
-                    "delivery": "mcp_image_content", "visual_review": "pending",
-                    "powerpoint_verified": False}
-        return CallToolResult(content=[TextContent(type="text", text=json.dumps(metadata)),
-                                       ImageContent(type="image", data=base64.b64encode(data).decode(),
-                                                    mimeType="image/png")])
-
-    @tool(mcp, annotations=read, meta=meta)
     def get_generation_report(job_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Read output provenance and canonical-format verification, separately from visual review."""
+        """Read output provenance and canonical-format verification."""
         job = store.job(current_owner(ctx), job_id)
         if job["state"] != "completed":
             raise StateError("JOB_NOT_COMPLETED")
@@ -286,7 +248,7 @@ def make_mcp(store, settings, auth):
         mcp, annotations=read, meta={**meta, "ui": {"resourceUri": "ui://research-slide-agent/viewer.html"}}
     )
     def show_viewer(job_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Show the MCP Apps slide viewer. Call get_job first; useful without UI through returned URLs."""
+        """Show job status and PowerPoint download in MCP Apps. No page previews are produced."""
         return links(job_id, ctx=ctx)
 
     @mcp.resource(

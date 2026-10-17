@@ -1,6 +1,6 @@
 ---
 name: research-slides
-description: 修正版スケルトンの見本ページと直接書式を保持して、研究発表の構成を相談し、承認済み内容から編集可能なPPTXを生成・修正します。
+description: 修正版スケルトンの見本ページと直接書式を保持して、研究発表の構成を相談し、資料と保存した仕様から編集可能なPPTXを生成・修正します。
 ---
 
 # Research Slide Agent
@@ -34,15 +34,14 @@ description: 修正版スケルトンの見本ページと直接書式を保持�
 階層・字下げ・段落間隔は選択した見本の段落からサーバーが取得する。
 座標、フォント、色、任意XMLは入力しない。省略した内容欄は空になる。小見出しと装飾は残る。
 
-## ツールと既存の承認
+## 生成手順
 1. `create_project`。資料は `register_chatgpt_file` の公式file引数、または `create_upload` のbrowser_urlから登録する。
    架空のファイルIDは使わない。`get_project` / `read_source` で提供内容と具体的なlocatorを確認する。
 2. `save_slide_spec` にページ全体の仕様を保存する。spec_versionは保存済み版+1、expected_versionは保存済み版。
-3. `request_approval(stage="outline")` のレビューURLを提示する。承認はユーザー自身のブラウザで行う。
-4. 全体承認後、各ページの文章・図表・引用を説明し、`request_approval(stage="slide", slide_id=...)` を提示する。
-5. `get_project` で現在版の全承認を確認し、`enqueue_generation` → `get_job`。短い間隔で無限に確認しない。
-   仕様変更時は既存承認が失効する。モデルからブラウザ承認を自動実行しない。
-6. completedになったら以下の画像確認を行い、`show_viewer` / `get_preview` のPPTXリンクを提示する。
+3. `enqueue_generation` → `get_job`。新規生成・再生成・PPTXパッチに承認手順は不要。
+   短い間隔で無限に確認しない。PPTX生成と構造検査が成功するとcompletedになる。
+4. completedの `get_job.download_url` をPPTXのダウンロードリンクとして提示する。
+   プレビュー用PDF・PNGの生成・表示や、モデルによる画像確認は行わない。
 
 ## 図表と収まらない場合
 表は `results_table` と `table_spec` を使う。正本の3列幅・見出し15pt／本文16pt・中央揃え・セル余白・罫線を複製する。
@@ -55,24 +54,16 @@ description: 修正版スケルトンの見本ページと直接書式を保持�
 引用は ` [著者 '25]`、年は内部で4桁。citations/source_referencesを指定し、対応する近傍欄のtextにも引用表記を含める。
 
 TEXT_OVERFLOW / TABLE_OVERFLOW / LAYOUT_REQUIRES_USER_CHANGEでは、該当欄を確認して短縮案またはページ分割案を示す。
-固定枠を広げたり文字を縮小したりしない。承認済み内容や数値は勝手に変更せず、仕様を更新して再承認する。
+固定枠を広げたり文字を縮小したりしない。資料の内容や数値を勝手に変更せず、仕様を更新する。
 
-## 描画画像の確認と修正
-`get_generation_report` でコードコミット、ソースハッシュ、正本SHA、仕様版、書式検査結果を確認する。
-書式検査passedは画像確認済みを意味しない。
-`get_preview_image(job_id, page)` を**全ページ**について呼ぶ。このツールはモデル向けのMCP `image` コンテンツを返す。
-URLを提示しただけ、show_viewerを開いただけ、画像ブロックを受け取れなかった場合は「画像を確認済み」と言わない。
-クライアントが画像を受け取れなければ確認未実施と報告し、ユーザーによる画像確認を依頼する。
-
-画像を実際に見て、欠けた文字、意図しない折返し、階層と継続行、強調色、図題、表の罫線・行高・揃え、余白を確認する。
-問題があれば内容の短縮／分割を仕様へ反映し、再生成後に新しいジョブの全画像を再確認する。
-旧ジョブの画像や期限切れURLを新しい出力の確認へ流用しない。
-LibreOfficeは参考表示。PowerPoint実機で確認していなければ必ず明示する。
+## 生成結果
+`get_generation_report` でコードコミット、ソースハッシュ、正本SHA、仕様版、書式検査結果を取得できる。
+構造・書式検査は描画品質の確認を意味しない。画像確認やPowerPoint実機での確認済みとは報告しない。
 
 ## 手動編集済みPPTX
 再生成は手動編集を反映しないため、手動編集済みファイルを再登録して `inspect_uploaded_pptx` で最新版を調べる。
-指定されたslide_number・shape_id・expected_sha256・textだけを `propose_pptx_patch` に渡し、ブラウザ承認後にpatch_idで生成する。
+指定されたslide_number・shape_id・expected_sha256・textだけを `propose_pptx_patch` に渡し、返されたpatch_idで `enqueue_generation` を呼ぶ。
 元ファイルは保持し、別PPTXへ出力する。競合時は最新版を再読込する。
 既存の単純テキストパッチは複数ランや表・グループを安全に編集できないため、その場合は停止する。
 手動パッチは正本適合検査済みの再生成とは区別する。INVALID_JOB_STATEは仕様・正本・再登録の変更を確認する。
-RENDER_OR_IO_FAILUREは環境を確認して最大3回までretry_jobする。
+IO_FAILUREは環境を確認して最大3回までretry_jobする。
