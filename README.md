@@ -111,11 +111,34 @@ uv run python scripts/render_spec.py examples/research-format.slidespec.json --o
 
 `plugins/research-slide-agent/` にportable `plugin.json`、`mcp.json`、Skillがあります。`.agents/plugins/marketplace.json` はこのリポジトリ内のローカルカタログです。個人設定や他のPluginは変更しません。
 
-1. ローカルクライアントではこのリポジトリをローカルmarketplaceとして追加し、Research Labからインストールします。利用できる面はアカウント・クライアントに依存します。
-2. ChatGPTからリモート接続する場合は、Cloudflare TunnelでPiのAPIを公開HTTPSにし、Accessで本人だけを許可してManaged OAuthを有効にします。`localhost` はChatGPTのクラウドから到達できません。
-3. [ChatGPT Plugins](https://chatgpt.com/plugins) の **Add custom MCP server** でHTTPSの `/mcp` をOAuth接続として登録します。CloudflareのDCRと、画面に表示された正確なredirect URIの許可を設定します。初回接続／ツール利用時にAccessの画面でログインします。
-4. `uv run python scripts/configure_plugin.py --url https://slides.example.org/mcp` で配布パッケージの接続先を更新。登録済み技術IDが得られた場合だけ `--app-id plugin_asdk_app...` を追加すると `.app.json` を生成します。
-5. 新しいチャットでSkillを呼び、仕様保存→生成→PPTX取得→部分修正を受入試験します。
+### MCPだけを接続する場合
+
+1. Cloudflare TunnelでPiのAPIを公開HTTPSにし、Accessで本人だけを許可してManaged OAuthを有効にします。`localhost` はChatGPTのクラウドから到達できません。
+2. [ChatGPT Plugins](https://chatgpt.com/plugins) の **Add custom MCP server** でHTTPSの `/mcp` をOAuth接続として登録します。CloudflareのDCRと、画面に表示された正確なredirect URIの許可を設定します。初回接続／ツール利用時にAccessの画面でログインします。
+3. サーバー更新後は接続の **Refresh** を実行し、新しいチャットで `get_authoring_context` が利用できることを確認します。
+4. 構成作成より先に同ツールを呼び、`required_documents` の4文書を全文取得してから `get_template_info` →仕様保存→生成を試します。
+
+MCP URLの登録は、GitHubにあるSkillパッケージを自動インストールしません。MCP単体の利用者にはserver instructionsと
+`get_authoring_context`が制作手順・教授ルール・過去資料の説明規則・正本の入力手順を提供します。
+`get_profile`は本人ID、`get_template_info`は書式情報であり、制作ルールの取得には使いません。
+
+### Skillを含む完全なPluginを使う場合
+
+1. `uv run python scripts/configure_plugin.py --url https://slides.example.org/mcp` で配布パッケージの接続先を更新します。登録済み技術IDが得られた場合だけ `--app-id plugin_asdk_app...` を追加し、既存接続のmappingを生成します。このスクリプトはSkillのインストール・公開を行いません。
+2. 対応クライアントでこのリポジトリをローカルmarketplaceとして追加し、Research Labから完全なPluginをインストールします。利用できる面はアカウント・クライアントに依存します。
+3. 新しいチャットでSkillを呼び、まず `get_authoring_context` の全文取得が実行されることを確認します。同梱Skillは取得手順を教える入口で、接続中はサーバー返却版を使います。
+
+教授・過去資料・正本入力手順・制作ワークフローの編集上の正本は、Skillの `references/` です。
+サーバーの開発実行は同じファイルを読み、wheel/Dockerにはビルド時に同じ内容を同梱します。別のルールコピーを手編集しません。
+`research-slides://authoring-context` Resourceも同じloaderの結果を返しますが、Resourceの自動読込は前提にしません。
+文書SHA・`rules_digest`は取得した版の識別用で、モデルが理解・遵守した証明ではありません。
+
+おまかせ制作はAutonomous（中間承認なし）、相談する制作はCollaborative（会話で構成・粒度に合意してから生成）です。
+文字の文中切断、図題だけで原図を置いた扱い、ダミー見出しの放置を避け、収まらなければ説明を保って分割します。
+現在の生成は既存Strictのままです。PDFページ画像化・crop・Adaptiveは未実装で、今回のルール取得とは別段階です。
+
+制作ルールの更新はサーバーの再ビルド・再配置で反映します。MCPメタデータ変更時はRefreshし、Skillの入口やツール契約を変える場合は
+完全なPluginも更新します。公開済みPluginは配布先の版更新・審査手順に従います。
 
 新規生成・再生成・PPTXパッチに承認は不要です。MCP Apps UIは状態とPPTX取得を表示します。
 

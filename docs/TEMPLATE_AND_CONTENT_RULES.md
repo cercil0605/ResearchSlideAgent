@@ -89,8 +89,20 @@ visual_reviewはnot_performedであり、PowerPoint実機での表示確認済�
 - 教授の原文: `reference_materials/guidelines/professor-slide-guidelines-2025-12-02.txt`。
 - 配布Skill: `plugins/research-slide-agent/skills/research-slides/SKILL.md`。
 - 入力手順: 同Skillの `references/canonical-skeleton.md`。
+- 制作ワークフロー: 同Skillの `references/authoring-workflow.md`。
 - 教授の文章の整理: `references/professor-guidelines.md`。
 - 過去PDFの推定: `references/presentation-guidelines.md`。
 
 提供資料の根拠を新しい研究事実と取り違えない。教授の文章やPDFから内容ルールを更新する開発用Skillは
 `.agents/skills/update-presentation-rules/SKILL.md`。書式の正本をこの処理で勝手に変更しない。
+
+上記referencesが編集上の正本で、サーバー専用の手編集コピーは作らない。`get_authoring_context` と
+`research-slides://authoring-context` Resourceは同じloaderで必須4文書を全文返す。開発実行は正本を直接読み、
+wheel/Dockerの配布は同じ内容をビルド時に同梱する。SKILL.mdは取得・必読化の入口とする。
+MCP単体接続にはGitHubのSkillの自動配布はない。server instructionsとルール取得ツールを主経路にする。
+取得した文書SHAとrules_digestは比較条件の識別に使い、モデルが理解・遵守した証明とは扱わない。
+
+Autonomousは中間承認なし、Collaborativeは内容・構成・説明粒度を会話で合意して生成する。
+この区別でジョブ承認を復活させない。両モードとも文中切断禁止、用語導入・具体例・実験条件・図表解釈を適用する。
+Strictの位置・寸法・対応visualの制約は維持し、満たせない教授規則は未充足として明示する。
+PDFページ画像化・crop・Adaptiveは後続段階で、ルール取得の追加だけで実装済みと報告しない。

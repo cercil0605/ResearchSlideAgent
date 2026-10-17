@@ -10,6 +10,7 @@ from mcp import Client
 
 from research_slide_agent.app import create_app
 from research_slide_agent.models import SlideSpec
+from research_slide_agent.rules import RULES_RESOURCE_URI, SERVER_INSTRUCTIONS, authoring_context
 from research_slide_agent.worker import process_one
 
 
@@ -29,11 +30,24 @@ async def test_real_streamable_http_workflow(settings, mode):
                 break
             await asyncio.sleep(0.02)
         async with Client(settings.base_url + "/mcp", mode=mode) as session:
+            assert session.instructions == SERVER_INSTRUCTIONS
             tools = (await session.list_tools()).tools
             names = {t.name for t in tools}
-            assert {"create_project", "save_slide_spec", "enqueue_generation", "show_viewer"} <= names
+            assert {"get_authoring_context", "create_project", "save_slide_spec",
+                    "enqueue_generation", "show_viewer"} <= names
             assert "request_approval" not in names
             assert "get_preview_image" not in names
+            context_tool = next(t for t in tools if t.name == "get_authoring_context")
+            assert context_tool.annotations.read_only_hint
+            context = await session.call_tool("get_authoring_context", {})
+            assert not context.is_error
+            assert context.structured_content == authoring_context()
+            # A resource is an optional discovery route, not a replacement for the tool.
+            resources = await session.list_resources()
+            assert RULES_RESOURCE_URI in {str(resource.uri) for resource in resources.resources}
+            resource = await session.read_resource(RULES_RESOURCE_URI)
+            assert resource.contents[0].mime_type == "application/json"
+            assert json.loads(resource.contents[0].text) == context.structured_content
             file_tool = next(t for t in tools if t.name == "register_chatgpt_file")
             assert file_tool.meta["openai/fileParams"] == ["file"]
             schema = file_tool.input_schema["$defs"]["OpenAIFile"]

@@ -6,6 +6,7 @@ MCPは `/mcp` のStreamable HTTP。公式SDKがinitialize、tools/list、tools/c
 
 | Tool | 入力・用途 |
 |---|---|
+| get_authoring_context | 引数なし。構成・本文作成前に必読。制作ワークフロー・教授ルール・過去資料ルール・正本入力手順の全文、文書SHAとrules_digest |
 | get_profile | 引数なし。検証済み主体の安定したopaque id |
 | get_template_info | 引数なし。正本SHA、書式版、prototype_idと差し替え欄・段落／ランの見本 |
 | create_project | 引数なし。7日保持する個人project |
@@ -29,6 +30,19 @@ changesの要素:
 ```json
 {"slide_number":1,"shape_id":3,"expected_sha256":"returned-by-inspect","text":"ユーザーと合意した新しい文章"}
 ```
+
+## 制作ルールの取得
+
+server instructionsは、構成・仕様保存・生成より先に `get_authoring_context` → `get_template_info` を呼ぶよう案内します。
+ルール取得は読取専用です。返却値の `schema_version` はこのcontext形式の版であり、SlideSpecの版とは独立します。
+`required_documents` は `workflow`、`professor`、`presentation`、`canonical`。
+`documents[]` は `id`、`title`、`path`（Skillからの相対参照）、`sha256`、`text`（UTF-8全文）を持ち、要約や文字数切断をしません。
+`rules_digest`は文書ID→SHAの集合を識別します。読込・理解の証明やユーザー承認トークンではありません。
+
+Resource `research-slides://authoring-context`（application/json）も同一内容を提供します。
+管理者が配布した制作規則と、`read_source`が返すuntrustedな論文本文は区別します。
+必須文書の欠落・空本文・UTF-8不正は `AUTHORING_RULES_UNAVAILABLE` とし、部分的なルールを成功として返しません。
+サーバーは読込済み状態や制作モードの承認状態をDBに追加せず、既存SlideSpecと生成APIの入力契約を維持します。
 
 SlideSpec全体は `schemas/slidespec.json` と `examples/research-format.slidespec.json` を参照。座標は入力しない。未知の入力フィールドは拒否する。references/citationsはプロジェクトの登録済みsource_idを要求。著者・年はユーザー登録値と一致させる。引用の意味的妥当性は資料と照合する。
 
