@@ -15,7 +15,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Mount, Route
 
-from .auth import SCOPE, Auth, AuthError, MCPAuthMiddleware
+from .auth import SCOPE, Auth, AuthError, AuthMiddleware
 from .config import Settings
 from .files import MAX_FILE, InputError
 from .server import make_mcp
@@ -79,14 +79,18 @@ def create_app(settings: Settings | None = None):
             return RedirectResponse("/login?" + urlencode({"next": request.url.path}), 303)
 
     async def health(request):
-        return JSONResponse({"status": "ok", "mode": "loopback-development" if settings.dev else "oauth"})
+        return JSONResponse({
+            "status": "ok", "mode": "loopback-development" if settings.dev else settings.auth_mode
+        })
 
     async def metadata(request):
         return JSONResponse(
             {
                 "resource": settings.base_url + "/mcp",
-                "authorization_servers": [settings.issuer] if settings.issuer else [],
-                "scopes_supported": [SCOPE],
+                "authorization_servers": (
+                    [settings.base_url] if settings.cloudflare else [settings.issuer] if settings.issuer else []
+                ),
+                "scopes_supported": settings.oauth_scopes,
                 "bearer_methods_supported": ["header"],
             }
         )
@@ -95,6 +99,10 @@ def create_app(settings: Settings | None = None):
         next_path = request.query_params.get("next", "/")
         if not next_path.startswith(("/review/", "/project/")):
             next_path = "/"
+        if settings.cloudflare:
+            response = RedirectResponse(next_path, 303)
+            auth.browser_cookie(response, request.state.rsa_owner)
+            return response
         if settings.dev:
             client = request.client
             if not client or not ipaddress.ip_address(client.host).is_loopback:
@@ -134,6 +142,8 @@ def create_app(settings: Settings | None = None):
         return response
 
     async def callback(request):
+        if settings.cloudflare:
+            return Response(status_code=404)
         state = auth.unsign("oauth_state", request.cookies.get("rsa_oauth", ""))
         if not secrets.compare_digest(state["state"], request.query_params.get("state", "")):
             raise AuthError("OAuth state mismatch")
@@ -211,8 +221,7 @@ const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:h,body:fi
             if cap["project"] != pid:
                 raise AuthError("Capability project mismatch")
             owner, author, year = cap["owner"], None, None
-            if not settings.dev and owner not in settings.allowed_subs:
-                raise AuthError("User no longer allowed")
+            auth.check_owner(request, owner)
         else:
             owner, csrf = auth.browser(request)
             csrf_check(request, csrf, request.headers.get("x-csrf"))
@@ -262,8 +271,7 @@ const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:h,body:fi
         claims = auth.unsign("artifact", request.query_params.get("cap", ""))
         if claims["job"] != job_id or claims["name"] != name:
             raise AuthError("Artifact capability mismatch")
-        if not settings.dev and claims["owner"] not in settings.allowed_subs:
-            raise AuthError("User no longer allowed")
+        auth.check_owner(request, claims["owner"])
         job = store.job(claims["owner"], job_id)
         if job["state"] != "completed":
             raise StateError("ARTIFACT_NOT_READY")
@@ -316,6 +324,6 @@ const r=await fetch(location.pathname+'/upload',{{method:'PUT',headers:h,body:fi
         exception_handlers={AuthError: error, StateError: error, InputError: error, ValueError: error},
     )
     app.state.store, app.state.auth, app.state.mcp = store, auth, mcp
-    app.add_middleware(MCPAuthMiddleware, auth=auth)
+    app.add_middleware(AuthMiddleware, auth=auth)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=[urlparse(settings.base_url).hostname])
     return app

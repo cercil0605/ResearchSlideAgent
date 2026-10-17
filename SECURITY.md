@@ -6,11 +6,24 @@
 
 ## 認証・所有権
 
-MCPは各HTTP要求でRS256署名・issuer・audience・iat/exp・slides:write・許可subを検証する。emailやモデルが渡すuser_idは権限に使わない。Google上流のsubではなく認可サーバーの安定subを許可リストに設定。GoogleのIDトークンをMCP access tokenとして認めない。
+`RSA_AUTH_MODE=cloudflare` は各HTTP要求で `Cf-Access-Jwt-Assertion` のRS256署名・チームissuer・アプリAUD・iat/exp・type=app・空でないsub・署名内の許可メールを検証する。
+JWKSは設定済みチームの `/cdn-cgi/access/certs` から取得し、キャッシュは5分。鍵単位の無期限キャッシュは使わない。
+OAuthの不透明なBearerやメールヘッダー、Access cookieを直接信用しない。Service tokenは人の本人確認に使えない。
+全ホスト名をAccessで保護し、Managed OAuthの認可・登録・トークン発行・更新はCloudflareが担当する。
+ownerは `cloudflare:<Access sub>` としてMCP・ブラウザで共通化する。メールは許可判定に使い、所有者の主キーには使わない。
+healthとリソースメタデータ以外はoriginでもassertionを要求する。
 
-ブラウザ承認はPKCE(S256)、state、nonce、IDトークンのissuer/audience/sub/nonce照合、独立セッションを使用。SameSite=Lax/HttpOnly/Secure cookie、CSRF token、Origin照合。人の承認POSTをMCPツールに公開しない。レビューはversion/hash/期限/1回性を照合する。
+`RSA_AUTH_MODE=oauth`（省略時）は従来どおりMCP要求でRS256署名・issuer・audience・iat/exp・slides:write・許可subを検証する。
+Google上流のsubではなく認可サーバーの安定subを許可リストに設定。GoogleのIDトークンをMCP access tokenとして認めない。
+
+Cloudflare方式のブラウザは検証したAccess本人へアプリのセッションを発行し、各要求でAccessの本人とcookieのownerの一致を確認する。
+従来OAuth方式のブラウザはPKCE(S256)、state、nonce、IDトークンのissuer/audience/sub/nonce照合を使う。
+両方式ともSameSite=Lax/HttpOnly/Secure cookie、CSRF token、Origin照合を維持する。人の承認POSTをMCPツールに公開しない。レビューはversion/hash/期限/1回性を照合する。
 
 プロジェクト、仕様、入力、ジョブ、プレビュー全て所有者を照合。一時URLは10分のbearer capability。発行時に所有者を確認し、利用時にもそのownerとproject/job/期限を再照合する。URLを知る人は期限内に利用できるので、共有は慎重にする。capを発行するMCP利用者も資料を登録できるが、人の承認権限は得られない。
+
+Cloudflare方式ではcap URLにも現在のAccess assertionとowner一致を要求するため、URLだけでは取得・登録できない。
+認証方式／Access組織を変更した際の既存ownerの自動移行は行わない。
 
 ## ファイル
 
@@ -32,6 +45,8 @@ ChatGPT添付は管理者の明示した完全一致HTTPSホストのみ。priva
 
 ## 既知の制限
 
-これは侵入試験済み製品ではない。PDF/Office/Pillow/LibreOfficeに未知の脆弱性がないとは主張しない。依存はlockfileを更新し再試験する。セッション有効30分の間、上流IdPの強制ログアウトが直ちに反映されない。RSA_ALLOWED_SUBSの除去はAPI設定反映後すべての経路で拒否する。アクセストークンは有効期限まで有効なので短期発行にする。
+これは侵入試験済み製品ではない。PDF/Office/Pillow/LibreOfficeに未知の脆弱性がないとは主張しない。依存はlockfileを更新し再試験する。
+上流IdPの強制ログアウトやAccessポリシー変更が既存トークンへ直ちに反映されるとは限らない。トークンを短期発行にし、更新時にAccessがポリシーを再評価する。
+Cloudflare方式のRSA_ALLOWED_EMAILSの除去はAPI設定反映後、各保護要求で拒否する。従来方式のRSA_ALLOWED_SUBSの除去も同様。
 
-OAuthプロバイダーとのGoogle login、CIMD/事前登録、resource indicator、issuer応答、ChatGPTホスト側の実動作は未検証。公開前にAUTH.mdの受入試験が必要。開発認証はloopback限定で本番環境では起動できない。
+Cloudflare Managed OAuthとの初回接続・更新、OAuthプロバイダーとのGoogle login、CIMD/DCR/事前登録、resource indicator、issuer応答、ChatGPTホスト側の実動作は未検証。公開前にAUTH.mdの受入試験が必要。開発認証はloopback限定で本番環境では起動できない。

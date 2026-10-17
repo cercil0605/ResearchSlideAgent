@@ -2,7 +2,7 @@
 
 研究室の既存マスターを維持し、編集可能な研究発表PPTXを生成するPython/MCPアプリです。追加のLLM APIは呼びません。意味的な構成・文章はChatGPTが作り、サーバーが配置と承認・生成を管理します。
 
-**修正版スケルトンを正本にしてページを複製し、内容を差し替えます。LibreOfficeプレビューと書式検査に対応しています。Google連携したOAuth、リモートChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。** 詳細は [TESTING.md](TESTING.md)。
+**修正版スケルトンを正本にしてページを複製し、内容を差し替えます。LibreOfficeプレビューと書式検査に対応しています。Cloudflare Access／外部OAuth、リモートChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。** 詳細は [TESTING.md](TESTING.md)。
 
 Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDKによる検証をCIへ追加しました。
 PiのPDFプレビューは参考表示です。正しいフォントと表を保つ最終PDFはPowerPointから書き出してください。
@@ -30,6 +30,10 @@ PiのPDFプレビューは参考表示です。正しいフォントと表を保
 Portainer Stackで `api` と `worker` を常駐。SQLite WALの永続キューとDocker volumeに状態・資料を保存します。Cloud Tasks/Firestore/Storageの代替です。生成とLibreOfficeはARM64コンテナで実行します。まずワーカー並列数1、研究室上限2を維持します。
 
 GitHub Actionsはテストと `linux/arm64,linux/amd64` のイメージ作成・GHCR登録に使います。Portainerで検証済みコミットタグを指定して更新します。研究資料をActionsのジョブ入力や成果物に送る構成にはしていません。
+
+1人利用はCloudflare Tunnel + AccessのManaged OAuthを推奨します。Accessで自分のメールだけを許可し、ChatGPTと承認ブラウザの本人確認をまとめます。
+別のOAuthサーバーは不要です。`.env.example` にイメージ・公開URL・認証方式・Accessチームドメイン／AUD・許可メール・セッション鍵を設定します。
+Cloudflareの画面設定と初回のChatGPTログインは [deploy/AUTH.md](deploy/AUTH.md) を参照してください。
 
 推奨する開始条件はPi 5、64-bit OS、RAM 8 GB、SSD、冷却です。これは設計上の目安であり実測要件ではありません。Pi 4/4 GBでもワーカー1件なら試験対象になりますが、40枚のレンダリング時間とメモリは実機で測ってください。[運用方法の比較](docs/RASPBERRY_PI.md)。
 
@@ -108,8 +112,8 @@ LibreOfficeは参考表示で、PowerPoint実機による確認は別途必要�
 `plugins/research-slide-agent/` にportable `plugin.json`、`mcp.json`、Skillがあります。`.agents/plugins/marketplace.json` はこのリポジトリ内のローカルカタログです。個人設定や他のPluginは変更しません。
 
 1. ローカルクライアントではこのリポジトリをローカルmarketplaceとして追加し、Research Labからインストールします。利用できる面はアカウント・クライアントに依存します。
-2. ChatGPTからリモート接続する場合は、PiのAPIを公開HTTPSにし、OAuthを設定します。`localhost` はChatGPTのクラウドから到達できません。
-3. [ChatGPT Plugins](https://chatgpt.com/plugins) の **Add custom MCP server** でHTTPSの `/mcp`、事前登録したOAuthクライアントIDなどを設定。画面に表示された正確なredirect URIを認可サーバーに登録します。
+2. ChatGPTからリモート接続する場合は、Cloudflare TunnelでPiのAPIを公開HTTPSにし、Accessで本人だけを許可してManaged OAuthを有効にします。`localhost` はChatGPTのクラウドから到達できません。
+3. [ChatGPT Plugins](https://chatgpt.com/plugins) の **Add custom MCP server** でHTTPSの `/mcp` をOAuth接続として登録します。CloudflareのDCRと、画面に表示された正確なredirect URIの許可を設定します。初回接続／ツール利用時にAccessの画面でログインします。
 4. `uv run python scripts/configure_plugin.py --url https://slides.example.org/mcp` で配布パッケージの接続先を更新。登録済み技術IDが得られた場合だけ `--app-id plugin_asdk_app...` を追加すると `.app.json` を生成します。
 5. 新しいチャットでSkillを呼び、構成承認→各ページ承認→生成→プレビュー→部分修正を受入試験します。
 
@@ -123,11 +127,11 @@ LibreOfficeは参考表示で、PowerPoint実機による確認は別途必要�
 
 1. `.github/workflows/ci.yml` で作成するイメージを使うか、Piで `docker build -t research-slide-agent:local .`。
 2. 実マスターはイメージ同梱のものを使用。ホストへの別配置は不要です。
-3. [OAuth設定](deploy/AUTH.md) とHTTPSリバースプロキシを用意。
+3. [Cloudflare Access設定](deploy/AUTH.md) とTunnelを用意。既存の認可サーバーを使う場合は同文書の従来OAuth方式を参照。
 4. Portainerの **Stacks → Add stack → Web editor** に `deploy/portainer-stack.yml` を貼り付け、`.env.example` の値を環境変数として設定してDeploy。
 5. サーバーと同じPiホストのリバースプロキシまたはCloudflare Tunnelから `127.0.0.1:8010` に転送。Portainerの8000番との競合を避けています。別コンテナのプロキシを使う場合は同じDockerネットワークに接続し `api:8000` に転送するようStackを変更します。
 
-GitHubへのpush、GHCRへの公開、Piへの接続、Portainer更新、Google認証設定はこの開発では実施していません。
+この変更でCloudflareの管理画面設定、GitHubへのpush、Portainerの更新は実施していません。外部接続の受入試験も別途必要です。
 
 ## 環境変数
 
@@ -135,14 +139,18 @@ GitHubへのpush、GHCRへの公開、Piへの接続、Portainer更新、Google�
 |---|---|
 | `RSA_DEV` | `1` はloopback限定開発モード。既定`0` |
 | `RSA_ENV` | Dockerでは`production`固定 |
+| `RSA_AUTH_MODE` | `cloudflare`でAccess認証。省略時`oauth`で従来方式を維持 |
+| `RSA_CF_TEAM_DOMAIN` | Cloudflare方式のチームURL。例`https://lab.cloudflareaccess.com` |
+| `RSA_CF_AUDIENCE` | Cloudflare AccessアプリのAUD Tag。公開URLとは別 |
+| `RSA_ALLOWED_EMAILS` | Cloudflare方式の許可メール。1人利用は自分の1件を指定 |
 | `RSA_DATA_DIR` | 状態DB・資料・出力の保存場所。既定`var` |
 | `RSA_TEMPLATE` | 固定マスターのPPTXパス |
 | `RSA_BASE_URL` | 公開HTTPSのorigin。開発は`http://127.0.0.1:8000` |
-| `RSA_OAUTH_ISSUER` | Google連携する認可サーバーの正確なissuer |
-| `RSA_JWKS_URL` | 同サーバーのHTTPS JWKS |
-| `RSA_OAUTH_AUDIENCE` | MCP用のaudience。例`https://slides.example.org/mcp` |
-| `RSA_WEB_CLIENT_ID` | ブラウザ承認用OAuthクライアントID |
-| `RSA_ALLOWED_SUBS` | 認可サーバーの許可済み安定subをカンマ区切り |
+| `RSA_OAUTH_ISSUER` | 従来OAuth方式のみ。認可サーバーの正確なissuer |
+| `RSA_JWKS_URL` | 従来OAuth方式のみ。同サーバーのHTTPS JWKS |
+| `RSA_OAUTH_AUDIENCE` | 従来OAuth方式のみ。MCP用のaudience |
+| `RSA_WEB_CLIENT_ID` | 従来OAuth方式のみ。ブラウザ承認用OAuthクライアントID |
+| `RSA_ALLOWED_SUBS` | 従来OAuth方式のみ。認可サーバーの許可済み安定sub |
 | `RSA_SESSION_KEY` | 32文字以上のランダム値。API再起動でも維持する |
 | `RSA_ATTACHMENT_HOSTS` | 添付ファイルの取得元ホストの完全一致リスト。空なら直接取込不可 |
 | `RSA_WORKER_LIMIT` | 1または2。Piは1を推奨 |

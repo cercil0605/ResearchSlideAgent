@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import httpx
 import jwt
 from jwt import PyJWKClient
+from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -20,9 +21,12 @@ class Auth:
     def __init__(self, settings):
         self.settings = settings
         self.key = settings.session_key or secrets.token_urlsafe(48)
+        jwks_url = (
+            settings.cf_team_domain + "/cdn-cgi/access/certs" if settings.cloudflare else settings.jwks_url
+        )
         self.jwks = (
-            PyJWKClient(settings.jwks_url, cache_keys=True, lifespan=300, timeout=10)
-            if settings.jwks_url
+            PyJWKClient(jwks_url, lifespan=300, timeout=10)
+            if jwks_url
             else None
         )
 
@@ -50,6 +54,43 @@ class Auth:
         except (jwt.PyJWTError, KeyError, TypeError) as exc:
             raise AuthError("Invalid access token") from exc
 
+    def cloudflare_owner(self, token):
+        """Validate Access's origin assertion, never the opaque Managed OAuth bearer token."""
+        if not self.settings.cloudflare or not self.jwks or not token:
+            raise AuthError("Cloudflare Access assertion required")
+        try:
+            key = self.jwks.get_signing_key_from_jwt(token)
+            claims = jwt.decode(
+                token,
+                key.key,
+                algorithms=["RS256"],
+                audience=self.settings.cf_audience,
+                issuer=self.settings.cf_team_domain,
+                options={"require": ["sub", "email", "type", "exp", "iat", "iss", "aud"]},
+            )
+            email = claims["email"]
+            if (
+                claims["type"] != "app"
+                or not isinstance(claims["sub"], str)
+                or not claims["sub"].strip()
+                or not isinstance(email, str)
+                or email.casefold() not in self.settings.allowed_emails
+            ):
+                raise AuthError("Cloudflare user is not allowed")
+            return "cloudflare:" + claims["sub"]
+        except (jwt.PyJWTError, KeyError, TypeError) as exc:
+            raise AuthError("Invalid Cloudflare Access assertion") from exc
+
+    def check_owner(self, request, owner):
+        if self.settings.dev:
+            return
+        if self.settings.cloudflare:
+            current = request.scope.get("state", {}).get("rsa_owner")
+            if not current or current != owner:
+                raise AuthError("Authenticated user does not own this resource")
+        elif owner not in self.settings.allowed_subs:
+            raise AuthError("User no longer allowed")
+
     def sign(self, kind, claims, ttl=900):
         return jwt.encode(
             {**claims, "iss": "rsa", "aud": kind, "iat": int(time.time()), "exp": int(time.time()) + ttl},
@@ -73,8 +114,7 @@ class Auth:
     def browser(self, request):
         claims = self.unsign("browser", request.cookies.get("rsa_session", ""))
         owner = claims["owner"]
-        if not self.settings.dev and owner not in self.settings.allowed_subs:
-            raise AuthError("User no longer allowed")
+        self.check_owner(request, owner)
         return owner, claims["csrf"]
 
     def browser_cookie(self, response, owner):
@@ -111,16 +151,29 @@ def current_owner(ctx):
     return owner
 
 
-class MCPAuthMiddleware:
+class AuthMiddleware:
     def __init__(self, app, auth):
         self.app, self.auth = app, auth
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] != "http" or not scope["path"].startswith("/mcp"):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        path = scope["path"]
+        is_mcp = path == "/mcp" or path.startswith("/mcp/")
+        if self.auth.settings.cloudflare:
+            if path in {
+                "/health", "/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"
+            }:
+                return await self.app(scope, receive, send)
+        elif not is_mcp:
             return await self.app(scope, receive, send)
         request = Request(scope)
         try:
-            if self.auth.settings.dev:
+            if self.auth.settings.cloudflare:
+                owner = await run_in_threadpool(
+                    self.auth.cloudflare_owner, request.headers.get("cf-access-jwt-assertion", "")
+                )
+            elif self.auth.settings.dev:
                 client = scope.get("client")
                 if not client or not ipaddress.ip_address(client[0]).is_loopback:
                     raise AuthError("Development MCP is loopback-only")
@@ -129,13 +182,17 @@ class MCPAuthMiddleware:
                 header = request.headers.get("authorization", "")
                 if not header.startswith("Bearer "):
                     raise AuthError("Bearer access token required")
-                from starlette.concurrency import run_in_threadpool
-
                 owner = await run_in_threadpool(self.auth.token_owner, header[7:])
         except (AuthError, ValueError):
-            challenge = f'Bearer resource_metadata="{self.auth.settings.base_url}/.well-known/oauth-protected-resource", scope="{SCOPE}", error="invalid_token", error_description="Sign in to continue"'
+            challenge = (
+                f'Bearer resource_metadata="{self.auth.settings.base_url}/.well-known/oauth-protected-resource", '
+                'error="invalid_token", error_description="Sign in to continue"'
+            )
+            if not self.auth.settings.cloudflare:
+                challenge += f', scope="{SCOPE}"'
             return await JSONResponse(
-                {"error": "unauthorized"}, 401, headers={"WWW-Authenticate": challenge}
+                {"error": "unauthorized"}, 401,
+                headers={"Cache-Control": "no-store", **({"WWW-Authenticate": challenge} if is_mcp else {})},
             )(scope, receive, send)
         scope.setdefault("state", {})["rsa_owner"] = owner
         await self.app(scope, receive, send)

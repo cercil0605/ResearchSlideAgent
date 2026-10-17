@@ -18,12 +18,16 @@ x-runtime: &runtime
     RSA_DEV: "0"
     RSA_DATA_DIR: /data
     RSA_TEMPLATE: /templates/lab-template.pptx
+    RSA_AUTH_MODE: ${RSA_AUTH_MODE:-oauth}
+    RSA_CF_TEAM_DOMAIN: ${RSA_CF_TEAM_DOMAIN:-}
+    RSA_CF_AUDIENCE: ${RSA_CF_AUDIENCE:-}
+    RSA_ALLOWED_EMAILS: ${RSA_ALLOWED_EMAILS:-}
     RSA_BASE_URL: ${RSA_BASE_URL:?Set public HTTPS URL}
-    RSA_OAUTH_ISSUER: ${RSA_OAUTH_ISSUER:?Set OAuth issuer}
-    RSA_JWKS_URL: ${RSA_JWKS_URL:?Set JWKS URL}
-    RSA_OAUTH_AUDIENCE: ${RSA_OAUTH_AUDIENCE:?Set MCP resource audience}
+    RSA_OAUTH_ISSUER: ${RSA_OAUTH_ISSUER:-}
+    RSA_JWKS_URL: ${RSA_JWKS_URL:-}
+    RSA_OAUTH_AUDIENCE: ${RSA_OAUTH_AUDIENCE:-}
     RSA_WEB_CLIENT_ID: ${RSA_WEB_CLIENT_ID:-research-slide-web}
-    RSA_ALLOWED_SUBS: ${RSA_ALLOWED_SUBS:?Set comma-separated allowed broker subjects}
+    RSA_ALLOWED_SUBS: ${RSA_ALLOWED_SUBS:-}
     RSA_SESSION_KEY: ${RSA_SESSION_KEY:?Set 32+ random characters}
     RSA_ATTACHMENT_HOSTS: ${RSA_ATTACHMENT_HOSTS:-}
     RSA_WORKER_LIMIT: "1"

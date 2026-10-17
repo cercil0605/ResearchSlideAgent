@@ -7,6 +7,7 @@ var/
 .env
 .env.*
 !.env.example
+!.env.oauth.example
 /artifacts/*
 !/artifacts/README.md
 slide_sample.pptx

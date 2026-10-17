@@ -19,7 +19,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 from starlette.concurrency import run_in_threadpool
 
-from .auth import SCOPE, current_owner
+from .auth import current_owner
 from .engine import inspect_pptx, template_info
 from .files import MAX_FILE, extract
 from .models import Model, SlideSpec
@@ -97,7 +97,7 @@ def make_mcp(store, settings, auth):
         read_only_hint=True, destructive_hint=False, open_world_hint=False, idempotent_hint=True
     )
     write = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_world_hint=False)
-    security = [{"type": "noauth"}] if settings.dev else [{"type": "oauth2", "scopes": [SCOPE]}]
+    security = [{"type": "noauth"}] if settings.dev else [{"type": "oauth2", "scopes": settings.oauth_scopes}]
     meta = {"securitySchemes": security}
 
     @tool(mcp, annotations=read, meta=meta)

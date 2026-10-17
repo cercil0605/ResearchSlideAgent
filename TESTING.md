@@ -3,9 +3,14 @@
 2026-10-17更新。現行の正本は `templates/lab-template.pptx` と `.profile.json`。
 提供原本や過去の `artifacts/` がなくても、新しいcloneでテスト・生成ができる構成とする。
 
-整理後の全テストは **69 passed / スキップなし**。ruffと差分チェックも成功。
-実行ログは `artifacts/canonical-review/cleanup-test-results.txt`。
-ブラウザ承認から5枚の生成・描画・取得までのsmokeも成功（`cleanup-smoke.json`）。
+Cloudflare Access認証の追加後、全テストは **94 passed / スキップなし**。ruff、差分チェック、Cloudflare／従来OAuth両方のCompose設定展開も成功。
+Cloudflareの自動試験は25件で、テスト用RS256鍵で署名したassertionを使う。
+MCP経由の本人確認・プロジェクト作成→ブラウザのcookie/CSRF/Origin付き承認→workerのPPTX生成→取得を確認した。
+別チーム／別AUD／期限切れ／改ざん／不足claim／service token／許可外メールを拒否し、古いcookieやcap URLだけではAccess認証を迂回できないことも確認した。
+旧OAuth・loopback開発認証の既存テストも維持している。
+
+以前の整理時は69 passed。実行ログは `artifacts/canonical-review/cleanup-test-results.txt`。
+当時のブラウザ承認から5枚の生成・描画・取得までのsmokeも成功（`cleanup-smoke.json`）。
 
 ## 現在の検証対象
 
@@ -31,7 +36,8 @@ Microsoft Open XML SDKは正本・卵出力・研究形式出力ともエラー0
 これらはGit対象外であり、[artifacts/README.md](artifacts/README.md) のコマンドで再生成する。
 旧解析画像・中間出力・ビルドログは整理済み。互換性問題の原因と対策は [技術記録](docs/POWERPOINT_COMPATIBILITY.md) に残す。
 
-PowerPoint実機、外部OAuth、リモートChatGPTクライアントでの表示受入は未実施。
+PowerPoint実機、Cloudflare Managed OAuthの初回認証／トークン更新、外部OAuth、リモートChatGPTクライアントでの表示受入は未実施。
+Cloudflare実アカウントのポリシー・Tunnel・DCR・ChatGPT callback設定は自動試験には含めない。[受入手順](deploy/AUTH.md)に従って実施する。
 XML適合、画像配信、モデルによる画像確認、PowerPoint実機の確認は区別する。公開・デプロイは行っていない。
 
 ## 再実行
@@ -58,4 +64,4 @@ dotnet run --project tools/pptx-validator --configuration Release -- templates/l
 ```
 
 UI変更時は `ui/` で `npm ci --ignore-scripts && npm run build` も実行する。
-今回の整理ではUIや認証方式は変更していない。
+今回のCloudflare対応ではUIのビルド対象ファイルを変更していない。

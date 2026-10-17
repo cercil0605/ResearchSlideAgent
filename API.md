@@ -61,7 +61,8 @@ schema 1.0の合成／旧テンプレート経路は互換性試験用に保持�
 
 - `GET /health`: 起動状態。秘密情報なし。
 - `GET /.well-known/oauth-protected-resource[/mcp]`: RFC9728 metadata。
-- `GET /login`, `GET /oauth/callback`: browser PKCE/OIDC login。
+- `GET /login`: Cloudflare方式は検証済みAccess本人へブラウザcookieを発行。従来OAuth方式はPKCE/OIDC loginへ遷移。
+- `GET /oauth/callback`: 従来OAuth方式のcallback。Cloudflare方式では使用せず404。
 - `GET /project/{id}`: 認証済み資料登録・引用メタデータ確認ページ。
 - `PUT /project/{id}/upload`: cookie/CSRF/Origin、raw bytes、X-Filename(UTF-8 percent encoded)、X-Author/X-Year任意。
 - `PUT /upload/{id}?cap=...`: 期限付きのupload capability。資料本文のみ、引用メタデータはブラウザで確認。
@@ -71,6 +72,12 @@ schema 1.0の合成／旧テンプレート経路は互換性試験用に保持�
 - `GET /artifact/{job}/{name}?cap=...`: 所有権確認済みの署名URL。期限切れプロジェクトは拒否。
 
 ファイル本文とトークンをログに含めない。proxyにもクエリ文字列・Cookie・Authorizationを記録させない。
+
+Cloudflare方式ではhealth／リソースメタデータ以外の全要求に、有効な `Cf-Access-Jwt-Assertion` が必要。
+MCP用の不透明なOAuthアクセストークンはCloudflare側が検証し、originは署名付きAccess assertionを検証する。
+upload／artifactのcapもAccess本人とのowner一致を要求する。ブラウザ操作は同じ本人のアプリcookieとCSRFも必要。
+Cloudflare方式のMCPツールは `oauth2`、`scopes: []` を宣言し、独自の `slides:write` scopeをCloudflareへ要求しない。
+認可サーバーメタデータ `/.well-known/oauth-authorization-server` はCloudflareが公開する。
 
 ## エラー
 
