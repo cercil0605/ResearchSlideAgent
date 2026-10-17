@@ -113,12 +113,33 @@ class ImageRef(Model):
     caption: str = Field(min_length=1, max_length=200)
 
 
+class PrototypeRun(Model):
+    text: str = Field(min_length=1, max_length=1800)
+    style_run: int = Field(default=0, ge=0)
+
+
+class PrototypeParagraph(Model):
+    """Select an existing paragraph/run style; clients cannot supply formatting."""
+
+    prototype_paragraph: int = Field(default=0, ge=0)
+    text: str = Field(default="", max_length=1800)
+    runs: list[PrototypeRun] = Field(default_factory=list, max_length=40)
+
+    @model_validator(mode="after")
+    def check_content(self):
+        if bool(self.text) == bool(self.runs):
+            raise ValueError("Specify either text or runs; use an empty paragraph list to clear a slot")
+        return self
+
+
 class Slide(Model):
     slide_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
     slide_order: int = Field(ge=1, le=40)
-    layout_id: int = Field(ge=0)
+    layout_id: int = Field(default=0, ge=0)
+    prototype_id: str | None = None
+    replacements: dict[str, list[PrototypeParagraph]] = Field(default_factory=dict)
     title: str = Field(min_length=1, max_length=180)
-    key_message: str = Field(min_length=1, max_length=400)
+    key_message: str = Field(default="", max_length=400)
     body_blocks: list[Block] = Field(default_factory=list, max_length=6)
     diagram_spec: Diagram | None = None
     table_spec: Table | None = None
@@ -132,7 +153,7 @@ class Slide(Model):
         ids = [b.id for b in self.body_blocks] + [i.id for i in self.image_references]
         if len(ids) != len(set(ids)) or set(ids) & {"key_message", "diagram", "table", "chart"}:
             raise ValueError("Duplicate or reserved block IDs")
-        targets = {*ids, "key_message", "diagram", "table", "chart"}
+        targets = {*ids, *self.replacements, "key_message", "diagram", "table", "chart"}
         if any(c.target_id not in targets for c in self.citations):
             raise ValueError("Citation target does not exist")
         if (
@@ -167,9 +188,10 @@ class Metadata(Model):
 
 
 class SlideSpec(Model):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.0", "1.1"] = "1.0"
     presentation_id: str
     template_id: str = "lab"
+    purpose_mode: Literal["research", "general"] = "research"
     spec_version: int = Field(ge=1)
     presentation_metadata: Metadata
     slides: list[Slide] = Field(min_length=1, max_length=40)
@@ -180,6 +202,28 @@ class SlideSpec(Model):
             raise ValueError("Duplicate slide ID")
         if sorted(s.slide_order for s in self.slides) != list(range(1, len(self.slides) + 1)):
             raise ValueError("Slide order must be contiguous from 1")
+        if self.schema_version == "1.1":
+            if any(not s.prototype_id or s.key_message or s.body_blocks or s.chart_spec for s in self.slides):
+                raise ValueError("1.1 requires prototype_id/replacements; legacy common slots and unsampled charts are unsupported")
+            if self.purpose_mode == "research":
+                order = [s.prototype_id for s in sorted(self.slides, key=lambda s: s.slide_order)]
+                ranks = {name: i for i, name in enumerate([
+                    "cover", "overview", "background", "related", "objective", "method", "experiment",
+                    "results_figure", "results_table", "discussion", "summary",
+                ])}
+                # Figure/table results can be interleaved; other sections retain their flow.
+                ranks["results_table"] = ranks["results_figure"]
+                if any(name not in ranks for name in order) or any(
+                    ranks[a] > ranks[b] for a, b in zip(order, order[1:])
+                ):
+                    raise ValueError("Research sections must follow the skeleton flow")
+                required = set(ranks) - {"results_figure", "results_table"}
+                if not required.issubset(order) or not {"results_figure", "results_table"}.intersection(order):
+                    raise ValueError("Research mode needs all sections and at least one result page")
+                if order.count("cover") != 1 or order.count("overview") != 1:
+                    raise ValueError("Research mode needs one cover followed by one overview")
+        elif any(s.prototype_id or s.replacements for s in self.slides):
+            raise ValueError("Prototype inputs require schema_version 1.1")
         return self
 
     def digest(self) -> str:

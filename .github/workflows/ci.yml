@@ -31,8 +31,8 @@ jobs:
         run: uv run python scripts/template_smoke.py
       - name: Validate PowerPoint XML with the Microsoft SDK
         run: |
-          uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/eggs
-          dotnet run --project tools/pptx-validator --configuration Release -- templates/lab-template.pptx artifacts/template-check/presentation.pptx artifacts/eggs/presentation.pptx
+          uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
+          dotnet run --project tools/pptx-validator --configuration Release -- templates/lab-template.pptx artifacts/template-check/presentation.pptx artifacts/canonical-eggs/presentation.pptx
   image:
     if: github.event_name != 'pull_request'
     needs: test
@@ -57,4 +57,5 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64,linux/amd64
+          build-args: RSA_CODE_COMMIT=${{ github.sha }}
           tags: ${{ steps.image.outputs.name }}:latest,${{ steps.image.outputs.name }}:${{ github.sha }}

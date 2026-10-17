@@ -59,7 +59,8 @@ def process_one(store, settings):
         store.finish(job["id"], job["lease_token"], "completed", output=output)
     except (LayoutError, StateError, ValueError) as exc:
         code = "LAYOUT_REQUIRES_USER_CHANGE" if isinstance(exc, LayoutError) else "INVALID_JOB_STATE"
-        store.finish(job["id"], job["lease_token"], "failed", error=code)
+        store.finish(job["id"], job["lease_token"], "failed", error=code,
+                     output={"guidance": str(exc)[:400]})
     except (OSError, subprocess.SubprocessError, RuntimeError):
         store.finish(job["id"], job["lease_token"], "failed", error="RENDER_OR_IO_FAILURE", transient=True)
     log.info(

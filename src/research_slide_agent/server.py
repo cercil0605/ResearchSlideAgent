@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import functools
+import hashlib
 import inspect
 import ipaddress
 import json
@@ -14,7 +16,7 @@ import httpx
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp_types import ToolAnnotations
+from mcp_types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 from starlette.concurrency import run_in_threadpool
 
 from .auth import SCOPE, current_owner
@@ -242,6 +244,43 @@ def make_mcp(store, settings, auth):
     def get_preview(job_id: str, *, ctx: Context) -> dict[str, Any]:
         """Issue expiring per-page preview and PowerPoint download URLs, after ownership/expiry checks."""
         return links(job_id, ctx=ctx)
+
+    @tool(mcp, annotations=read, meta=meta)
+    def get_preview_image(job_id: str, page: int, *, ctx: Context) -> CallToolResult:
+        """Return one rendered page as MCP image content for the model to inspect, not a URL.
+
+        Call for every page after completion. Delivery does not mean visual review passed.
+        """
+        job = store.job(current_owner(ctx), job_id)
+        if job["state"] != "completed":
+            raise StateError("JOB_NOT_COMPLETED")
+        output = json.loads(job["output"])
+        names = output["preview"]["images"]
+        if not 1 <= page <= len(names):
+            raise StateError("PREVIEW_PAGE_OUT_OF_RANGE_OR_NOT_RENDERED")
+        path = (store.root / output["directory"] / "preview" / names[page - 1]).resolve()
+        if not path.is_relative_to(store.root.resolve()):
+            raise StateError("INVALID_ARTIFACT_PATH")
+        data = path.read_bytes()
+        metadata = {"job_id": job_id, "page": page, "page_count": len(names),
+                    "image_sha256": hashlib.sha256(data).hexdigest(),
+                    "delivery": "mcp_image_content", "visual_review": "pending",
+                    "powerpoint_verified": False}
+        return CallToolResult(content=[TextContent(type="text", text=json.dumps(metadata)),
+                                       ImageContent(type="image", data=base64.b64encode(data).decode(),
+                                                    mimeType="image/png")])
+
+    @tool(mcp, annotations=read, meta=meta)
+    def get_generation_report(job_id: str, *, ctx: Context) -> dict[str, Any]:
+        """Read output provenance and canonical-format verification, separately from visual review."""
+        job = store.job(current_owner(ctx), job_id)
+        if job["state"] != "completed":
+            raise StateError("JOB_NOT_COMPLETED")
+        output = json.loads(job["output"])
+        path = (store.root / output["pptx"]).with_suffix(".manifest.json")
+        if not path.resolve().is_relative_to(store.root.resolve()) or not path.exists():
+            raise StateError("GENERATION_REPORT_UNAVAILABLE_FOR_PATCH")
+        return json.loads(path.read_text())
 
     @tool(
         mcp, annotations=read, meta={**meta, "ui": {"resourceUri": "ui://research-slide-agent/viewer.html"}}

@@ -1,170 +1,104 @@
 # 書式テンプレートと発表内容ルール
 
-2026-10-16。Microsoft、python-pptx、OpenAI、Cloudflareの公式資料と現実装を照合した整理。
-提供された `slide_sample.pptx` から書式テンプレートを作成し、本文・箇条書き用の固定枠で生成する経路を追加した。
-手本PDFはユーザー提供のPowerPoint出力28ページへ差し替え済み。生成PPTXのXML修正と表示上の制約は [互換性の調査と運用](POWERPOINT_COMPATIBILITY.md) を参照。
-公開設定やMicrosoft PowerPoint上の実機確認はまだ行っていない。
+2026-10-17更新。ユーザー修正版「学会発表スケルトン.pptx」を書式の正本とする。
+優先順位は今回のユーザー指示、修正版、教授の文章ガイドライン、過去PDFからの推定。
+教授のガイドラインは目安であり、正本の中央揃えの表・最下段の黒罫線等を上書きしない。
 
-## 書式の定義
+## 正本と登録
 
-このプロジェクトでいう「スライドマスター」は、実用上は指定PPTXに含まれる
-**テーマ・スライドマスター・スライドレイアウトを合わせた書式テンプレート**を意味する。
-
-| PowerPointの要素 | 定義するもの |
-|---|---|
-| テーマ | テーマのフォント・配色・効果。位置や箇条書きの全設定はテーマだけでは決まらない |
-| スライドマスター | 共通背景・ロゴ・装飾、タイトル/本文などの基本文字スタイル |
-| スライドレイアウト | 表紙・本文・二段組などの種類ごとのプレースホルダー位置・寸法と書式 |
-| プレースホルダー内の段落スタイル | 階層ごとの文字サイズ・色・箇条書き記号・インデント・行間・段落間隔 |
-| 個別スライドの直接書式 | そのページだけの上書き。新規スライドへの共通継承は前提にできない |
-
-新規スライドはレイアウトに紐付き、レイアウトはマスターに紐付く。
-普通のテキストボックスを完成ページに置いただけでは、その位置や直接書式が新規スライドの規則になるとは限らない。
-プレースホルダーは「クリックしてタイトルを入力」などと表示される内容用の枠で、通常のテキストボックスと区別する。
-箇条書き記号を文字として手入力するだけでは、段落レベル・インデントの定義にならない。
-
-根拠: [Microsoft: レイアウト](https://support.microsoft.com/en-us/powerpoint/what-is-a-slide-layout)、
-[Microsoft: プレースホルダー](https://support.microsoft.com/en-us/powerpoint/add-edit-or-remove-a-placeholder-on-a-slide-layout)、
-[Microsoft: 箇条書き](https://support.microsoft.com/en-us/powerpoint/add-bullets-or-numbers-to-text)、
-[python-pptx: 継承とスライド追加](https://python-pptx.readthedocs.io/en/latest/user/slides.html)。
-
-## 用意する簡潔なPPTX
-
-既存の教授のPPTXを複製し、書式を維持したまま内容をダミー文に置き換える。
-新しい無地のファイルへ見た目だけを作り直す必要はない。
-
-1. デスクトップ版PowerPointの「表示 → スライドマスター」を開く。
-   最上段のマスターと、その下の使用するレイアウトを確認する。
-2. 共通の背景・装飾はマスターまたはレイアウトへ置く。
-   表紙、本文、二段組、図中心など、実際に使う種類の枠は各レイアウトで定義する。
-   使用するマスターは可能なら1つに整理する。元資料に複数ある場合は、勝手に消さず使用対象を示す。
-3. タイトル、本文、必要なら引用・キャプション用の枠を定義する。
-   位置と幅・高さだけでなく、枠内余白、縦位置、折返し、段落間隔も整える。
-   役割が分かるレイアウト名を付けると対応付けやすい。固定の名称や番号にする必要はない。
-4. 本文は使う階層ごとに、和文・欧文のフォント、文字サイズ・色、箇条書き記号とサイズ、
-   記号の位置、本文開始位置、折返し行の開始位置、行間・段落前後の間隔を設定する。
-   例えば第1～第3階層を使うなら、各階層を設定して見本を残す。
-5. 通常表示でレイアウトごとに見本を1枚ずつ残す。長い行の折返し、日本語と英数字、箇条書きの階層を確認できるダミー文を入れる。
-   引用や図のキャプションにも見本を入れる。マスターに載せにくい特殊な書式は見本ページに残して別途伝える。
-6. 同じレイアウトを使った新規スライドで、枠や箇条書きを手調整せず同じ書式になるか確認する。
-   複製ページは直接書式も引き継ぐため、この確認の代わりにはならない。
-7. `.pptx` として `templates/lab-template.pptx` に保存する。
-   PowerPointの再利用用テンプレート形式は `.potx` だが、現在のアプリに渡すファイルは `.pptx` とする。
-   マスターやレイアウトはPPTXにも含まれる。`.potx` の拡張子を変更するだけでは変換にならない。
-
-例として表紙・本文・本文＋図・二段組・まとめの3～5種類程度から始められる。
-枚数・種類・文字サイズの数値はユーザーのPPTXに従い、この文書で新たに指定しない。
-表・グラフ・図中ラベルの独自スタイルまで厳密に揃える場合は、その見本も含める。
-これらの全てが本文プレースホルダーから自動継承されると仮定しない。
-
-根拠: [Microsoft: マスターとレイアウトによるテンプレート作成](https://support.microsoft.com/en-us/powerpoint/create-and-save-a-powerpoint-template)。
-
-Mac・Windows・Piのプレビューで必要なフォントが利用できるかも確認する。
-PiのLibreOfficeプレビューは参考表示とし、最終PDFは正しく表示されるPowerPointから出力する。
-フォント名の指定だけでは別端末にフォントは追加されない。埋込み可能性はフォントによって異なり、
-PowerPointの埋込みがPiのLibreOfficeでそのまま使えるとは、この実装では確認していない。
-勝手に代替フォントへ変えず、利用できないものを報告する。
-根拠: [Microsoft: カスタムフォント](https://support.microsoft.com/en-us/office/fonts/download-and-install-custom-fonts-to-use-with-office)、
-[Microsoft: フォント埋込み](https://support.microsoft.com/en-gb/office/fonts/benefits-of-embedding-custom-fonts)。
-
-## 提供された見本からの抽出結果
-
-`scripts/prepare_lab_template.py` が `templates/lab-template.pptx` と `.profile.json` を作成する。
-原本のSHA-256を照合する、今回の見本専用の抽出レシピである。別資料へ無検証で流用しない。
-
-| layout_id | 用途 | 本文用の枠 |
-|---|---|---|
-| 5 | RSA 表紙 | title、key_message（発表者・所属等） |
-| 7 | RSA 本文 | key_message、body、citations |
-| 8 | RSA 本文と図 | key_message、body、visual、citations |
-| 9 | RSA 二段組 | key_message、body、body_right、citations |
-| 10 | RSA 図表 | key_message、visual、citations |
-
-原本はマスター2種類・レイアウト18種類を含む。全42ページが2つ目のマスターを使用していた。
-両マスターとテーマは元のXML・関係ファイルをバイト単位で保持する。
-表紙のレイアウトと、使用されていなかった4つのレイアウトを整理し、それ以外のレイアウトも保持する。
-このためマスターの見た目を描き直すことも、研究本文42ページを残すこともせず、約160 KBの5枚の見本にまとめられる。
-
-表紙はp.1のタイトル・所属欄・ブランド画像と元レイアウトの区切り線を利用する。
-本文の外側の範囲はp.3、本文・箇条書きはp.8、下位項目はp.28、引用はp.7から抽出する。
-表紙タイトル28 pt、通常タイトル24 pt、本文・第1階層18 pt、下位項目16 ptを利用する。
-引用欄は原本から取得した12 pt・行間130%と枠内余白に合わせ、一行を収められる高さを確保する。
-出典追跡は `.profile.json` に記録する。局所的な強調色や全ページの配置を一つの標準に潰したものではない。
-
-内容の違う発表に再利用するため、本文範囲内を要点・本文/図表・引用の固定枠に分けた。
-二段組の分割や要点/引用用の行の予約は生成用に正規化した部分で、原本の全ページが同じ配置だったという意味ではない。
-
-固定枠では位置・寸法・段落書式をPPTXから取得し、図表もvisual枠内へ配置する。
-Blockの `level`、`bullet`、`slot` で段落階層と左右の列を指定する。座標・フォントサイズは受け付けない。
-文字が収まらない場合は枠拡張や縮小を行わず停止する。従来の合成テンプレート用生成経路は別に維持する。
-本文・表紙の欧文/和文フォント、文字色、箇条書きと行間を固定枠に保持する。
-普通のテキストボックスを本文用プレースホルダーへ移す際は、元の文字色等も明示し、別のマスター既定値が混ざらないようにする。
-
-生成後はmaster/layout/themeの意味的変更を検知した上で元のXMLバイト列を維持する。
-図表のネイティブ構造・承認済み文字列・位置・重なりを検査するが、フォント代替やOffice間の描画差は実機確認が残る。
-ネイティブ図表の全ての装飾が見本中の全図表と完全一致するという保証ではない。
+`templates/lab-template.pptx` は修正版のバイト単位のコピーで、SHA-256は
+`5f699f70dfa52726c17f6438cee84ece404ec852926b023f334f1a903f1832b5`。
+`.profile.json` に各ページの役割、差し替え欄、段落とランの見本、固定要素を記録する。
+この2ファイルをGit・Dockerに同梱するため、原本ファイルを別途用意しなくても生成できる。
 
 ```bash
-uv run python scripts/prepare_lab_template.py
+uv run python scripts/prepare_skeleton_template.py --render-preview
 uv run python scripts/template_smoke.py
+uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs --render
+uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research --render
 ```
 
-後者は研究事実を含まない6枚の合成スライドを生成してPDF・PNGへ変換する。
-本物の研究発表の構成・内容承認を省略してよいという意味ではない。
+既定のコマンドは同梱済みの正本を検査・プレビューするため、元の添付ファイルを必要としない。
+新しい正本を登録するときは `--source /path/to/new-skeleton.pptx` を指定する。元ファイルやページの書式は変更しない。
+登録時に旧プレビューを削除し、`--render-preview`で現在の正本から`templates/lab-template.preview.pdf`を再生成する。
+対応する`.preview.json`に正本SHA・PDFのSHA・ページ数を記録する。
+`scripts/prepare_lab_template.py` は旧コマンド名を維持する薄い入口。42枚専用の抽出コードは削除済み。
+ルートの原本コピーは `reference_materials/local-inputs/` に保管し、実行用は `templates/` に一本化した。
+別の正本へ差し替えるときは対応欄と書式版をレビューし、profileを再生成する。SHAが一致しなければ生成を停止する。
 
-## 教授の明示ガイドラインとPDF由来のルール
+## 各ページの役割と固定要素
 
-- 教授の原文: `reference_materials/guidelines/professor-slide-guidelines-2025-12-02.txt`（Git管理）。
-- 教授の明示事項: `plugins/research-slide-agent/skills/research-slides/references/professor-guidelines.md`。
-- 原本: `reference_materials/content-pdfs/`。
-- 開発用Skill: `.agents/skills/update-presentation-rules/SKILL.md`。
-- 配布用ルール: `plugins/research-slide-agent/skills/research-slides/references/presentation-guidelines.md`。
+| 見本ページ | prototype_id | 差し替え対象 |
+|---|---|---|
+| 1 | cover | title、著者・所属 |
+| 2 | overview | 目的、方法、結果の内容、図・図題 |
+| 3 | background | 背景・動向の箇条書き |
+| 4 | related | 研究例と未解決の課題 |
+| 5 | objective | 研究目的、手段、根拠 |
+| 6 | method | 手法の名称、図・図題、特徴、説明 |
+| 7 | experiment | 実験目的、条件・手順、指標 |
+| 8 | results_figure | 結果図・図題、結果の要点 |
+| 9 | results_table | ネイティブ表の列見出しとセル、表の結果要点 |
+| 10 | discussion | 達成、解釈、制約 |
+| 11 | summary | 目的、方法、結果、今後の課題 |
 
-抽出済み `templates/lab-template.pptx` と `.profile.json`、ルールMarkdown、SkillはGit管理する。
-原本 `slide_sample.pptx`、手本PDF、生成プレビュー、テスト出力はGit管理しない。
-Dockerイメージには抽出済みPPTXと出典情報を同梱し、参考PDFや原本なしで生成できる。
-PDFからルールを更新する開発者は、別途原本PDFをこのフォルダへ配置する。
-PDFは手本としての説明順序、主張と根拠の対応、図表の説明方法などを学ぶ資料であり、
-新しい発表の実験結果を裏付ける資料として自動で引用しない。
+固定するものはロゴ、区切り線、背景・装飾、位置・寸法、余白、フォント、色、揃え、箇条書き、段落／行間、罫線。
+小見出しは文字だけ変更でき、省略した場合は正本のまま残る。未指定の内容欄は空にする。
+表紙の番号非表示を保持し、後続ページの番号フィールドは生成順に更新する。
 
-ユーザーの指定を優先し、教授の文章による明示事項を見本PDFからの推定より優先する。
-教授の「表紙直後の概要」は研究発表の制作指示として採用し、原文のp1～p22は固定枚数にしない。
-引用の ` [著者 '25]` とネイティブ表の罫線・塗りなし・数値右揃えは生成処理にも反映する。
-この変更でマスター・テーマ・レイアウトの書式は変更しない。指導教員による発表可の確認は、生成システムの構成・ページ承認とは別の人による確認事項。
-細かいグラフ装飾、動画編集、ソフト改行等の未対応部分は、明示ルールの実装状況に記録する。
+schema 1.1はページをレイアウトから作り直さず、見本ページのXMLと関係ファイルを複製する。
+共有のマスター・レイアウト・テーマ・ロゴはそのまま保持する。
+`prototype_paragraph`でその欄の段落見本を選び、`runs/style_run`で部分書式も選べる。
+改行はa:brの継続行で、段落を追加するときは配列要素を追加する。
+正本にはない全ページ共通の「要点」行を追加しない。
 
-開発時に `$update-presentation-rules` を呼ぶと、PDFと教授の原文資料の追加・変更を調べてルールを更新する。
-明示された必須指示と、手本から読み取った推奨を区別し、ファイル名・PDFページ・SHA-256で根拠を追跡する。
-単にルールを増やすのではなく、矛盾・重複・根拠の消失も見直す。
-Skillは更新手順であり、カレンダーやcronの定期実行は設定していない。
-根拠: [OpenAI: リポジトリ内のSkillと呼出方法](https://learn.chatgpt.com/docs/build-skills)。
+`research`モードは表紙→概要→背景→関連研究→目的→手法→実験方法→結果→考察→まとめを検査する。
+必要なページは複製できる（現在のジョブ上限40枚）。結果は図／表の片方でも両方でもよい。
+`general`モードは必要な見本だけ選び、研究発表に見せるための架空の研究内容を作らない。
 
-配布用ルールは既存の `research-slides` Skillから参照する。MCPサーバー単独ではMarkdownを自動で読み込まない。
-ルール変更を利用中のChatGPTへ反映する際には、配布パッケージの更新・再読込を確認する。
-既存プロジェクトや承認済み仕様を、ルール更新だけで自動的に書き換えない。
+## 表と図
 
-## 公開ホスト名
+表は見本9の3列（幅1847850/2143125/2143125 EMU）、見出し高329256、本文高538163 EMUを使う。
+見出し15pt、本文16pt・太字、中央揃え、枠内余白、塗りなし、黒罫線をそのまま保持する。
+本文1～3行に対応し、少ない行数では全体の高さだけを行高合計へ短くする。
+最後の本文行は必ず見本の最下段を複製する。多い行数はページ分割し、列数を変える入力は拒否する。
 
-Cloudflare Tunnelで、Pi上のサービスへ割り当てる外向きのドメイン名。
-例えば所有ドメインが `example.com` なら `slides.example.com` というサブドメインを割り当てる。
-これは例示であり実際のドメインは未設定。
+図は見本の枠内で、元の画像、または正本の枠とラベルを使う簡単な編集可能な配置図に対応する。
+配置図は最大4個のprocessノード。接続線・decision・独自強調を含む図は停止する。
+正本にグラフの直接書式の見本がないため、1.1ではchart_specを受け付けない。
+未対応の図やグラフを画像化して編集可能性を回避しない。
 
-| 項目 | 設定例 |
-|---|---|
-| TunnelのPublic hostname / 公開アプリのホスト名 | `slides.example.com` |
-| Tunnelの転送先Service | `http://localhost:8010` |
-| Dockerのホスト側公開ポート | `127.0.0.1:8010:8000` |
-| アプリのRSA_BASE_URL | `https://slides.example.com` |
-| ChatGPTへ登録するMCP接続URL | `https://slides.example.com/mcp` |
+## 検証と出力の識別
 
-前提は `cloudflared` がPiホストのサービスとして動く場合。
-`localhost:8010` はPiの内側の宛先、`slides.example.com` は外部からアクセスする名前。
-Tunnelの管理名・UUIDやPortainerのコンテナ名とは別。
-前回の実機確認ではPortainerがホストの8000番を使用しており、既存Stack例の8000番をそのまま使うと競合する。
-Compose/PortainerのStack定義は8010番へ変更済み。実際のStack配備とTunnelのルート追加はまだ行っていない。
+正本と仕様から許される差し替え後のXMLを再構成し、出力の各ページと比較する。
+表の存在だけで合格にせず、色・罫線・字形・文字サイズ・揃え・余白・行高・列幅・固定要素まで検査する。
+表の青塗り、最下段の罫線削除、サイズ変更等の改変試験で失敗を確認する。
 
-Cloudflareの管理画面で「Networking → Tunnels → 対象Tunnel → Routes」を開く。
-追加する場合は「Add route → Published application」でHostnameとService URLを設定する。
-既存の画面によりPublic Hostnames等の表記もある。ホスト名と転送先Serviceの組を確認する。
-根拠: [Cloudflare: ホスト名とサービスの対応](https://developers.cloudflare.com/tunnel/concepts/routing/)、
-[Cloudflare: 公開アプリのルート設定](https://developers.cloudflare.com/tunnel/get-started/#publish-an-application)。
+生成時のコミット、作業ツリー変更の有無、生成器ソースハッシュ、正本SHA、書式版、仕様版・digestを
+`.manifest.json`とPPTXのカスタムプロパティに記録する。
+ローカル未コミットの変更もソースハッシュで識別できる。Dockerはビルド引数RSA_CODE_COMMITを渡す。
+コード・正本が変わった出力と過去の出力を、見た目や同じファイル名だけで取り違えない。
+
+はみ出し判定はフォントと行間を使った保守的な見積りで、フォントの実描画測定ではない。
+はみ出し時に枠拡張や文字縮小は行わず、短縮／分割を求める。
+XML適合と画像確認は別で、生成直後のvisual_reviewはpending。
+
+`get_preview_image(job_id, page)`は所有権・有効期限・完了状態を検査し、PNGをMCPのimageブロックとして返す。
+モデルは全ページの画像を実際に確認して、必要なら短縮／分割後に再生成して確認する。
+`get_preview`のURL提示だけで画像確認済みと扱わない。
+ローカルStreamable HTTPで画像ブロック・PNGバイト列の取得をテストした。
+外部公開・デプロイと、リモートChatGPTクライアントでの画像表示受入は今回行っていない。
+
+LibreOfficeの描画は参考表示であり、游ゴシック等の代替が起こりうる。
+Microsoft PowerPoint実機での最終表示確認は未実施。手動パッチは正本検査済みの再生成とは区別する。
+
+## 内容ガイドラインの管理
+
+- 教授の原文: `reference_materials/guidelines/professor-slide-guidelines-2025-12-02.txt`。
+- 配布Skill: `plugins/research-slide-agent/skills/research-slides/SKILL.md`。
+- 入力手順: 同Skillの `references/canonical-skeleton.md`。
+- 教授の文章の整理: `references/professor-guidelines.md`。
+- 過去PDFの推定: `references/presentation-guidelines.md`。
+
+提供資料の根拠を新しい研究事実と取り違えない。教授の文章やPDFから内容ルールを更新する開発用Skillは
+`.agents/skills/update-presentation-rules/SKILL.md`。書式の正本をこの処理で勝手に変更しない。

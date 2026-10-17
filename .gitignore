@@ -7,7 +7,9 @@ var/
 .env
 .env.*
 !.env.example
-artifacts/
+/artifacts/*
+!/artifacts/README.md
 slide_sample.pptx
 tools/pptx-validator/bin/
 tools/pptx-validator/obj/
+学会発表スケルトン.pptx

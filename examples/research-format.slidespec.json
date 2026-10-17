@@ -1,0 +1,439 @@
+{
+  "schema_version": "1.1",
+  "purpose_mode": "research",
+  "presentation_id": "research-check",
+  "spec_version": 1,
+  "presentation_metadata": {
+    "title": "試験用の研究発表構成",
+    "audience": "書式確認者",
+    "purpose": "提供内容の再配置と書式検証。研究事実の主張ではない。",
+    "duration_minutes": 10
+  },
+  "slides": [
+    {
+      "prototype_id": "cover",
+      "title": "研究発表の書式検証",
+      "replacements": {
+        "著者": [
+          {
+            "prototype_paragraph": 0,
+            "runs": [
+              {
+                "text": "試験用サンプル・研究事実ではない",
+                "style_run": 0
+              }
+            ]
+          }
+        ]
+      },
+      "slide_id": "page1",
+      "slide_order": 1
+    },
+    {
+      "prototype_id": "overview",
+      "title": "概要",
+      "replacements": {
+        "目的の記入欄": [
+          {
+            "text": "正本の書式保持を確認する",
+            "prototype_paragraph": 0
+          }
+        ],
+        "方法の記入欄": [
+          {
+            "text": "見本ページを複製して差し替える",
+            "prototype_paragraph": 0
+          }
+        ],
+        "結果の記入欄": [
+          {
+            "text": "以下の数値はすべて試験用",
+            "prototype_paragraph": 0
+          }
+        ],
+        "図題": [
+          {
+            "text": "図1　書式検証の構成",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "diagram_spec": {
+        "kind": "comparison",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "input",
+            "text": "正本と試験用内容"
+          },
+          {
+            "id": "output",
+            "text": "編集可能なPPTX"
+          }
+        ]
+      },
+      "slide_id": "page2",
+      "slide_order": 2
+    },
+    {
+      "prototype_id": "background",
+      "title": "研究背景の記入例",
+      "replacements": {
+        "背景の箇条書き": [
+          {
+            "text": "このページは構成・書式の試験",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "下位項目の字下げを確認\n継続行も同じ位置に配置",
+            "prototype_paragraph": 1
+          }
+        ],
+        "動向の箇条書き": [
+          {
+            "text": "研究分野の動向は未入力",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "資料を受領してから記載する",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page3",
+      "slide_order": 3
+    },
+    {
+      "prototype_id": "background",
+      "title": "背景ページの複製例",
+      "replacements": {
+        "小見出し：社会的な問題・ニーズ": [
+          {
+            "text": "ページ分割の検証",
+            "prototype_paragraph": 0
+          }
+        ],
+        "背景の箇条書き": [
+          {
+            "text": "固定枠と文字サイズを保持",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "長い内容は別ページへ分ける",
+            "prototype_paragraph": 1
+          }
+        ],
+        "動向の箇条書き": [
+          {
+            "text": "11枚固定にしない動作の確認",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page4",
+      "slide_order": 4
+    },
+    {
+      "prototype_id": "related",
+      "title": "関連研究の記入例",
+      "replacements": {
+        "研究例": [
+          {
+            "text": "関連文献は未提供",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "著者・年・結果は推測しない",
+            "prototype_paragraph": 0
+          }
+        ],
+        "研究の課題": [
+          {
+            "text": "課題の内容は資料確認後に記載",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "本ページは書式の検証例",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page5",
+      "slide_order": 5
+    },
+    {
+      "prototype_id": "objective",
+      "title": "目的とアプローチの記入例",
+      "replacements": {
+        "研究目的": [
+          {
+            "text": "実研究の目的は未入力",
+            "prototype_paragraph": 0
+          }
+        ],
+        "手段": [
+          {
+            "text": "ここでは書式保持の処理を例示",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "青色の段落書式を正本から複製",
+            "prototype_paragraph": 1
+          }
+        ],
+        "根拠の記入例": [
+          {
+            "text": "文献の根拠は未提供",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page6",
+      "slide_order": 6
+    },
+    {
+      "prototype_id": "method",
+      "title": "提案手法の記入例",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "以下は生成処理の試験図",
+            "prototype_paragraph": 0
+          }
+        ],
+        "図題": [
+          {
+            "text": "図2　試験用の処理構成",
+            "prototype_paragraph": 0
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "元の書式",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "編集可能",
+            "prototype_paragraph": 0
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "研究手法は\n未入力",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "diagram_spec": {
+        "kind": "comparison",
+        "nodes": [
+          {
+            "id": "source",
+            "text": "見本"
+          },
+          {
+            "id": "result",
+            "text": "差し替え"
+          }
+        ]
+      },
+      "slide_id": "page7",
+      "slide_order": 7
+    },
+    {
+      "prototype_id": "experiment",
+      "title": "実験方法の記入例",
+      "replacements": {
+        "実験目的": [
+          {
+            "text": "実研究の実験目的は未入力",
+            "prototype_paragraph": 0
+          }
+        ],
+        "実験条件": [
+          {
+            "text": "参加者実験は実施していない",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "以降の数値は描画試験用",
+            "prototype_paragraph": 0
+          }
+        ],
+        "指標": [
+          {
+            "text": "書式検証用の仮の列見出しを使用",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page8",
+      "slide_order": 8
+    },
+    {
+      "prototype_id": "results_figure",
+      "title": "結果図の配置試験",
+      "replacements": {
+        "図題": [
+          {
+            "text": "図3　研究結果ではない配置確認図",
+            "prototype_paragraph": 0
+          }
+        ],
+        "結果の要点": [
+          {
+            "text": "研究上の効果を示す図ではない",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "diagram_spec": {
+        "kind": "comparison",
+        "nodes": [
+          {
+            "id": "a",
+            "text": "試験A"
+          },
+          {
+            "id": "b",
+            "text": "試験B"
+          },
+          {
+            "id": "c",
+            "text": "試験C"
+          }
+        ]
+      },
+      "slide_id": "page9",
+      "slide_order": 9
+    },
+    {
+      "prototype_id": "results_table",
+      "title": "試験用数値：1行の表",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "試験用数値。実験結果ではない",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "table_spec": {
+        "columns": [
+          "試験条件",
+          "仮指標A",
+          "仮指標B"
+        ],
+        "rows": [
+          [
+            "A",
+            "10.0",
+            "20.0"
+          ]
+        ]
+      },
+      "slide_id": "page10",
+      "slide_order": 10
+    },
+    {
+      "prototype_id": "results_table",
+      "title": "試験用数値：3行の表",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "試験用数値。統計的な意味はない",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "table_spec": {
+        "columns": [
+          "試験条件",
+          "仮指標A",
+          "仮指標B"
+        ],
+        "rows": [
+          [
+            "A",
+            "10.0",
+            "20.0"
+          ],
+          [
+            "B",
+            "11.0",
+            "21.0"
+          ],
+          [
+            "C",
+            "12.0",
+            "22.0"
+          ]
+        ]
+      },
+      "slide_id": "page11",
+      "slide_order": 11
+    },
+    {
+      "prototype_id": "discussion",
+      "title": "考察の記入例",
+      "replacements": {
+        "達成": [
+          {
+            "text": "この資料では書式だけを確認する",
+            "prototype_paragraph": 0
+          }
+        ],
+        "解釈": [
+          {
+            "text": "試験用数値の研究的な解釈はしない",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "関連研究との比較は未入力",
+            "prototype_paragraph": 0
+          }
+        ],
+        "制約": [
+          {
+            "text": "PowerPoint実機での確認は別途必要",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page12",
+      "slide_order": 12
+    },
+    {
+      "prototype_id": "summary",
+      "title": "まとめ",
+      "replacements": {
+        "まとめ：目的": [
+          {
+            "text": "実研究の目的は未入力",
+            "prototype_paragraph": 0
+          }
+        ],
+        "まとめ：方法": [
+          {
+            "text": "正本の見本ページを複製する",
+            "prototype_paragraph": 0
+          }
+        ],
+        "まとめ：結果": [
+          {
+            "text": "図表と文章の差し替えを試験する",
+            "prototype_paragraph": 0
+          }
+        ],
+        "まとめ：今後の課題": [
+          {
+            "text": "実研究の資料を受領して記入する",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page13",
+      "slide_order": 13
+    }
+  ]
+}

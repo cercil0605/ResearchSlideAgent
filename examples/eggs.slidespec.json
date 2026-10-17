@@ -1,89 +1,238 @@
 {
-  "schema_version": "1.0",
-  "presentation_id": "eggs-demo",
+  "schema_version": "1.1",
+  "purpose_mode": "general",
+  "presentation_id": "general-check",
   "spec_version": 1,
   "presentation_metadata": {
     "title": "美味しい卵の食べ方",
-    "audience": "毎日の卵料理を楽しみたい人",
-    "purpose": "目玉焼きと卵焼きを例に、食感と味付けで料理を選ぶ楽しさを伝える",
-    "duration_minutes": 3,
-    "language": "ja"
+    "audience": "書式確認者",
+    "purpose": "提供内容の再配置と書式検証。研究事実の主張ではない。",
+    "duration_minutes": 10
   },
   "slides": [
     {
-      "slide_id": "cover",
-      "slide_order": 1,
-      "layout_id": 5,
+      "prototype_id": "cover",
       "title": "美味しい卵の食べ方",
-      "key_message": "いつもの卵を、今日の楽しみに"
-    },
-    {
-      "slide_id": "enjoy",
-      "slide_order": 2,
-      "layout_id": 9,
-      "title": "卵料理は「食感」と「味」で選ぶ",
-      "key_message": "焼き方と味付けを変えて、自分の好みを見つけよう。",
-      "body_blocks": [
-        {"id": "texture", "text": "食感から選ぶ"},
-        {"id": "texture-options", "text": "ふっくら：蒸し焼き\n香ばしく：両面焼き", "level": 1, "bullet": true},
-        {"id": "taste", "text": "味から選ぶ", "slot": "body_right"},
-        {"id": "taste-options", "text": "塩・こしょう\n砂糖で甘めに", "level": 1, "bullet": true, "slot": "body_right"}
-      ]
-    },
-    {
-      "slide_id": "fried",
-      "slide_order": 3,
-      "layout_id": 10,
-      "title": "目玉焼き：焼き方で食感を変える",
-      "key_message": "ふっくら派なら蒸し焼き、香ばしさなら両面焼き。",
-      "table_spec": {
-        "columns": ["焼き方", "楽しめる食感", "主食の例"],
-        "rows": [
-          ["蒸し焼き", "ふっくら", "ご飯"],
-          ["両面焼き", "香ばしい", "トースト"]
+      "replacements": {
+        "著者": [
+          {
+            "prototype_paragraph": 0,
+            "runs": [
+              {
+                "text": "いつもの卵を、今日の楽しみに",
+                "style_run": 0
+              }
+            ]
+          }
         ]
       },
-      "source_references": [{"source_id": "kikkoman-fried-egg", "locator": "蒸し焼き・ターンオーバーの説明。主食の組合せは今回の提案"}],
-      "citations": [{"source": {"source_id": "kikkoman-fried-egg", "locator": "蒸し焼きの焼き方／ターンオーバー（両面焼き）の焼き方"}, "author": "キッコーマン", "year": 2024, "target_id": "table"}]
+      "slide_id": "page1",
+      "slide_order": 1
     },
     {
-      "slide_id": "rolled",
-      "slide_order": 4,
-      "layout_id": 8,
-      "title": "卵焼き：甘さと香りを楽しむ",
-      "key_message": "卵液を分けて焼き、少しずつ層を重ねる。",
-      "body_blocks": [
-        {"id": "seasoning", "text": "砂糖としょうゆで\n甘めの味付けに"},
-        {"id": "layers", "text": "卵液は数回に分ける", "level": 1, "bullet": true},
-        {"id": "shape", "text": "巻くたびに形を整える", "level": 1, "bullet": true}
+      "prototype_id": "background",
+      "title": "食感と味から卵料理を選ぶ",
+      "replacements": {
+        "小見出し：社会的な問題・ニーズ": [
+          {
+            "text": "食感から選ぶ",
+            "prototype_paragraph": 0
+          }
+        ],
+        "背景の箇条書き": [
+          {
+            "text": "ふっくら：蒸し焼き",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "香ばしく：両面焼き",
+            "prototype_paragraph": 1
+          }
+        ],
+        "小見出し：研究分野の動向": [
+          {
+            "text": "味から選ぶ",
+            "prototype_paragraph": 0
+          }
+        ],
+        "動向の箇条書き": [
+          {
+            "text": "塩・こしょう",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "砂糖で甘めに",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "slide_id": "page2",
+      "slide_order": 2
+    },
+    {
+      "prototype_id": "results_table",
+      "title": "目玉焼きの焼き方を選ぶ",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "食感に合わせて選ぶ [キッコーマン '24]",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
+      "table_spec": {
+        "columns": [
+          "焼き方",
+          "楽しめる食感",
+          "主食の例"
+        ],
+        "rows": [
+          [
+            "蒸し焼き",
+            "ふっくら",
+            "ご飯"
+          ],
+          [
+            "両面焼き",
+            "香ばしい",
+            "トースト"
+          ]
+        ]
+      },
+      "citations": [
+        {
+          "source": {
+            "source_id": "kikkoman-fried-egg",
+            "locator": "蒸し焼きの焼き方／ターンオーバー（両面焼き）の焼き方"
+          },
+          "author": "キッコーマン",
+          "year": 2024,
+          "target_id": "table"
+        }
       ],
+      "source_references": [
+        {
+          "source_id": "kikkoman-fried-egg",
+          "locator": "蒸し焼き・ターンオーバーの説明。主食の組合せは今回の提案"
+        }
+      ],
+      "slide_id": "page3",
+      "slide_order": 3
+    },
+    {
+      "prototype_id": "method",
+      "title": "卵焼きの層を重ねる",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "甘さと香りを楽しむ",
+            "prototype_paragraph": 0
+          }
+        ],
+        "図題": [
+          {
+            "text": "卵焼きの手順 [キッコーマン閲覧 '26]",
+            "prototype_paragraph": 0
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "味付け",
+            "prototype_paragraph": 0
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "砂糖",
+            "prototype_paragraph": 0
+          },
+          {
+            "text": "しょうゆ",
+            "prototype_paragraph": 0
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "卵液を分けて\n少しずつ巻く",
+            "prototype_paragraph": 0
+          }
+        ]
+      },
       "diagram_spec": {
         "kind": "flowchart",
         "direction": "vertical",
         "nodes": [
-          {"id": "beat", "text": "卵を溶く"},
-          {"id": "season", "text": "味をつける"},
-          {"id": "roll", "text": "分けて巻く", "emphasis": true}
-        ],
-        "edges": [{"source": "beat", "target": "season"}, {"source": "season", "target": "roll"}]
+          {
+            "id": "beat",
+            "text": "卵を溶く"
+          },
+          {
+            "id": "season",
+            "text": "味をつける"
+          },
+          {
+            "id": "roll",
+            "text": "分けて巻く"
+          }
+        ]
       },
-      "source_references": [{"source_id": "kikkoman-rolled-egg", "locator": "材料とつくり方。引用の2026は閲覧年"}],
-      "citations": [{"source": {"source_id": "kikkoman-rolled-egg", "locator": "基本の卵焼き／材料とつくり方"}, "author": "キッコーマン閲覧", "year": 2026, "target_id": "diagram"}]
+      "citations": [
+        {
+          "source": {
+            "source_id": "kikkoman-rolled-egg",
+            "locator": "基本の卵焼き／材料とつくり方"
+          },
+          "author": "キッコーマン閲覧",
+          "year": 2026,
+          "target_id": "diagram"
+        }
+      ],
+      "source_references": [
+        {
+          "source_id": "kikkoman-rolled-egg",
+          "locator": "材料とつくり方。引用の2026は閲覧年"
+        }
+      ],
+      "slide_id": "page4",
+      "slide_order": 4
     },
     {
-      "slide_id": "choose",
-      "slide_order": 5,
-      "layout_id": 10,
-      "title": "気分に合わせて、今日の一皿を選ぶ",
-      "key_message": "まず一皿。次は味付けを一つ変えてみよう。",
-      "table_spec": {
-        "columns": ["今日の気分", "料理", "ひと工夫"],
-        "rows": [
-          ["香ばしく", "目玉焼き", "両面を焼く"],
-          ["甘めに", "卵焼き", "砂糖を加える"],
-          ["シンプルに", "目玉焼き", "塩・こしょう"]
+      "prototype_id": "results_table",
+      "title": "今日の気分で一皿を選ぶ",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "次は味付けを一つ変えてみよう",
+            "prototype_paragraph": 0
+          }
         ]
-      }
+      },
+      "table_spec": {
+        "columns": [
+          "今日の気分",
+          "料理",
+          "ひと工夫"
+        ],
+        "rows": [
+          [
+            "香ばしく",
+            "目玉焼き",
+            "両面を焼く"
+          ],
+          [
+            "甘めに",
+            "卵焼き",
+            "砂糖を加える"
+          ],
+          [
+            "シンプルに",
+            "目玉焼き",
+            "塩・こしょう"
+          ]
+        ]
+      },
+      "slide_id": "page5",
+      "slide_order": 5
     }
   ]
 }

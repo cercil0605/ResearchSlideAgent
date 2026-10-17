@@ -325,6 +325,56 @@
       "title": "Node",
       "type": "object"
     },
+    "PrototypeParagraph": {
+      "additionalProperties": false,
+      "description": "Select an existing paragraph/run style; clients cannot supply formatting.",
+      "properties": {
+        "prototype_paragraph": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Prototype Paragraph",
+          "type": "integer"
+        },
+        "text": {
+          "default": "",
+          "maxLength": 1800,
+          "title": "Text",
+          "type": "string"
+        },
+        "runs": {
+          "items": {
+            "$ref": "#/$defs/PrototypeRun"
+          },
+          "maxItems": 40,
+          "title": "Runs",
+          "type": "array"
+        }
+      },
+      "title": "PrototypeParagraph",
+      "type": "object"
+    },
+    "PrototypeRun": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 1800,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "style_run": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Style Run",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "PrototypeRun",
+      "type": "object"
+    },
     "Series": {
       "additionalProperties": false,
       "properties": {
@@ -366,9 +416,32 @@
           "type": "integer"
         },
         "layout_id": {
+          "default": 0,
           "minimum": 0,
           "title": "Layout Id",
           "type": "integer"
+        },
+        "prototype_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prototype Id"
+        },
+        "replacements": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/PrototypeParagraph"
+            },
+            "type": "array"
+          },
+          "title": "Replacements",
+          "type": "object"
         },
         "title": {
           "maxLength": 180,
@@ -377,8 +450,8 @@
           "type": "string"
         },
         "key_message": {
+          "default": "",
           "maxLength": 400,
-          "minLength": 1,
           "title": "Key Message",
           "type": "string"
         },
@@ -450,9 +523,7 @@
       "required": [
         "slide_id",
         "slide_order",
-        "layout_id",
-        "title",
-        "key_message"
+        "title"
       ],
       "title": "Slide",
       "type": "object"
@@ -516,8 +587,11 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "1.0",
       "default": "1.0",
+      "enum": [
+        "1.0",
+        "1.1"
+      ],
       "title": "Schema Version",
       "type": "string"
     },
@@ -528,6 +602,15 @@
     "template_id": {
       "default": "lab",
       "title": "Template Id",
+      "type": "string"
+    },
+    "purpose_mode": {
+      "default": "research",
+      "enum": [
+        "research",
+        "general"
+      ],
+      "title": "Purpose Mode",
       "type": "string"
     },
     "spec_version": {

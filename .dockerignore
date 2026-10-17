@@ -4,6 +4,7 @@ var
 artifacts
 reference_materials
 slide_sample.pptx
+学会発表スケルトン.pptx
 templates/*
 !templates/lab-template.pptx
 !templates/lab-template.profile.json

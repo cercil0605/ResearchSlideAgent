@@ -6,6 +6,8 @@ COPY ui/ ./
 RUN npm run build
 
 FROM python:3.12-slim-bookworm
+ARG RSA_CODE_COMMIT=unknown
+ENV RSA_CODE_COMMIT=$RSA_CODE_COMMIT
 ENV OTEL_SDK_DISABLED=true PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 RSA_DATA_DIR=/data RSA_TEMPLATE=/templates/lab-template.pptx RSA_ENV=production UV_PROJECT_ENVIRONMENT=/opt/venv PATH="/opt/venv/bin:$PATH"
 RUN apt-get update && apt-get install -y --no-install-recommends libreoffice-impress poppler-utils fonts-noto-cjk fonts-crosextra-carlito fonts-liberation2 && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir uv==0.13.1

@@ -1,142 +1,1988 @@
 {
-  "source_sha256": "de2fe26ff1a007e2f72d9258563bc4554a408fc06ab5054c5fd0cd8835f1afc3",
-  "template_sha256": "27afc0bee21b487d3b18101a11862ab423b01c7f89db4c96bf1657369b8e714d",
-  "source_pages": {
-    "body_geometry": 3,
-    "body_styles": [
-      8,
-      28
-    ],
-    "citation_style": 7,
-    "cover": 1
-  },
-  "original_master_and_theme_preserved": true,
-  "normalized_layout_parts": [
-    "ppt/slideLayouts/slideLayout10.xml",
-    "ppt/slideLayouts/slideLayout11.xml",
-    "ppt/slideLayouts/slideLayout6.xml",
-    "ppt/slideLayouts/slideLayout8.xml",
-    "ppt/slideLayouts/slideLayout9.xml"
-  ],
-  "layouts": [
+  "engine": "prototype-clone-v1",
+  "style_version": "skeleton-2026-10-17.1",
+  "source_name": "学会発表スケルトン.pptx",
+  "source_sha256": "5f699f70dfa52726c17f6438cee84ece404ec852926b023f334f1a903f1832b5",
+  "template_sha256": "5f699f70dfa52726c17f6438cee84ece404ec852926b023f334f1a903f1832b5",
+  "prototypes": [
     {
-      "layout_id": 5,
-      "name": "RSA 表紙",
-      "source_page": 1
+      "prototype_id": "cover",
+      "source_page": 1,
+      "part": "ppt/slides/slide1.xml",
+      "title_slot": "発表題目",
+      "slots": [
+        {
+          "name": "発表題目",
+          "shape_id": 6,
+          "kind": "title",
+          "box": [
+            361950,
+            1219200,
+            6134100,
+            990600
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［発表題目］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"2600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "発表題目",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"2600\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"2600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［必要に応じて副題］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"2600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "必要に応じて副題",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"2600\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"2600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "著者",
+          "shape_id": 3,
+          "kind": "content",
+          "box": [
+            361950,
+            3181350,
+            6134100,
+            1396828
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［所属］　［著者名］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "所属",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" lang=\"ja-JP\" altLang=\"en-US\" sz=\"1800\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］　［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 3,
+                  "example": "著者名",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 4,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［所属］　［共著者名］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［所属］　［共著者名］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" lang=\"ja-JP\" altLang=\"en-US\" sz=\"1800\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "level": 0,
+              "example": "［所属］　［共著者名］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［所属］　［共著者名］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" lang=\"ja-JP\" altLang=\"en-US\" sz=\"1800\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "level": 0,
+              "example": "",
+              "runs": []
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "表紙の区切り線",
+        "グループ化 440"
+      ]
     },
     {
-      "layout_id": 7,
-      "name": "RSA 本文",
-      "slots": {
-        "key_message": [
-          271929,
-          709527,
-          5915025,
-          685800
-        ],
-        "body": [
-          271929,
-          1578207,
-          5915025,
-          2932357
-        ],
-        "citations": [
-          271929,
-          4693444,
-          5915025,
-          289561
-        ]
+      "prototype_id": "overview",
+      "source_page": 2,
+      "part": "ppt/slides/slide2.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "概要",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "概要",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：目的",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            885825,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "目的",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "目的",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "目的の記入欄",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            361950,
+            1266825,
+            3562350,
+            647700
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［解決したい課題と研究目的］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［解決したい課題と研究目的］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：方法",
+          "shape_id": 7,
+          "kind": "heading",
+          "box": [
+            361950,
+            2057400,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "方法",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "方法",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "方法の記入欄",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            2438400,
+            3562350,
+            647700
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［提案手法の名称と要点］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［提案手法の名称と要点］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：結果",
+          "shape_id": 9,
+          "kind": "heading",
+          "box": [
+            361950,
+            3228975,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "結果",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "結果",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "結果の記入欄",
+          "shape_id": 10,
+          "kind": "content",
+          "box": [
+            361950,
+            3609975,
+            3562350,
+            647700
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［得られた主要な結果］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［得られた主要な結果］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "図の記入欄",
+          "shape_id": 12,
+          "kind": "content",
+          "box": [
+            4314825,
+            2276475,
+            2066925,
+            495300
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［研究の全体像］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［研究の全体像］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1500\" b=\"0\"><a:solidFill><a:srgbClr val=\"6A6A6A\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "図題",
+          "shape_id": 13,
+          "kind": "content",
+          "box": [
+            4200525,
+            3943350,
+            2295525,
+            304800
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "図1　［研究の全体像］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "図1　［研究の全体像］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1200\" b=\"0\"><a:solidFill><a:srgbClr val=\"6A6A6A\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3",
+        "図の差し替え枠"
+      ],
+      "figure": {
+        "frame": "図の差し替え枠",
+        "label": "図の記入欄"
       }
     },
     {
-      "layout_id": 8,
-      "name": "RSA 本文と図",
-      "slots": {
-        "key_message": [
-          271929,
-          709527,
-          5915025,
-          685800
-        ],
-        "body": [
-          271929,
-          1578207,
-          2866072,
-          2932357
-        ],
-        "visual": [
-          3320881,
-          1578207,
-          2866072,
-          2932357
-        ],
-        "citations": [
-          271929,
-          4693444,
-          5915025,
-          289561
-        ]
+      "prototype_id": "background",
+      "source_page": 3,
+      "part": "ppt/slides/slide3.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "研究背景",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "研究背景",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：社会的な問題・ニーズ",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            895350,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "社会的な問題・ニーズ",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "社会的な問題・ニーズ",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "背景の箇条書き",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            361950,
+            1304925,
+            6115050,
+            1009650
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［解決が求められる問題］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［解決が求められる問題］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 1,
+              "example": "［問題の規模や重要性を示す事実］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［問題の規模や重要性を示す事実］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1500\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：研究分野の動向",
+          "shape_id": 7,
+          "kind": "heading",
+          "box": [
+            361950,
+            2647950,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "研究分野の動向",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "研究分野の動向",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "動向の箇条書き",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            3057525,
+            6115050,
+            1009650
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［この分野で進んでいる取り組み］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "この分野で進んでいる取り組み",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［現状では十分に解決できていない点］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "現状では十分に解決できていない点",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3"
+      ]
+    },
+    {
+      "prototype_id": "related",
+      "source_page": 4,
+      "part": "ppt/slides/slide4.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "関連研究と未解決の課題",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "関連研究と未解決の課題",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：既存研究",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            895350,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "既存研究",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "既存研究",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "研究例",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            361950,
+            1304925,
+            6115050,
+            1009650
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［関連研究Aの目的・手法］ [著者ら '25]",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［関連研究Aの目的・手法］ [著者ら '25]",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［関連研究Bの目的・手法］ [著者ら '24]",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［関連研究Bの目的・手法］ [著者ら '24]",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：未解決の課題",
+          "shape_id": 7,
+          "kind": "heading",
+          "box": [
+            361950,
+            2647950,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "未解決の課題",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "未解決の課題",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "研究の課題",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            3057525,
+            6115050,
+            1009650
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［既存研究で残っている問題］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［既存研究で残っている問題］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［本研究が取り組む範囲］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［本研究が取り組む範囲］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3"
+      ]
+    },
+    {
+      "prototype_id": "objective",
+      "source_page": 5,
+      "part": "ppt/slides/slide5.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "研究目的とアプローチ",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "研究目的とアプローチ",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：研究目的",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            895350,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "目的",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "目的",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "研究目的",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            361950,
+            1304925,
+            6115050,
+            685800
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［解決する社会的・技術的な課題］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［解決する社会的・技術的な課題］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：アプローチ",
+          "shape_id": 7,
+          "kind": "heading",
+          "box": [
+            361950,
+            2352675,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "アプローチ",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "アプローチ",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "手段",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            2762250,
+            6115050,
+            1009650
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［目的を達成するための方針］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［目的を達成するための方針］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［従来研究との違い・新規性］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［従来研究との違い・新規性］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"1F4E79\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "根拠の記入例",
+          "shape_id": 9,
+          "kind": "content",
+          "box": [
+            542925,
+            4114800,
+            5953125,
+            457200
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［方針の妥当性を支える知見］ [著者ら '25]",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［方針の妥当性を支える知見］ [著者ら '25]",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1400\" b=\"1\"><a:solidFill><a:srgbClr val=\"6A6A6A\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3"
+      ]
+    },
+    {
+      "prototype_id": "method",
+      "source_page": 6,
+      "part": "ppt/slides/slide6.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "提案手法",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "提案手法",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：［提案手法の名称］",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            895350,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［提案手法の名称］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "提案手法の名称",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "図の記入欄",
+          "shape_id": 7,
+          "kind": "content",
+          "box": [
+            476250,
+            2381250,
+            3790950,
+            495300
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［手法の概要図・構成図・写真］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［手法の概要図・構成図・写真］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1500\" b=\"0\"><a:solidFill><a:srgbClr val=\"6A6A6A\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "図題",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            4010025,
+            4019550,
+            266700
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "図2　［提案手法の概要］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "図2　［提案手法の概要］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1200\" b=\"0\"><a:solidFill><a:srgbClr val=\"6A6A6A\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：特徴",
+          "shape_id": 9,
+          "kind": "heading",
+          "box": [
+            4667250,
+            1438275,
+            1828800,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "特徴",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "特徴",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\"><a:solidFill><a:srgbClr val=\"1F4E79\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "手法の特徴",
+          "shape_id": 10,
+          "kind": "content",
+          "box": [
+            4667250,
+            1847850,
+            1828800,
+            990600
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［要素A］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［要素A］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［要素B］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［要素B］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "手法の説明",
+          "shape_id": 11,
+          "kind": "content",
+          "box": [
+            4667250,
+            3209925,
+            1828800,
+            704850
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［目的達成に",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［目的達成に",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1500\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "つながる理由］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "つながる理由］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1500\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3",
+        "図の差し替え枠"
+      ],
+      "figure": {
+        "frame": "図の差し替え枠",
+        "label": "図の記入欄"
       }
     },
     {
-      "layout_id": 9,
-      "name": "RSA 二段組",
-      "slots": {
-        "key_message": [
-          271929,
-          709527,
-          5915025,
-          685800
-        ],
-        "body": [
-          271929,
-          1578207,
-          2866072,
-          2932357
-        ],
-        "body_right": [
-          3320881,
-          1578207,
-          2866072,
-          2932357
-        ],
-        "citations": [
-          271929,
-          4693444,
-          5915025,
-          289561
-        ]
+      "prototype_id": "experiment",
+      "source_page": 7,
+      "part": "ppt/slides/slide7.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "実験方法",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "実験方法",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：実験目的",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            895350,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "実験目的",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "実験目的",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "実験目的",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            361950,
+            1304925,
+            6115050,
+            609600
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［提案手法について検証・確認する事項］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［提案手法について検証・確認する事項］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：実験条件・手順",
+          "shape_id": 7,
+          "kind": "heading",
+          "box": [
+            361950,
+            2143125,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "実験条件・手順",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "実験条件・手順",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "実験条件",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            2552700,
+            6115050,
+            971550
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［対象・参加者・使用データ］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［対象・参加者・使用データ］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［比較条件と実施手順］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［比較条件と実施手順］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：評価指標",
+          "shape_id": 9,
+          "kind": "heading",
+          "box": [
+            361950,
+            3790950,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "評価指標",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "評価指標",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "指標",
+          "shape_id": 10,
+          "kind": "content",
+          "box": [
+            361950,
+            4200525,
+            6115050,
+            590550
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［評価項目と、その指標を用いる理由］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［評価項目と、その指標を用いる理由］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3"
+      ]
+    },
+    {
+      "prototype_id": "results_figure",
+      "source_page": 8,
+      "part": "ppt/slides/slide8.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "実験結果：図",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "実験結果：図",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "図の記入欄",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            476250,
+            2114550,
+            5905500,
+            495300
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［グラフ・図を挿入］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［グラフ・図を挿入］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1500\" b=\"0\"><a:solidFill><a:srgbClr val=\"6A6A6A\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "図題",
+          "shape_id": 7,
+          "kind": "content",
+          "box": [
+            361950,
+            3829050,
+            6134100,
+            266700
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "図3　［評価指標と比較条件が分かる図題］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "図3　［評価指標と比較条件が分かる図題］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1200\" b=\"0\"><a:solidFill><a:srgbClr val=\"6A6A6A\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "結果の要点",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            4333875,
+            6134100,
+            571500
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［図から直接読み取れる主要な結果］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［図から直接読み取れる主要な結果］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3",
+        "図の差し替え枠"
+      ],
+      "figure": {
+        "frame": "図の差し替え枠",
+        "label": "図の記入欄"
       }
     },
     {
-      "layout_id": 10,
-      "name": "RSA 図表",
-      "slots": {
-        "key_message": [
-          271929,
-          709527,
-          5915025,
-          685800
+      "prototype_id": "results_table",
+      "source_page": 9,
+      "part": "ppt/slides/slide9.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "実験結果：表",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "実験結果：表",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "表の結果要点",
+          "shape_id": 7,
+          "kind": "content",
+          "box": [
+            361950,
+            4143375,
+            6134100,
+            609600
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［表から直接読み取れる主要な結果］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "表から直接読み取れる主要な結果",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3",
+        "表 5"
+      ],
+      "table": {
+        "name": "表 5",
+        "columns": 3,
+        "column_widths": [
+          1847850,
+          2143125,
+          2143125
         ],
-        "visual": [
-          271929,
-          1578207,
-          5915025,
-          2932357
+        "row_heights": [
+          329256,
+          538163,
+          538163,
+          538163
         ],
-        "citations": [
-          271929,
-          4693444,
-          5915025,
-          289561
-        ]
+        "max_body_rows": 3
       }
+    },
+    {
+      "prototype_id": "discussion",
+      "source_page": 10,
+      "part": "ppt/slides/slide10.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "考察",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "考察",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：達成できたこと",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            895350,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "達成できたこと",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "達成できたこと",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "達成",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            361950,
+            1304925,
+            6115050,
+            628650
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［結果に基づく研究目的の達成範囲］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［結果に基づく研究目的の達成範囲］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：結果の解釈",
+          "shape_id": 7,
+          "kind": "heading",
+          "box": [
+            361950,
+            2171700,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "結果の解釈",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "結果の解釈",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "解釈",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            2581275,
+            6115050,
+            1009650
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［結果が得られた理由と根拠］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "結果が得られた理由と根拠",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            },
+            {
+              "index": 1,
+              "level": 0,
+              "example": "［関連研究と一致する点・異なる点］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 1,
+                  "example": "関連研究と一致する点・異なる点",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                },
+                {
+                  "index": 2,
+                  "example": "］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\" dirty=\"0\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：制約・改善点",
+          "shape_id": 9,
+          "kind": "heading",
+          "box": [
+            361950,
+            3829050,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "制約・改善点",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "制約・改善点",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "制約",
+          "shape_id": 10,
+          "kind": "content",
+          "box": [
+            361950,
+            4238625,
+            6115050,
+            571500
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［適用できる範囲と残された課題］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［適用できる範囲と残された課題］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3"
+      ]
+    },
+    {
+      "prototype_id": "summary",
+      "source_page": 11,
+      "part": "ppt/slides/slide11.xml",
+      "title_slot": "タイトル 1",
+      "slots": [
+        {
+          "name": "タイトル 1",
+          "shape_id": 2,
+          "kind": "title",
+          "box": [
+            944724,
+            141480,
+            5832648,
+            432048
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "まとめ",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "まとめ",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" b=\"1\"><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：目的",
+          "shape_id": 5,
+          "kind": "heading",
+          "box": [
+            361950,
+            895350,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "目的",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "目的",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "まとめ：目的",
+          "shape_id": 6,
+          "kind": "content",
+          "box": [
+            361950,
+            1247775,
+            6115050,
+            581025
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［解決を目指した課題］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［解決を目指した課題］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：方法",
+          "shape_id": 7,
+          "kind": "heading",
+          "box": [
+            361950,
+            1857375,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "方法",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "方法",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "まとめ：方法",
+          "shape_id": 8,
+          "kind": "content",
+          "box": [
+            361950,
+            2209800,
+            6115050,
+            581025
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［提案手法の要点］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［提案手法の要点］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：結果",
+          "shape_id": 9,
+          "kind": "heading",
+          "box": [
+            361950,
+            2819400,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "結果",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "結果",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "まとめ：結果",
+          "shape_id": 10,
+          "kind": "content",
+          "box": [
+            361950,
+            3171825,
+            6115050,
+            581025
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［達成したこととその範囲］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［達成したこととその範囲］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "小見出し：今後の課題",
+          "shape_id": 11,
+          "kind": "heading",
+          "box": [
+            361950,
+            3781425,
+            6096000,
+            285750
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "今後の課題",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "今後の課題",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1800\" b=\"1\" dirty=\"0\" err=\"1\"><a:solidFill><a:schemeClr val=\"accent2\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "まとめ：今後の課題",
+          "shape_id": 12,
+          "kind": "content",
+          "box": [
+            361950,
+            4133850,
+            6115050,
+            581025
+          ],
+          "paragraphs": [
+            {
+              "index": 0,
+              "level": 0,
+              "example": "［残された課題と次の取り組み］",
+              "runs": [
+                {
+                  "index": 0,
+                  "example": "［残された課題と次の取り組み］",
+                  "style_xml": "<a:rPr xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" sz=\"1600\" b=\"1\"><a:solidFill><a:srgbClr val=\"000000\"/></a:solidFill><a:latin typeface=\"Yu Gothic\"/><a:ea typeface=\"Yu Gothic\"/><a:cs typeface=\"Yu Gothic\"/></a:rPr>"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "fixed_elements": [
+        "スライド番号プレースホルダー 3"
+      ]
     }
-  ],
-  "fonts": [
-    "Yu Gothic",
-    "Arial"
-  ],
-  "font_substitution_in_pi_preview": true,
-  "normalization": "Reserved a key-message row and citation row; split content bounds for reusable layouts."
+  ]
 }

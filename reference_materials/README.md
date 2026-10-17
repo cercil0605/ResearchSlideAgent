@@ -16,3 +16,13 @@ PowerPointで正しく表示されるMacまたはWindowsから、スライドを
 
 PPTXの書式テンプレートは `templates/lab-template.pptx`。PDFからテーマ・マスターを再構築しない。
 新規に生成したPPTXの最終PDFも、PowerPointで確認してから書き出す。手本PDFを差し替えるだけでは生成物の描画方式は変わらない。
+
+## ローカルの提供原本
+
+`local-inputs/` はGit・Docker対象外の保管場所。生成処理からは読み込まない。
+
+- `学会発表スケルトン.pptx`: ユーザーの提供原本。`templates/lab-template.pptx`と同一内容。
+- `eggs-original.pptx`: 比較に使った旧卵例。旧`artifacts/eggs/presentation.pptx`から内容を変えず移動。
+
+実行に必要なのは `templates/lab-template.pptx` と `.profile.json`。
+原本を残すのは受領時の資料の保管のためであり、サーバーの必須ファイルではない。

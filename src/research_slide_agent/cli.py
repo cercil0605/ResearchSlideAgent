@@ -7,7 +7,7 @@ def main():
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     demo = sub.add_parser("demo")
-    demo.add_argument("--template", type=Path, default=Path("examples/lab-template.pptx"))
+    demo.add_argument("--template", type=Path, default=Path("artifacts/synthetic-template.pptx"))
     demo.add_argument("--output", type=Path, default=Path("artifacts/demo.pptx"))
     demo.add_argument("--slides", type=int, default=5)
     demo.add_argument("--render", action="store_true")
@@ -35,7 +35,7 @@ def main():
     elif args.command == "schema":
         from .models import SlideSpec
 
-        path = Path("schemas/slidespec-1.0.json")
+        path = Path("schemas/slidespec.json")
         path.parent.mkdir(exist_ok=True)
         path.write_text(json.dumps(SlideSpec.model_json_schema(), ensure_ascii=False, indent=2) + "\n")
     elif args.command == "serve":

@@ -120,6 +120,14 @@ def contrast(a, b):
 
 
 def template_info(path: Path):
+    from .prototypes import profile_for
+
+    profile = profile_for(path)
+    if profile:
+        return {"template_id": "lab", "sha256": profile["template_sha256"],
+                "engine": profile["engine"], "style_version": profile["style_version"],
+                "schema_version": "1.1", "prototypes": profile["prototypes"],
+                "layouts": [], "generation": "clone canonical examples; replace selected text only"}
     prs = Presentation(path)
     layouts = []
     for i, layout in enumerate(layouts_of(prs)):
@@ -745,6 +753,12 @@ def _generate_once(
 
 
 def generate(template: Path, spec: SlideSpec, output: Path, images: dict[str, Path] | None = None):
+    from .prototypes import generate_prototypes, profile_for
+
+    if profile_for(template) or spec.schema_version == "1.1":
+        return generate_prototypes(template, spec, output, images)
+    if template.resolve() == output.resolve():
+        raise LayoutError("Original template must not be overwritten")
     # Only enlarge available text/node boxes. Approved content and font sizes stay unchanged.
     for repair in range(3):
         try:
@@ -776,8 +790,12 @@ def inspect_pptx(path: Path):
     return result
 
 
-def verify(template, output, spec, manifest):
+def verify(template, output, spec, manifest, images=None):
     """Hard structural checks. Rendering and heuristic text fit have separate reports."""
+    from .prototypes import verify_prototypes
+
+    if spec.schema_version == "1.1":
+        return verify_prototypes(template, output, spec, manifest, images)
     issues = []
     with zipfile.ZipFile(template) as src, zipfile.ZipFile(output) as dst:
         for name in src.namelist():

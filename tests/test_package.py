@@ -17,4 +17,4 @@ def test_official_plugin_schemas():
 
 
 def test_slidespec_schema_is_current():
-    assert json.loads((ROOT / "schemas/slidespec-1.0.json").read_text()) == SlideSpec.model_json_schema()
+    assert json.loads((ROOT / "schemas/slidespec.json").read_text()) == SlideSpec.model_json_schema()
