@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir uv==0.13.1
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY src/ ./src/
+COPY plugins/research-slide-agent/skills/research-slides/references/ ./plugins/research-slide-agent/skills/research-slides/references/
 COPY --from=ui /build/src/research_slide_agent/static/viewer.html ./src/research_slide_agent/static/viewer.html
 RUN uv sync --frozen --no-dev --no-editable && useradd --uid 10001 --create-home app && mkdir /data /templates && chown app:app /data /templates
 COPY templates/lab-template.pptx templates/lab-template.profile.json /templates/

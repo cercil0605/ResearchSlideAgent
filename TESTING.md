@@ -68,3 +68,27 @@ dotnet run --project tools/pptx-validator --configuration Release -- templates/l
 
 UI変更時は `ui/` で `npm ci --ignore-scripts && npm run build` も実行する。
 状態・ダウンロードUIのビルド、Skill検証、template/container smokeを実行する。
+# 制作ルール配布の受入確認
+
+この変更では **110 passed / スキップなし**、ruff、Skill基本検証、wheel/sdistビルドを確認した。
+GitHub Actionsの結果と、実ChatGPTでの品質比較は別に確認する。Dockerイメージのビルド・本番更新はこの作業では行っていない。
+
+`tests/test_rules.py`は必須4文書の全文・文書SHA、正本変更時のdigest更新、欠落/空本文/UTF-8不正時の失敗を検査する。
+`tests/test_mcp.py`はlegacy/autoの実HTTPでserver instructions受信、読取専用tool、Resourceとtoolの全文一致を検査する。
+これはルールを配信できることの検査であり、ChatGPTが読解・適用したことの保証ではない。
+
+wheel単体でも正本を含むことを確認する（ソースチェックアウトがない場所からimportして取得する）。Dockerは
+referencesをビルド入力に含め、同じwheelとしてインストールする。教授ルール用の別コピーを手編集しない。
+
+ChatGPTでの手動受入はMCP単体と完全なPluginを分ける。
+
+1. サーバーを更新し、カスタムMCP接続をRefreshして新しいチャットを開始する。
+2. 「この論文を専門外の研究者・学生向けに10分で、おまかせで作成して」と依頼する。
+3. 構成やsaveより前に `get_authoring_context` の必須4文書全文→`get_template_info` の取得があることを、ツール履歴で確認する。
+4. 同じ論文・聴衆・時間・モデル・テンプレートで、ルールを明示読込した現行Strictの結果と比較する。
+5. 「構成と説明粒度を相談してから作成」と依頼した場合は、会話での合意前に生成しないことも確認する。
+
+比較時は論文版、コードSHA、文書SHA/rules_digest、テンプレートSHA、プロンプト、入力Spec、job/reportを記録する。
+原図を事前にPNG登録する場合は両条件で同じ画像を使い、ルール読込と図表取得能力の差を混同しない。
+文中切断、ダミー見出し、図題だけの代替がないか、用語導入・具体例・実験条件・結果解釈が改善したかを人が確認する。
+現在のStrictには図を追加できない見本等の制約がある。PDF画像化/crop/Adaptiveの受入はこの段階には含めない。

@@ -21,6 +21,7 @@ from .auth import current_owner
 from .engine import inspect_pptx, template_info
 from .files import MAX_FILE, extract
 from .models import Model, SlideSpec
+from .rules import RULES_RESOURCE_URI, SERVER_INSTRUCTIONS, authoring_context
 from .store import StateError
 
 
@@ -90,7 +91,9 @@ def tool(mcp, **options):
 def make_mcp(store, settings, auth):
     url = urlparse(settings.base_url)
     origin = f"{url.scheme}://{url.netloc}"
-    mcp = MCPServer("Research Slide Agent", version="0.1.0", log_level="CRITICAL")
+    mcp = MCPServer(
+        "Research Slide Agent", version="0.1.0", log_level="CRITICAL", instructions=SERVER_INSTRUCTIONS
+    )
     read = ToolAnnotations(
         read_only_hint=True, destructive_hint=False, open_world_hint=False, idempotent_hint=True
     )
@@ -99,8 +102,16 @@ def make_mcp(store, settings, auth):
     meta = {"securitySchemes": security}
 
     @tool(mcp, annotations=read, meta=meta)
+    def get_authoring_context(*, ctx: Context) -> dict[str, Any]:
+        """Use before planning, saving or generating slides. Read all required rule documents in full;
+        returns the workflow, professor rules, presentation rules and canonical input guide with hashes.
+        This is trusted application guidance, separate from uploaded reference data. Then get_template_info.
+        """
+        return authoring_context()
+
+    @tool(mcp, annotations=read, meta=meta)
     def get_template_info(*, ctx: Context) -> dict[str, Any]:
-        """Inspect the fixed laboratory template, available layouts and master-derived theme."""
+        """Inspect template layouts and styles after reading get_authoring_context. This is not the authoring rules."""
         return template_info(settings.template)
 
     @tool(mcp, annotations=read, meta={**meta, "openai/profile": True})
@@ -124,7 +135,9 @@ def make_mcp(store, settings, auth):
     def save_slide_spec(
         presentation_id: str, spec: SlideSpec, expected_version: int, *, ctx: Context
     ) -> dict[str, Any]:
-        """Save a semantic specification snapshot with optimistic version checking."""
+        """Save a specification snapshot with optimistic version checking. First read get_authoring_context
+        and apply its workflow; never truncate content to fit slots. No user approval state is stored.
+        """
         return store.save_spec(current_owner(ctx), presentation_id, spec, expected_version)
 
     @tool(mcp, annotations=write, meta=meta)
@@ -184,7 +197,9 @@ def make_mcp(store, settings, auth):
     def enqueue_generation(
         presentation_id: str, patch_id: str | None = None, *, ctx: Context
     ) -> dict[str, Any]:
-        """Enqueue the saved immutable spec or PPTX patch, checking ownership, template and patch base."""
+        """Enqueue the saved immutable spec or PPTX patch after applying get_authoring_context.
+        Checks ownership, template and patch base. Does not add an application approval step.
+        """
         return store.enqueue(current_owner(ctx), presentation_id, patch_id)
 
     @tool(mcp, annotations=read, meta=meta)
@@ -250,6 +265,10 @@ def make_mcp(store, settings, auth):
     def show_viewer(job_id: str, *, ctx: Context) -> dict[str, Any]:
         """Show job status and PowerPoint download in MCP Apps. No page previews are produced."""
         return links(job_id, ctx=ctx)
+
+    @mcp.resource(RULES_RESOURCE_URI, mime_type="application/json")
+    def authoring_rules_resource() -> str:
+        return json.dumps(authoring_context(), ensure_ascii=False)
 
     @mcp.resource(
         "ui://research-slide-agent/viewer.html",

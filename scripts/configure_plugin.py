@@ -1,4 +1,4 @@
-"""Configure only this repository's plugin; no account settings or secrets are changed."""
+"""Configure package connections only; does not install/publish skills or change account settings."""
 
 import argparse
 import json

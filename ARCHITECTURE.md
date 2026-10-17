@@ -18,11 +18,19 @@ APIと生成ワーカーは同一Piの共有Docker volumeを使い、SQLite WAL�
 | store.py | 所有権、7日期限、仕様スナップショット、キュー、lease、削除 |
 | auth.py | トークン検証、署名済み一時URL、ブラウザセッション、MCPリクエスト認証 |
 | server.py | MCPツール/リソース、公式ファイルパラメーター、ダウンロードURL・生成レポート |
+| rules.py | Skillの正本referencesを読込、全文・文書SHA・bundle digestをMCP tool/Resourceへ提供 |
 | app.py | HTTP入口、ログイン、資料登録、成果物配信 |
 | worker.py | ジョブ実行、構造検査、失敗分類、3試行上限、定期削除 |
 | ui/ | React/TypeScript、標準MCP Apps SDK、状態・再実行・ダウンロード |
 
 ## 仕様と生成
+
+MCP単体接続はGitHubのSkillを自動配布しないため、server instructionsから `get_authoring_context` へ誘導する。
+同ツールと `research-slides://authoring-context` Resourceは同じloaderを使い、必須4文書を全文返す。
+正本は配布Skillのreferences。開発時は正本を直接読み、wheelにはHatch force-include、Dockerにはそのビルド入力を含める。
+文書欠落時は取得を失敗させる。hashは版の監査用で、モデルの読解・遵守の保証やジョブ承認には使わない。
+完全なPluginのSkillは取得手順を教える入口とし、接続中はサーバー返却版を適用する。
+Autonomous/CollaborativeはChatGPTの制作手順で区別し、生成キュー・DB・SlideSpecへ承認状態を追加しない。
 
 既定の正本は修正版スケルトンの同一バイトコピー。SlideSpec 1.1のprototype_idで見本ページを選び、
 replacementsで段落とランの見本を選択する。位置・色・字形は正本に固定され、入力で任意指定できない。
