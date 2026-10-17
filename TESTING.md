@@ -22,7 +22,7 @@
 - ARM64コンテナ内で合成データを使い、MCP→browser cookie/CSRF付き2段階承認→worker→全頁preview→PPTXダウンロードを通し検証。
 - ARM64 Linux/Python 3.12のDocker build。非root・read-only・network noneで5枚生成と全頁LibreOffice/Poppler previewを実行。
 
-pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piでの全体実行は45件成功（うち1件はローカル原本がある場合の実見本試験）。Starlette TestClient依存内のanyio BlockingPortalに関するDeprecationWarningが1件あります。
+pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piでの全体実行は49件成功（うち1件はローカル原本がある場合の実見本試験）。Starlette TestClient依存内のanyio BlockingPortalに関するDeprecationWarningが1件あります。
 
 ## 教授の見本を用いたPi実機検証
 
@@ -63,6 +63,17 @@ pytestの最新件数と結果は `artifacts/test-results.txt` を参照。Piで
 - 回帰テストを追加し、既存のグラフ3種類のテストを拡張。全45件成功。CIでもMicrosoft SDKによる検証を必須にした。これはOffice実機での無警告・描画一致の確認とは別。
 - ユーザーの新PDFは28ページ、4,623,928 bytes、SHA-256 `b9547268fc0a86d077de6514bdcee3dd3701491be6a12f03851b72dcff179d16`。CreatorがPowerPoint、ProducerがmacOS Quartzで、游ゴシック等のサブセット埋め込みを確認。全28ページの本文・画像を確認し、内容ルール12項目のIDと根拠ページを維持して参照元を更新。
 - LibreOffice出力には `fidelity: approximate` と `powerpoint_verified: false` を付け、ローカルビューアーでも参考表示を明示。最終PDFは正しく表示されるPowerPointから書き出す運用とする。詳細は [互換性調査](docs/POWERPOINT_COMPATIBILITY.md)。
+
+## 教授の文章ガイドラインの取り込み
+
+- 2025-12-02更新の提供テキストを `reference_materials/guidelines/` に原文のまま保存。19,270 bytes、SHA-256 `65a51981aa99ffd2867f665858d9c33986c7b1c784950a33d33fd0b21482451e`。
+- 明示事項を19項目に整理し、必須・目安・推奨・条件付き指示を区別。研究発表の表紙直後の概要を採用し、例示のp1～p22を固定枚数にはしない。
+- 旧引用表記を教授指定の ` [著者 '25]` に変更し、内部の4桁年と著者情報は保持。複数引用間の空白も統一。
+- ネイティブ表を塗りなし・見出し上下の黒罫線・本文の白罫線・文字左/数値右へ変更。数値の丸めや並替を行わない。本文・図形・表のテキスト自動調整はオフを明示。
+- 引用の3ケースと表のネイティブ構造・罫線・数値保持・左右揃えの回帰試験を追加。全49件成功。両Skillの公式quick_validate成功。
+- テンプレート・卵デモ・図表デモをMicrosoft Open XML SDKで検証し、全て0件。テンプレートはダミー引用文字列のみ更新し、マスター・テーマ・レイアウトは維持。
+- Dockerイメージを更新し、表・引用を反映した5枚のPPTXと全頁PDF/PNGを確認。`artifacts/eggs-guidelines/` はこの2点の見本で、研究発表用の全指示への自動適合を示すものではない。
+- 動画編集、グラフの直接ラベル等の未対応機能、PowerPointでの最終仕上げ、人による発表練習・発表可の確認は別途必要として記録。
 
 ## 再実行
 

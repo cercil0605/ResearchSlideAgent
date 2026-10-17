@@ -6,7 +6,7 @@
 | source_id | 参照資料 | 年の扱い |
 |---|---|---|
 | kikkoman-fried-egg | [キッコーマン：目玉焼きの基本のつくり方](https://www.kikkoman.co.jp/homecook/tsushin/tips0066/) | 公開2024-09-03、更新2024-09-18 |
-| kikkoman-rolled-egg | [キッコーマン：基本の卵焼き](https://www.kikkoman.co.jp/homecook/search/recipe/00004002/) | 発行年は未確認。スライド上の「キッコーマン閲覧，2026」は閲覧年を示す |
+| kikkoman-rolled-egg | [キッコーマン：基本の卵焼き](https://www.kikkoman.co.jp/homecook/search/recipe/00004002/) | 発行年は未確認。スライド上の ` [キッコーマン閲覧 '26]` は閲覧年を示す |
 
 目玉焼きの蒸し焼き・両面焼きによる食感の違いと、砂糖・しょうゆを使い卵液を分けて巻く卵焼きの基本を参照した。
 ご飯・トーストとの組合せ、気分から料理を選ぶ表、説明の順序は今回のデモ向けの提案。

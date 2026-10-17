@@ -1,5 +1,10 @@
 # 手本PDFの管理
 
+教授の文章による指示は `guidelines/professor-slide-guidelines-2025-12-02.txt` に原文のまま保存する。
+更新日2025-12-02、SHA-256 `65a51981aa99ffd2867f665858d9c33986c7b1c784950a33d33fd0b21482451e`。
+原文テキストは約19 KBなのでGit管理し、配布用の要約は `professor-guidelines.md` としてPluginに含める。
+ユーザー指示・教授の明示事項・PDFからの推奨を区別して管理する。
+
 `content-pdfs/slide_sample.pdf` は2026-10-16にユーザーが差し替えた、PowerPoint出力の28ページを正本とする。
 SHA-256: `b9547268fc0a86d077de6514bdcee3dd3701491be6a12f03851b72dcff179d16`。
 PDF本体はGit対象外。ルールと根拠の追跡情報をGit管理する。

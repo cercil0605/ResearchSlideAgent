@@ -32,6 +32,11 @@ changesの要素:
 
 SlideSpec全体は `schemas/slidespec-1.0.json` と `artifacts/demo.spec.json` を参照。座標は入力しない。出力専用のapproval_statusを入力に混ぜると拒否する。references/citationsはプロジェクトの登録済みsource_idを要求。著者・年はユーザー登録値と一致させる。引用の意味的妥当性は人が承認する。
 
+引用の可視表記は教授指定の ` [著者 '25]`（半角スペース＋半角角括弧＋ASCIIアポストロフィ＋年下2桁）。
+入力と保存データの `year` は4桁のまま保持する。「ら」はauthorに含まれる場合だけ表示し、推測して補わない。
+ネイティブ表は塗りなし、見出し上下の黒罫線、本文の白罫線、文字左揃え・数値文字列右揃えで生成する。
+表示書式の変更時にも、承認済み数値の丸め・並替は行わない。
+
 ## HTTP
 
 `get_template_info.layouts` のlayout_idは全マスターのレイアウトを順に並べたファイル全体のIDです。

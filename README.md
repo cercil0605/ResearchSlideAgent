@@ -61,6 +61,8 @@ Inspectorで **Streamable HTTP**、URL `http://127.0.0.1:8000/mcp` を指定し�
 教授のPPTXの準備方法とPDF由来ルールの運用は [書式テンプレートと発表内容ルール](docs/TEMPLATE_AND_CONTENT_RULES.md) を参照。
 抽出済み実マスター `templates/lab-template.pptx` と出典情報 `.profile.json` はGit管理し、Dockerイメージに同梱します。内容・構成の手本PDFは `reference_materials/content-pdfs/` に置き、原本PPTX・PDF・生成プレビューはGitとDockerビルド対象から除外します。
 開発時は `$update-presentation-rules` でPDF由来のルールを更新できます。書式はテーマ・マスター・レイアウトを正本とし、内容ルールと分けます。
+教授の文章による [明示ガイドライン](plugins/research-slide-agent/skills/research-slides/references/professor-guidelines.md) も取り込み済みです。
+原文は `reference_materials/guidelines/` で管理し、明示事項をPDFからの推定より優先します。引用表記と表の生成書式にも反映しています。
 実見本から5種類のレイアウトを抽出済みです。サーバーの既定テンプレートは `templates/lab-template.pptx`。
 `uv run python scripts/prepare_lab_template.py` で原本から再作成し、`uv run python scripts/template_smoke.py` で6枚の合成スライドとPDFを検証できます。
 固定枠・和文/欧文の書式・箇条書き階層を使う生成経路を追加しました。Office実機の書式受入は別途必要です。

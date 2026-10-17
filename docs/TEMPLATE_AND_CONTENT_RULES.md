@@ -112,8 +112,10 @@ uv run python scripts/template_smoke.py
 後者は研究事実を含まない6枚の合成スライドを生成してPDF・PNGへ変換する。
 本物の研究発表の構成・内容承認を省略してよいという意味ではない。
 
-## PDF由来の内容・構成ルール
+## 教授の明示ガイドラインとPDF由来のルール
 
+- 教授の原文: `reference_materials/guidelines/professor-slide-guidelines-2025-12-02.txt`（Git管理）。
+- 教授の明示事項: `plugins/research-slide-agent/skills/research-slides/references/professor-guidelines.md`。
 - 原本: `reference_materials/content-pdfs/`。
 - 開発用Skill: `.agents/skills/update-presentation-rules/SKILL.md`。
 - 配布用ルール: `plugins/research-slide-agent/skills/research-slides/references/presentation-guidelines.md`。
@@ -125,7 +127,13 @@ PDFからルールを更新する開発者は、別途原本PDFをこのフォ�
 PDFは手本としての説明順序、主張と根拠の対応、図表の説明方法などを学ぶ資料であり、
 新しい発表の実験結果を裏付ける資料として自動で引用しない。
 
-開発時に `$update-presentation-rules` を呼ぶと、PDFの追加・変更を調べてルールを更新する。
+ユーザーの指定を優先し、教授の文章による明示事項を見本PDFからの推定より優先する。
+教授の「表紙直後の概要」は研究発表の制作指示として採用し、原文のp1～p22は固定枚数にしない。
+引用の ` [著者 '25]` とネイティブ表の罫線・塗りなし・数値右揃えは生成処理にも反映する。
+この変更でマスター・テーマ・レイアウトの書式は変更しない。指導教員による発表可の確認は、生成システムの構成・ページ承認とは別の人による確認事項。
+細かいグラフ装飾、動画編集、ソフト改行等の未対応部分は、明示ルールの実装状況に記録する。
+
+開発時に `$update-presentation-rules` を呼ぶと、PDFと教授の原文資料の追加・変更を調べてルールを更新する。
 明示された必須指示と、手本から読み取った推奨を区別し、ファイル名・PDFページ・SHA-256で根拠を追跡する。
 単にルールを増やすのではなく、矛盾・重複・根拠の消失も見直す。
 Skillは更新手順であり、カレンダーやcronの定期実行は設定していない。

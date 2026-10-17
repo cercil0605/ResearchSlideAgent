@@ -2,9 +2,10 @@ import zipfile
 
 import pytest
 from pptx import Presentation
+from pptx.enum.text import MSO_AUTO_SIZE, PP_ALIGN
 
 from research_slide_agent.engine import LayoutError, generate, inspect_pptx, patch_text, render
-from research_slide_agent.models import Chart, Diagram
+from research_slide_agent.models import Chart, Citation, Diagram, SourceRef, Table
 from research_slide_agent.sample import sample_spec
 
 
@@ -73,6 +74,43 @@ def test_40_slides(settings, tmp_path):
     assert len(Presentation(output).slides) == 40
 
 
+@pytest.mark.parametrize(
+    "author,year,label",
+    [("小林ら", 2013, " [小林ら '13]"), ("Kobayashi", 2005, " [Kobayashi '05]"), ("著者", 2000, " [著者 '00]")],
+)
+def test_professor_citation_format_keeps_full_year(author, year, label):
+    citation = Citation(source=SourceRef(source_id="fixture", locator="page 1"), author=author, year=year, target_id="key_message")
+    assert citation.label == label
+    assert citation.model_dump()["year"] == year
+
+
+def test_professor_table_rules_keep_values_and_native_cells(settings, tmp_path):
+    spec = sample_spec(count=1)
+    spec.slides[0].body_blocks = []
+    data = Table(columns=["項目", "数値"], rows=[["A", "1,234.50"], ["B", "−0.20"], ["C", "未測定"]])
+    spec.slides[0].table_spec = data
+    output = tmp_path / "table-rules.pptx"
+    generate(settings.template, spec, output)
+    table = next(s.table for s in Presentation(output).slides[0].shapes if s.has_table)
+    assert [[c.text for c in row.cells] for row in table.rows] == [data.columns, *data.rows]
+    widths = set()
+    for row in table.rows:
+        for cell in row.cells:
+            assert cell.text_frame.auto_size == MSO_AUTO_SIZE.NONE
+            assert cell._tc.xpath("./a:tcPr/a:noFill")
+            assert cell._tc.xpath("./a:tcPr/a:lnL/a:noFill")
+            assert cell._tc.xpath("./a:tcPr/a:lnR/a:noFill")
+            widths.update(cell._tc.xpath("./a:tcPr/*[starts-with(local-name(), 'ln')]/@w"))
+    assert len(widths) == 1 and int(next(iter(widths))) > 0
+    assert table.cell(0, 0)._tc.xpath("./a:tcPr/a:lnT/a:solidFill/a:srgbClr/@val") == ["000000"]
+    assert table.cell(0, 0)._tc.xpath("./a:tcPr/a:lnB/a:solidFill/a:srgbClr/@val") == ["000000"]
+    assert table.cell(2, 0)._tc.xpath("./a:tcPr/a:lnT/a:solidFill/a:srgbClr/@val") == ["FFFFFF"]
+    assert table.cell(1, 0).text_frame.paragraphs[0].alignment == PP_ALIGN.LEFT
+    assert table.cell(1, 1).text_frame.paragraphs[0].alignment == PP_ALIGN.RIGHT
+    assert table.cell(2, 1).text_frame.paragraphs[0].alignment == PP_ALIGN.RIGHT
+    assert table.cell(3, 1).text_frame.paragraphs[0].alignment == PP_ALIGN.LEFT
+
+
 def test_partial_edit_preserves_unselected_parts(settings, tmp_path):
     original = tmp_path / "manual.pptx"
     generate(settings.template, sample_spec(), original)
@@ -138,8 +176,6 @@ def test_safe_layout_repair_keeps_approved_text(settings, tmp_path):
 
 
 def test_citations_stay_native_and_near_target(settings, tmp_path):
-    from research_slide_agent.models import Citation, SourceRef
-
     spec = sample_spec(count=1)
     ref = SourceRef(source_id="uploaded-fixture", locator="page 2")
     slide = spec.slides[0]
@@ -151,5 +187,5 @@ def test_citations_stay_native_and_near_target(settings, tmp_path):
     shapes = list(Presentation(output).slides[0].shapes)
     citation = next(s for s in shapes if s.name.startswith("rsa:citation:"))
     block = next(s for s in shapes if s.name.startswith("rsa:block:"))
-    assert citation.text == "［試験資料，2026］"
+    assert citation.text == " [試験資料 '26]"
     assert abs(citation.top - (block.top + block.height)) < 100

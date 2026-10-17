@@ -21,7 +21,7 @@ from pptx.chart.data import CategoryChartData, XyChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_CONNECTOR, PP_PLACEHOLDER
-from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
+from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE, PP_ALIGN
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Inches, Pt
 
@@ -241,6 +241,7 @@ def text_box(slide, name, text, box, theme, size=None, fill=None, center=False):
     shape = slide.shapes.add_textbox(box.x, box.y, box.w, box.h)
     shape.name = name
     tf = shape.text_frame
+    tf.auto_size = MSO_AUTO_SIZE.NONE
     tf.word_wrap = True
     tf.margin_left = tf.margin_right = Pt(6)
     tf.margin_top = tf.margin_bottom = Pt(4)
@@ -323,6 +324,7 @@ def diagram_shapes(slide, diagram, box, theme, repair=0):
         shape.fill.fore_color.rgb = RGBColor.from_string(fill)
         shape.line.color.rgb = RGBColor.from_string(theme.colors["accent1"])
         shape.text = node.text
+        shape.text_frame.auto_size = MSO_AUTO_SIZE.NONE
         shape.text_frame.word_wrap = True
         shape.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
         fg = max([theme.colors["dk1"], theme.colors["lt1"]], key=lambda c: contrast(c, fill))
@@ -371,6 +373,7 @@ def native_table(slide, data, box, theme):
             cell = table.cell(r, c)
             check_fit(value, Box(0, 0, box.w // len(row), box.h // len(rows)), theme.body_size)
             cell.text = value
+            cell.text_frame.auto_size = MSO_AUTO_SIZE.NONE
             cell.fill.background()
             # Explicit cell borders override the default PowerPoint table style.
             # Keep white row separators rather than removing their spacing.
@@ -709,7 +712,7 @@ def _generate_once(
             text_box(
                 slide,
                 f"rsa:citation:{target}",
-                " ".join(dict.fromkeys(labels)),
+                "".join(dict.fromkeys(labels)),
                 Box(cb.x, cb.y + cb.h, cb.w, int(cite_h)),
                 theme,
                 14,

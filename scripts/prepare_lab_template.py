@@ -319,7 +319,7 @@ def extract(source, output):
             elif role == "visual":
                 write_slot(p, original, [("編集可能な図表の配置領域", 0, False)])
             elif role == "citations":
-                write_slot(p, original, [("［著者，年］（引用位置の見本）", 0, False)])
+                write_slot(p, original, [(" [著者 '25]（引用位置の見本）", 0, False)])
             elif role == "key_message":
                 write_slot(p, original, examples[0])
         slide.notes_slide.notes_text_frame.text = "書式確認用ダミー。研究内容・実験値は含まない。"
