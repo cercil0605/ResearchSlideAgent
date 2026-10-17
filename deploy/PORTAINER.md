@@ -55,6 +55,27 @@ workerは起動時/毎時、作成7日後のプロジェクトを削除。`rsa c
 
 ## 更新・ロールバック
 
+### ラズパイから直接更新する構成（Portainer APIキー不要）
+
+`scripts/deploy_poll.py`は既存の`gh`ログインとDockerのGHCR認証を使い、
+CIが公開した`deploy/production`の`compose.yaml`を取得する。
+`.env.cloudflare`に認証設定が揃った場合だけ、イメージをpullし、APIとworkerを停止して
+同じコミットSHAのイメージで起動する。取得に失敗した場合は既存コンテナを停止しない。
+設定が未完了の場合は不足する変数名だけを表示して終了する。
+
+このPi用の`research-slide-agent-update.service`と`.timer`を`/etc/systemd/system/`へ配置して
+`sudo systemctl enable --now research-slide-agent-update.timer`で有効にすると、
+起動2分後と、前回処理の終了から5分ごとに確認する。
+serviceは`User=kei`、repoの場所と認証ファイルの場所もこのPiに合わせている。
+別ホストではこれらを変更する。Dockerへのアクセス権が必要。
+
+手動確認は`sudo systemctl start research-slide-agent-update.service`、
+結果は`journalctl -u research-slide-agent-update.service`で確認する。
+停止する場合は`sudo systemctl disable --now research-slide-agent-update.timer`。
+この方式ではPortainerがStackの作成元ではないため、コンテナの状態はPortainerで確認できるが、
+Composeと環境変数の変更はこのrepoと`.env.cloudflare`で管理する。
+`var/deploy/`に適用したComposeと状態を保存する。認証情報はGitHubへ送らない。
+
 ### CIと連携した定期確認
 
 `main`のCIはテストとARM64/AMD64イメージの公開に成功すると、`deploy/production`ブランチの
