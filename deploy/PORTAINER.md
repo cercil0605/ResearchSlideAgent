@@ -61,6 +61,12 @@ workerは起動時/毎時、作成7日後のプロジェクトを削除。`rsa c
 CIが公開した`deploy/production`の`compose.yaml`を取得する。
 `.env.cloudflare`に認証設定が揃った場合だけ、イメージをpullし、APIとworkerを停止して
 同じコミットSHAのイメージで起動する。取得に失敗した場合は既存コンテナを停止しない。
+起動後はGitHub Deployments APIへ`production`環境の成功状態をすぐ登録するため、
+GitHubリポジトリのDeployments画面でPiが稼働させたコミットSHAを確認できる。
+報告に失敗した場合は`var/deploy/github-pending.json`へ保持し、次の5分ごとの実行で再送する。
+GitHub API認証にはPi上の`.env.deploy`にある`RSA_DEPLOY_GITHUB_TOKEN`を使う。
+このtokenには対象repoのContents読み取りとDeployments書き込み権限が必要。tokenはコンテナへ渡さず、
+Pi上の更新スクリプトだけが読み取る。既に稼働中の版も初回実行時に報告する。
 設定が未完了の場合は不足する変数名だけを表示して終了する。
 
 このPi用の`research-slide-agent-update.service`と`.timer`を`/etc/systemd/system/`へ配置して
