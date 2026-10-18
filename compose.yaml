@@ -1,6 +1,6 @@
 name: research-slide-agent
 x-runtime: &runtime
-  image: ghcr.io/cercil0605/researchslideagent:7b0544ef693957c9c95734597c3db704b6ed0dfb
+  image: ghcr.io/cercil0605/researchslideagent:56286001ba12a4823866dcb848583a483b79b5bd
   restart: unless-stopped
   init: true
   user: "10001:10001"
@@ -29,7 +29,7 @@ x-runtime: &runtime
     RSA_WEB_CLIENT_ID: ${RSA_WEB_CLIENT_ID:-research-slide-web}
     RSA_ALLOWED_SUBS: ${RSA_ALLOWED_SUBS:-}
     RSA_SESSION_KEY: ${RSA_SESSION_KEY:?Set 32+ random characters}
-    RSA_ATTACHMENT_HOSTS: ${RSA_ATTACHMENT_HOSTS:-}
+    RSA_ATTACHMENT_HOSTS: ${RSA_ATTACHMENT_HOSTS-*.oaiusercontent.com}
     RSA_WORKER_LIMIT: "1"
   logging:
     driver: none
