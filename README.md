@@ -2,7 +2,7 @@
 
 研究室の既存マスターを維持し、編集可能な研究発表PPTXを生成するPython/MCPアプリです。追加のLLM APIは呼びません。意味的な構成・文章は接続先LLMが作り、サーバーが配置と生成を管理します。
 
-**修正版スケルトンを正本にしてページを複製し、内容を差し替えます。PPTX生成と構造検査の成功でcompletedとなり、ダウンロードリンクを返します。承認・プレビュー・モデルによる画像確認は不要です。Cloudflare Access／外部OAuth、リモートChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。** 詳細は [TESTING.md](TESTING.md)。
+**修正版スケルトンを正本にしてページを複製し、内容を差し替えます。PPTX生成と構造検査でcompletedとなり、要求時に完成画像・参考PDFを返します。作成側LLMが画像を確認して仕上げ、ユーザーへの中間承認は追加しません。Cloudflare Access／外部OAuth、リモートChatGPT内UI、Microsoft PowerPointでの受入試験は未実施です。** 詳細は [TESTING.md](TESTING.md)。
 
 Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDKによる検証をCIへ追加しました。
 正しいフォントと表を保つ最終PDFはPowerPointから書き出してください。
@@ -83,8 +83,9 @@ Inspectorで **Streamable HTTP**、URL `http://127.0.0.1:8000/mcp` を指定し�
 
 正本はユーザー修正版「学会発表スケルトン.pptx」。同一バイトのコピーを `templates/lab-template.pptx` として同梱しています。
 マスターだけでなく見本ページ全体を複製し、直接書式・段落・表を保持します。
-仕様はSlideSpec 1.1。`get_template_info.prototypes` から役割と差し替え欄を選びます。
-研究発表は表紙→概要→背景→関連研究→目的→手法→実験→結果→考察→まとめを維持し、必要なページを複製できます。
+新規制作はSlideSpec 1.2。`section`で説明上の役割、`part`で本編・補足、`prototype_id`で表示見本を選びます。
+研究各節を含みつつ、導入の具体例、実験説明後の指標図、複数実験、まとめ後の補足を置けます。
+method（図と本文）、results_figure（大きい図）、overview（本文3群とキー図）を各節で再利用できます。
 
 優先順位はユーザー指示、修正版、教授のガイドライン、過去PDFの推定です。
 表は修正版の中央揃え・最下段黒罫線・見出し／本文の行高と文字書式を保持し、少ない行数でも引き伸ばしません。
@@ -94,18 +95,21 @@ Inspectorで **Streamable HTTP**、URL `http://127.0.0.1:8000/mcp` を指定し�
 uv run python scripts/prepare_skeleton_template.py
 uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
 uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research
+uv run python scripts/render_spec.py examples/narrative.slidespec.json --output artifacts/narrative --render
 ```
 
 正本とprofileはGit管理してDockerに同梱するため、生成時に元の添付ファイルは不要です。
 元の「学会発表スケルトン.pptx」と旧卵例は、内容を変えず `reference_materials/local-inputs/` へ保管しています（Git対象外）。
 新しいスケルトンを登録する場合だけ `--source /path/to/new-skeleton.pptx` を指定します。
 `RSA_TEMPLATE`で変更する場合は対応するprofileも指定先に置き、サーバーとワーカーで同じ正本を使います。
-旧schema 1.0と合成テンプレートは従来試験用に保持しますが、新しい正本では1.1を要求します。
+旧1.1は見本順の検査とともに維持し、1.0と合成テンプレートも互換試験用に保持します。正本は1.1/1.2に対応します。
 詳細なページ対応・入力・制約は [書式テンプレートと発表内容ルール](docs/TEMPLATE_AND_CONTENT_RULES.md)。
 
 `get_generation_report`でコードコミット・ソースハッシュ・正本SHA・仕様版と書式検査を取得できます。
 `get_job` はcompleted時に期限付き `download_url` を返します。
-プレビューの生成・表示・モデルによる画像確認は行いません。構造検査はPowerPoint実機での表示確認を意味しません。
+`get_slide_preview`は要求時に完成画像を返し、overview=trueなら最大6頁の一覧、falseなら個別頁です。
+同じPPTXはキャッシュを再利用し、描画後の`get_preview.pdf_url`から参考PDFも取得できます。
+描画は近似表示です。構造検査や画像の取得だけを、読解やPowerPoint実機の表示確認の合格と扱いません。
 
 ## ChatGPTとPlugin
 
@@ -204,7 +208,7 @@ Compose/Portainerは `RSA_ATTACHMENT_HOSTS` が未設定なら `*.oaiusercontent
 
 - 1ジョブの技術上限は40枚（推奨枚数ではない）。必要な説明が超える場合は省略せず制約を明示する。アップロード資料10件＋派生画像80件、各20 MiB、両者合計100 MiB。ユーザー同時ジョブ1、研究室実行上限2。
 - PDF/PPTX/PNG/JPEG/UTF-8 CSV/XLSX。資料抽出は1回24,000文字まで。画像PDFのOCRは未対応。
-- 正本の1.1経路は、3列・本文最大3行のネイティブ表、簡単な配置図、元画像に対応します。旧1.0経路のグラフ等は合成デモ・互換性試験用です。
+- 正本の1.1/1.2経路は、3列・本文最大3行のネイティブ表、ノードと接続線の説明図、元画像に対応します。旧1.0経路のグラフ等は合成デモ・互換性試験用です。
 - 部分修正は、明示フォントを持つ単純なトップレベルのテキスト図形のみ。複数ラン・グループ・SmartArt・表/グラフの部分更新は停止する。
 - 再生成は正本の見本ページを複製します。手動編集を維持したいときは再アップロードと部分修正を使います。
 - 文字幅検査は保守的な推定。図形接続・領域・重なり・引用・元データ・保存した本文の構造検査を行いますが、図の意味や描画品質を完全自動判定しません。

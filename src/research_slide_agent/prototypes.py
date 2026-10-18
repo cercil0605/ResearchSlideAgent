@@ -21,6 +21,7 @@ from lxml import etree as E
 from pptx import Presentation
 
 from .models import PrototypeParagraph
+from .rules import authoring_context
 
 NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -63,6 +64,40 @@ def profile_for(template):
     if profile["template_sha256"] != sha(template.read_bytes()):
         raise ValueError("TEMPLATE_HASH_MISMATCH: prepare the canonical template profile again")
     return profile
+
+
+def authoring_feedback(template, spec):
+    """Expose inherited headings and actual visual capacity; do not claim semantic review."""
+    profile = profile_for(template)
+    if not profile:
+        raise ValueError("Canonical schemas require the canonical template profile")
+    entries = {entry["prototype_id"]: entry for entry in profile["prototypes"]}
+    presentation = Presentation(template)
+    pages, warnings = [], []
+    for item in sorted(spec.slides, key=lambda s: s.slide_order):
+        entry = entries.get(item.prototype_id)
+        if entry is None:
+            raise ValueError("Unknown prototype_id")
+        visual = bool(item.diagram_spec or item.table_spec or item.image_references)
+        page = {"slide_id": item.slide_id, "page": item.slide_order, "section": item.section,
+                "part": item.part, "prototype_id": item.prototype_id, "has_visual": visual,
+                "inherited_headings": [
+                    {"slot": s["name"], "text": " ".join(p["example"] for p in s["paragraphs"])}
+                    for s in entry["slots"] if s["kind"] == "heading" and s["name"] not in item.replacements
+                ]}
+        if "figure" in entry:
+            frame = next(s for s in presentation.slides[entry["source_page"] - 1].shapes
+                         if s.name == entry["figure"]["frame"])
+            page["visual_frame_inches"] = [round(frame.width / 914400, 2), round(frame.height / 914400, 2)]
+        if item.section != "cover" and not visual:
+            warnings.append({"slide_id": item.slide_id, "code": "MISSING_EXPLANATORY_VISUAL",
+                             "guidance": "Use a compatible visual prototype and a meaningful explanation, not decoration."})
+        if (item.diagram_spec or item.image_references) and "figure" not in entry:
+            warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
+                             "guidance": "Select method, results_figure or overview while keeping section unchanged."})
+        pages.append(page)
+    return {"pages": pages, "warnings": warnings, "content_review": "not_performed",
+            "visual_review": "not_performed"}
 
 
 def prepare(source, output):
@@ -481,7 +516,8 @@ def provenance(template, spec):
     return {"code_commit": commit, "working_tree_dirty": dirty, "generator_source_sha256": source_hash,
             "template_sha256": sha(template.read_bytes()), "style_version": STYLE_VERSION,
             "schema_version": spec.schema_version, "spec_version": spec.spec_version,
-            "spec_digest": spec.digest(), "engine": ENGINE}
+            "spec_digest": spec.digest(), "engine": ENGINE,
+            "rules_digest": authoring_context()["rules_digest"]}
 
 
 def _custom_properties(value):
@@ -500,8 +536,8 @@ def generate_prototypes(template, spec, output, images=None):
     if template.resolve() == output.resolve():
         raise LayoutError("Original template must not be overwritten")
     profile = profile_for(template)
-    if not profile or spec.schema_version != "1.1":
-        raise LayoutError("Canonical template requires SlideSpec 1.1 prototype_id/replacements")
+    if not profile or spec.schema_version not in {"1.1", "1.2"}:
+        raise LayoutError("Canonical template requires SlideSpec 1.1 or 1.2 prototype_id/replacements")
     entries = {e["prototype_id"]: e for e in profile["prototypes"]}
     prs = Presentation(template)
     info = provenance(template, spec)
@@ -550,6 +586,7 @@ def generate_prototypes(template, spec, output, images=None):
             E.SubElement(types, f"{{{NS['ct']}}}Override", PartName="/" + part,
                          ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml")
             manifest["slides"].append({"slide_id": item.slide_id, "prototype_id": item.prototype_id,
+                                       "section": item.section, "presentation_part": item.part,
                                        "source_page": entry["source_page"], "part": "/" + part})
         parts["ppt/presentation.xml"] = dump(presentation)
         parts["ppt/_rels/presentation.xml.rels"] = dump(rels)

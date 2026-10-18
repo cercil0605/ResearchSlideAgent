@@ -33,7 +33,8 @@ jobs:
       - name: Validate PowerPoint XML with the Microsoft SDK
         run: |
           uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
-          dotnet run --project tools/pptx-validator --configuration Release -- templates/lab-template.pptx artifacts/template-check/presentation.pptx artifacts/canonical-eggs/presentation.pptx
+          uv run python scripts/preview_smoke.py
+          dotnet run --project tools/pptx-validator --configuration Release -- templates/lab-template.pptx artifacts/template-check/presentation.pptx artifacts/canonical-eggs/presentation.pptx artifacts/narrative-check/presentation.pptx
   image:
     if: github.event_name != 'pull_request'
     needs: test

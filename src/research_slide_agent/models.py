@@ -137,6 +137,11 @@ class Slide(Model):
     slide_order: int = Field(ge=1, le=40)
     layout_id: int = Field(default=0, ge=0)
     prototype_id: str | None = None
+    section: Literal[
+        "cover", "overview", "example", "background", "related", "objective", "method",
+        "experiment", "metric", "results", "discussion", "summary",
+    ] | None = None
+    part: Literal["main", "appendix"] = "main"
     replacements: dict[str, list[PrototypeParagraph]] = Field(default_factory=dict)
     title: str = Field(min_length=1, max_length=180)
     key_message: str = Field(default="", max_length=400)
@@ -188,7 +193,7 @@ class Metadata(Model):
 
 
 class SlideSpec(Model):
-    schema_version: Literal["1.0", "1.1"] = "1.0"
+    schema_version: Literal["1.0", "1.1", "1.2"] = "1.0"
     presentation_id: str
     template_id: str = "lab"
     purpose_mode: Literal["research", "general"] = "research"
@@ -202,10 +207,35 @@ class SlideSpec(Model):
             raise ValueError("Duplicate slide ID")
         if sorted(s.slide_order for s in self.slides) != list(range(1, len(self.slides) + 1)):
             raise ValueError("Slide order must be contiguous from 1")
-        if self.schema_version == "1.1":
+        if self.schema_version != "1.2" and any(s.section is not None or s.part != "main" for s in self.slides):
+            raise ValueError("section/part require schema_version 1.2")
+        if self.schema_version in {"1.1", "1.2"}:
             if any(not s.prototype_id or s.key_message or s.body_blocks or s.chart_spec for s in self.slides):
-                raise ValueError("1.1 requires prototype_id/replacements; legacy common slots and unsampled charts are unsupported")
-            if self.purpose_mode == "research":
+                raise ValueError("Canonical schemas require prototype_id/replacements; legacy common slots and unsampled charts are unsupported")
+            if self.schema_version == "1.2":
+                ordered = sorted(self.slides, key=lambda s: s.slide_order)
+                if any(s.section is None for s in ordered):
+                    raise ValueError("1.2 requires a section independent of prototype_id on every page")
+                if any((s.section == "cover") != (s.prototype_id == "cover") for s in ordered):
+                    raise ValueError("Cover sections use the cover prototype, which is reserved for covers")
+                if any(a.part == "appendix" and b.part == "main" for a, b in zip(ordered, ordered[1:])):
+                    raise ValueError("Appendices must follow the main presentation")
+                if self.purpose_mode == "research":
+                    main = [s.section for s in ordered if s.part == "main"]
+                    required = {"cover", "overview", "background", "related", "objective", "method",
+                                "experiment", "results", "discussion", "summary"}
+                    if not required.issubset(main):
+                        raise ValueError("Research main presentation needs all research sections")
+                    if not any(s.section == "results" and s.part == "main" and
+                               (s.diagram_spec or s.table_spec or s.image_references) for s in ordered):
+                        raise ValueError("Research main presentation needs a result figure or table")
+                    if main[:2] != ["cover", "overview"] or main.count("cover") != 1 or main.count("overview") != 1:
+                        raise ValueError("Research main presentation starts with one cover and one overview")
+                    if main[-1] != "summary":
+                        raise ValueError("Research main presentation must end with a summary before appendices")
+                    if any(s.section in {"cover", "overview"} for s in ordered if s.part == "appendix"):
+                        raise ValueError("Appendices cannot contain a cover or overview")
+            elif self.purpose_mode == "research":
                 order = [s.prototype_id for s in sorted(self.slides, key=lambda s: s.slide_order)]
                 ranks = {name: i for i, name in enumerate([
                     "cover", "overview", "background", "related", "objective", "method", "experiment",
@@ -223,7 +253,7 @@ class SlideSpec(Model):
                 if order.count("cover") != 1 or order.count("overview") != 1:
                     raise ValueError("Research mode needs one cover followed by one overview")
         elif any(s.prototype_id or s.replacements for s in self.slides):
-            raise ValueError("Prototype inputs require schema_version 1.1")
+            raise ValueError("Prototype inputs require schema_version 1.1 or 1.2")
         return self
 
     def digest(self) -> str:

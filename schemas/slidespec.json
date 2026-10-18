@@ -433,6 +433,41 @@
           "default": null,
           "title": "Prototype Id"
         },
+        "section": {
+          "anyOf": [
+            {
+              "enum": [
+                "cover",
+                "overview",
+                "example",
+                "background",
+                "related",
+                "objective",
+                "method",
+                "experiment",
+                "metric",
+                "results",
+                "discussion",
+                "summary"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "part": {
+          "default": "main",
+          "enum": [
+            "main",
+            "appendix"
+          ],
+          "title": "Part",
+          "type": "string"
+        },
         "replacements": {
           "additionalProperties": {
             "items": {
@@ -590,7 +625,8 @@
       "default": "1.0",
       "enum": [
         "1.0",
-        "1.1"
+        "1.1",
+        "1.2"
       ],
       "title": "Schema Version",
       "type": "string"

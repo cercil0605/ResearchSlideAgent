@@ -18,6 +18,7 @@ from starlette.routing import Mount, Route
 from .auth import SCOPE, Auth, AuthError, AuthMiddleware
 from .config import Settings
 from .files import MAX_FILE, InputError
+from .previews import preview_files
 from .server import make_mcp
 from .store import StateError, Store
 
@@ -283,7 +284,11 @@ finally{{button.disabled=false;}}}};"""
             path = store.root / output["pptx"]
             filename = "research-slides.pptx"
         else:
-            raise StateError("Unknown artifact")
+            cached = preview_files(store, claims["owner"], job_id)
+            if not cached or name not in {cached[1]["pdf"], *cached[1]["images"]}:
+                raise StateError("Unknown artifact")
+            path = cached[0] / name
+            filename = "research-slides.pdf" if name.endswith(".pdf") else name
         return FileResponse(
             path,
             filename=filename,

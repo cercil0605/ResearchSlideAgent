@@ -11,7 +11,8 @@ APIと生成ワーカーは同一Piの共有Docker volumeを使い、SQLite WAL�
 
 | モジュール | 責務 |
 |---|---|
-| models.py | SlideSpec 1.0/1.1、見本・段落／ラン選択、意味的図表、参照、引用、JSON Schema |
+| models.py | SlideSpec 1.0/1.1/1.2、説明上の役割と表示見本、本編・補足、意味的図表、参照、引用、JSON Schema |
+| previews.py | 完成jobのPDF・PNGを要求時に描画。所有者・期限確認、PPTXハッシュ対応、描画の同時実行制限 |
 | pdf_assets.py | 登録PDFのCropBox画像化、表示に沿った正規化領域の切り出し。既存PopplerをAPI側で再利用 |
 | engine.py | 生成経路の選択、旧テンプレート互換処理、LibreOffice/Poppler、OPC差分編集 |
 | prototypes.py | 正本ページの複製、直接書式と表の保持、適合検査、生成来歴 |
@@ -35,7 +36,7 @@ Autonomous/Collaborativeは接続先LLMの制作手順で区別し、生成キ�
 作成側のLLMは共通のF01–F06に従って読解・説明設計・図表選定・文章化・保存前の自己点検を行う。
 ルールの正本は同じworkflow文書であり、Plugin用とMCP用の説明方針を別管理しない。追加LLM APIは使わない。
 
-既定の正本は修正版スケルトンの同一バイトコピー。SlideSpec 1.1のprototype_idで見本ページを選び、
+既定の正本は修正版スケルトンの同一バイトコピー。SlideSpec 1.1/1.2のprototype_idで見本ページを選び、
 replacementsで段落とランの見本を選択する。位置・色・字形は正本に固定され、入力で任意指定できない。
 `prototypes.py`はOPCの共有パーツを保持し、見本のページXML・関係ファイルを複製する。
 表は行高を保って必要な行を複製し、最終行に正本の最下段罫線を残す。
@@ -47,7 +48,13 @@ replacementsで段落とランの見本を選択する。位置・色・字形�
 正本と仕様から期待XMLを再構成して出力を検証し、コードコミット・ソースhash・正本SHA・仕様版を
 manifestとPPTX内へ記録する。生成は検査済みの一時ファイルを完成後に置換する。
 PPTX生成・構造検査の成功でcompletedとなり、get_jobは期限付きダウンロードURLを返す。
-完成PPTXのPDF・PNGプレビューは生成しない。原論文のページ画像・図の切り出しはAPI側の独立した処理とする。
+1.2はsectionとpartを表示見本から分離し、導入の具体例、実験後の指標図、複数実験、まとめ後の補足を許可する。
+save_slide_specは図の不足と引継ぎ見出し等の確認情報を返すが、内容の正確さは判定しない。
+
+workerは画像確認を待たずPPTX生成を完了する。APIのget_slide_previewは既存render関数でPDF・PNGを要求時に生成し、
+jobの出力ディレクトリ内へ一時生成後に公開する。キャッシュはPPTXのSHAに対応し、別版の画像を返さない。
+同一APIプロセスの描画は1件に制限する。原論文のPDF画像・図の切り出しは独立した処理。
+描画は近似表示でvisual_review=not_performedのまま。画像を実際に確認・修正するのは接続先LLMで、サーバーにLLMや承認状態は追加しない。
 get_generation_reportは書式適合と来歴を返す。
 
 `spec_version` は単調増加。保存時にexpected_versionを照合する。

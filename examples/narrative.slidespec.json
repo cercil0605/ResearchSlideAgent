@@ -1,0 +1,821 @@
+{
+  "schema_version": "1.2",
+  "presentation_id": "narrative-check",
+  "spec_version": 1,
+  "presentation_metadata": {
+    "title": "試験用の研究発表構成",
+    "audience": "書式確認者",
+    "purpose": "提供内容の再配置と書式検証。研究事実の主張ではない。",
+    "duration_minutes": 10
+  },
+  "slides": [
+    {
+      "slide_id": "page1",
+      "slide_order": 1,
+      "prototype_id": "cover",
+      "section": "cover",
+      "replacements": {
+        "著者": [
+          {
+            "runs": [
+              {
+                "text": "試験用サンプル・研究事実ではない"
+              }
+            ]
+          }
+        ]
+      },
+      "title": "研究発表の書式検証"
+    },
+    {
+      "slide_id": "page2",
+      "slide_order": 2,
+      "prototype_id": "overview",
+      "section": "overview",
+      "replacements": {
+        "目的の記入欄": [
+          {
+            "text": "正本の書式保持を確認する"
+          }
+        ],
+        "方法の記入欄": [
+          {
+            "text": "見本ページを複製して差し替える"
+          }
+        ],
+        "結果の記入欄": [
+          {
+            "text": "以下の数値はすべて試験用"
+          }
+        ],
+        "図題": [
+          {
+            "text": "図1　書式検証の構成"
+          }
+        ]
+      },
+      "title": "概要",
+      "diagram_spec": {
+        "kind": "comparison",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "input",
+            "text": "正本と試験用内容"
+          },
+          {
+            "id": "output",
+            "text": "編集可能なPPTX"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "early-example",
+      "slide_order": 3,
+      "prototype_id": "method",
+      "section": "example",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "試験用の説明例"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "確認する内容"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "研究事実ではない"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "図題": [
+          {
+            "text": "説明順の検証例"
+          }
+        ]
+      },
+      "title": "導入：条件による動作の違い",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "0",
+            "text": "条件"
+          },
+          {
+            "id": "1",
+            "text": "動作A"
+          },
+          {
+            "id": "2",
+            "text": "動作B"
+          }
+        ],
+        "edges": [
+          {
+            "source": "0",
+            "target": "1"
+          },
+          {
+            "source": "0",
+            "target": "2"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "background-visual",
+      "slide_order": 4,
+      "prototype_id": "method",
+      "section": "background",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "試験用の説明例"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "確認する内容"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "研究事実ではない"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "図題": [
+          {
+            "text": "説明順の検証例"
+          }
+        ]
+      },
+      "title": "背景：対象と課題",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "0",
+            "text": "既知の状況"
+          },
+          {
+            "id": "1",
+            "text": "説明する関係"
+          }
+        ],
+        "edges": [
+          {
+            "source": "0",
+            "target": "1"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "background-detail",
+      "slide_order": 5,
+      "prototype_id": "method",
+      "section": "background",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "試験用の説明例"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "確認する内容"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "研究事実ではない"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "図題": [
+          {
+            "text": "説明順の検証例"
+          }
+        ]
+      },
+      "title": "背景：位置と判断条件",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "0",
+            "text": "既知の状況"
+          },
+          {
+            "id": "1",
+            "text": "説明する関係"
+          }
+        ],
+        "edges": [
+          {
+            "source": "0",
+            "target": "1"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "related-visual",
+      "slide_order": 6,
+      "prototype_id": "method",
+      "section": "related",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "試験用の説明例"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "確認する内容"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "研究事実ではない"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "図題": [
+          {
+            "text": "説明順の検証例"
+          }
+        ]
+      },
+      "title": "既存手法と未解決点",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "0",
+            "text": "既知の状況"
+          },
+          {
+            "id": "1",
+            "text": "説明する関係"
+          }
+        ],
+        "edges": [
+          {
+            "source": "0",
+            "target": "1"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "objective-visual",
+      "slide_order": 7,
+      "prototype_id": "method",
+      "section": "objective",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "試験用の説明例"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "確認する内容"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "研究事実ではない"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "図題": [
+          {
+            "text": "説明順の検証例"
+          }
+        ]
+      },
+      "title": "研究目的と達成の方針",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "0",
+            "text": "既知の状況"
+          },
+          {
+            "id": "1",
+            "text": "説明する関係"
+          }
+        ],
+        "edges": [
+          {
+            "source": "0",
+            "target": "1"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "page7",
+      "slide_order": 8,
+      "prototype_id": "method",
+      "section": "method",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "以下は生成処理の試験図"
+          }
+        ],
+        "図題": [
+          {
+            "text": "図2　試験用の処理構成"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "元の書式"
+          },
+          {
+            "text": "編集可能"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "研究手法は\n未入力"
+          }
+        ]
+      },
+      "title": "提案手法の記入例",
+      "diagram_spec": {
+        "kind": "comparison",
+        "nodes": [
+          {
+            "id": "source",
+            "text": "見本"
+          },
+          {
+            "id": "result",
+            "text": "差し替え"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "page8",
+      "slide_order": 9,
+      "prototype_id": "experiment",
+      "section": "experiment",
+      "replacements": {
+        "実験目的": [
+          {
+            "text": "実研究の実験目的は未入力"
+          }
+        ],
+        "実験条件": [
+          {
+            "text": "参加者実験は実施していない"
+          },
+          {
+            "text": "以降の数値は描画試験用"
+          }
+        ],
+        "指標": [
+          {
+            "text": "書式検証用の仮の列見出しを使用"
+          }
+        ]
+      },
+      "title": "実験方法の記入例"
+    },
+    {
+      "slide_id": "metric-visual",
+      "slide_order": 10,
+      "prototype_id": "method",
+      "section": "metric",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "試験用の説明例"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "確認する内容"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "研究事実ではない"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "図題": [
+          {
+            "text": "説明順の検証例"
+          }
+        ]
+      },
+      "title": "実験後に説明する評価指標",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "0",
+            "text": "実行1"
+          },
+          {
+            "id": "1",
+            "text": "実行2"
+          },
+          {
+            "id": "2",
+            "text": "実行3"
+          },
+          {
+            "id": "3",
+            "text": "平均"
+          }
+        ],
+        "edges": [
+          {
+            "source": "0",
+            "target": "3"
+          },
+          {
+            "source": "1",
+            "target": "3"
+          },
+          {
+            "source": "2",
+            "target": "3"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "page9",
+      "slide_order": 11,
+      "prototype_id": "results_figure",
+      "section": "results",
+      "replacements": {
+        "図題": [
+          {
+            "text": "図3　研究結果ではない配置確認図"
+          }
+        ],
+        "結果の要点": [
+          {
+            "text": "研究上の効果を示す図ではない"
+          }
+        ]
+      },
+      "title": "結果図の配置試験",
+      "diagram_spec": {
+        "kind": "comparison",
+        "nodes": [
+          {
+            "id": "a",
+            "text": "試験A"
+          },
+          {
+            "id": "b",
+            "text": "試験B"
+          },
+          {
+            "id": "c",
+            "text": "試験C"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "page10",
+      "slide_order": 12,
+      "prototype_id": "results_table",
+      "section": "results",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "試験用数値。実験結果ではない"
+          }
+        ]
+      },
+      "title": "試験用数値：1行の表",
+      "table_spec": {
+        "columns": [
+          "試験条件",
+          "仮指標A",
+          "仮指標B"
+        ],
+        "rows": [
+          [
+            "A",
+            "10.0",
+            "20.0"
+          ]
+        ]
+      }
+    },
+    {
+      "slide_id": "page11",
+      "slide_order": 13,
+      "prototype_id": "results_table",
+      "section": "results",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "試験用数値。統計的な意味はない"
+          }
+        ]
+      },
+      "title": "試験用数値：3行の表",
+      "table_spec": {
+        "columns": [
+          "試験条件",
+          "仮指標A",
+          "仮指標B"
+        ],
+        "rows": [
+          [
+            "A",
+            "10.0",
+            "20.0"
+          ],
+          [
+            "B",
+            "11.0",
+            "21.0"
+          ],
+          [
+            "C",
+            "12.0",
+            "22.0"
+          ]
+        ]
+      }
+    },
+    {
+      "slide_id": "page12",
+      "slide_order": 14,
+      "prototype_id": "discussion",
+      "section": "discussion",
+      "replacements": {
+        "達成": [
+          {
+            "text": "この資料では書式だけを確認する"
+          }
+        ],
+        "解釈": [
+          {
+            "text": "試験用数値の研究的な解釈はしない"
+          },
+          {
+            "text": "関連研究との比較は未入力"
+          }
+        ],
+        "制約": [
+          {
+            "text": "PowerPoint実機での確認は別途必要"
+          }
+        ]
+      },
+      "title": "考察の記入例"
+    },
+    {
+      "slide_id": "second-experiment",
+      "slide_order": 15,
+      "prototype_id": "experiment",
+      "section": "experiment",
+      "replacements": {
+        "実験目的": [
+          {
+            "text": "実研究の実験目的は未入力"
+          }
+        ],
+        "実験条件": [
+          {
+            "text": "参加者実験は実施していない"
+          },
+          {
+            "text": "以降の数値は描画試験用"
+          }
+        ],
+        "指標": [
+          {
+            "text": "書式検証用の仮の列見出しを使用"
+          }
+        ]
+      },
+      "title": "実験方法の記入例"
+    },
+    {
+      "slide_id": "second-results_table",
+      "slide_order": 16,
+      "prototype_id": "results_table",
+      "section": "results",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "試験用数値。統計的な意味はない"
+          }
+        ]
+      },
+      "title": "試験用数値：3行の表",
+      "table_spec": {
+        "columns": [
+          "試験条件",
+          "仮指標A",
+          "仮指標B"
+        ],
+        "rows": [
+          [
+            "A",
+            "10.0",
+            "20.0"
+          ],
+          [
+            "B",
+            "11.0",
+            "21.0"
+          ],
+          [
+            "C",
+            "12.0",
+            "22.0"
+          ]
+        ]
+      }
+    },
+    {
+      "slide_id": "second-discussion",
+      "slide_order": 17,
+      "prototype_id": "discussion",
+      "section": "discussion",
+      "replacements": {
+        "達成": [
+          {
+            "text": "この資料では書式だけを確認する"
+          }
+        ],
+        "解釈": [
+          {
+            "text": "試験用数値の研究的な解釈はしない"
+          },
+          {
+            "text": "関連研究との比較は未入力"
+          }
+        ],
+        "制約": [
+          {
+            "text": "PowerPoint実機での確認は別途必要"
+          }
+        ]
+      },
+      "title": "考察の記入例"
+    },
+    {
+      "slide_id": "summary-visual",
+      "slide_order": 18,
+      "prototype_id": "overview",
+      "section": "summary",
+      "replacements": {
+        "目的の記入欄": [
+          {
+            "text": "必要な説明を保つ"
+          }
+        ],
+        "方法の記入欄": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "小見出し：結果": [
+          {
+            "text": "結果と今後の課題"
+          }
+        ],
+        "結果の記入欄": [
+          {
+            "text": "数値は試験用のみ"
+          },
+          {
+            "text": "別の論文でも検証"
+          }
+        ],
+        "図題": [
+          {
+            "text": "本編の説明経路"
+          }
+        ]
+      },
+      "title": "まとめ",
+      "diagram_spec": {
+        "kind": "comparison",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "input",
+            "text": "正本と試験用内容"
+          },
+          {
+            "id": "output",
+            "text": "編集可能なPPTX"
+          }
+        ]
+      }
+    },
+    {
+      "slide_id": "appendix-visual",
+      "slide_order": 19,
+      "prototype_id": "method",
+      "section": "discussion",
+      "part": "appendix",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "試験用の説明例"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "確認する内容"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "研究事実ではない"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "役割と見本を分ける"
+          }
+        ],
+        "図題": [
+          {
+            "text": "説明順の検証例"
+          }
+        ]
+      },
+      "title": "補足：指標と出典の注意",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "0",
+            "text": "元資料の記載"
+          },
+          {
+            "id": "1",
+            "text": "使用する値"
+          }
+        ],
+        "edges": [
+          {
+            "source": "0",
+            "target": "1"
+          }
+        ]
+      }
+    }
+  ]
+}

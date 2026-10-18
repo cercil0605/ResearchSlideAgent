@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 import unicodedata
 import zipfile
 from copy import deepcopy
@@ -126,7 +127,14 @@ def template_info(path: Path):
     if profile:
         return {"template_id": "lab", "sha256": profile["template_sha256"],
                 "engine": profile["engine"], "style_version": profile["style_version"],
-                "schema_version": "1.1", "prototypes": profile["prototypes"],
+                "schema_version": "1.2", "prototypes": profile["prototypes"],
+                "supported_schema_versions": ["1.1", "1.2"], "recommended_schema_version": "1.2",
+                "section_independent_of_prototype": True,
+                "visual_prototypes": {
+                    "method": "editable diagram or original image with explanatory text; any section in 1.2",
+                    "results_figure": "wide original image or diagram with short explanation; any section in 1.2",
+                    "overview": "three text groups and a key diagram; also usable for a summary in 1.2",
+                },
                 "layouts": [], "generation": "clone canonical pages; replace text and framed evidence",
                 "diagram_capabilities": {
                     "native_connectors": True, "branches_and_merges": True,
@@ -761,7 +769,7 @@ def _generate_once(
 def generate(template: Path, spec: SlideSpec, output: Path, images: dict[str, Path] | None = None):
     from .prototypes import generate_prototypes, profile_for
 
-    if profile_for(template) or spec.schema_version == "1.1":
+    if profile_for(template) or spec.schema_version in {"1.1", "1.2"}:
         return generate_prototypes(template, spec, output, images)
     if template.resolve() == output.resolve():
         raise LayoutError("Original template must not be overwritten")
@@ -800,7 +808,7 @@ def verify(template, output, spec, manifest, images=None):
     """Hard structural checks. Rendering and heuristic text fit have separate reports."""
     from .prototypes import verify_prototypes
 
-    if spec.schema_version == "1.1":
+    if spec.schema_version in {"1.1", "1.2"}:
         return verify_prototypes(template, output, spec, manifest, images)
     issues = []
     with zipfile.ZipFile(template) as src, zipfile.ZipFile(output) as dst:
@@ -869,6 +877,7 @@ def render(pptx: Path, directory: Path, timeout=240):
     soffice, pdftoppm = shutil.which("soffice"), shutil.which("pdftoppm")
     if not soffice or not pdftoppm:
         raise RuntimeError("RENDERER_MISSING: install LibreOffice and Poppler")
+    deadline = time.monotonic() + timeout
     directory.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="rsa-lo-") as profile:
         result = subprocess.run(
@@ -892,16 +901,20 @@ def render(pptx: Path, directory: Path, timeout=240):
     for old_page in directory.glob("slide-*.png"):
         if re.fullmatch(r"slide-\d+\.png", old_page.name):
             old_page.unlink()
-    subprocess.run(
-        [pdftoppm, "-scale-to", "1600", "-png", str(pdf), str(directory / "slide")],
-        capture_output=True,
-        check=True,
-        timeout=timeout,
-    )
-    images = sorted(directory.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[-1]))
     from pypdf import PdfReader
 
     page_count = len(PdfReader(pdf).pages)
+    # Isolate page rendering: some Poppler builds omit reused text in multi-page conversion.
+    for page in range(1, page_count + 1):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("RENDER_TIMEOUT")
+        subprocess.run(
+            [pdftoppm, "-f", str(page), "-l", str(page), "-singlefile", "-scale-to", "1600",
+             "-png", str(pdf), str(directory / f"slide-{page}")],
+            capture_output=True, check=True, timeout=remaining,
+        )
+    images = sorted(directory.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[-1]))
     if page_count != len(Presentation(pptx).slides) or len(images) != page_count:
         raise RuntimeError("RENDER_PAGE_COUNT_MISMATCH")
     return {

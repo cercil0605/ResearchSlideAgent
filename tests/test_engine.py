@@ -1,4 +1,5 @@
 import zipfile
+from pathlib import Path
 
 import pytest
 from pptx import Presentation
@@ -152,15 +153,29 @@ def test_cycles_rejected(settings, tmp_path):
         generate(settings.template, spec, tmp_path / "bad.pptx")
 
 
-def test_render_pages(settings, tmp_path):
+def test_render_pages(settings, tmp_path, monkeypatch):
     import shutil
 
     if not shutil.which("soffice") or not shutil.which("pdftoppm"):
         pytest.skip("LibreOffice/Poppler not installed")
+    from research_slide_agent import engine
+
+    commands = []
+    run = engine.subprocess.run
+
+    def recorded(command, **kwargs):
+        commands.append(command)
+        return run(command, **kwargs)
+
+    monkeypatch.setattr(engine.subprocess, "run", recorded)
     output = tmp_path / "rendered.pptx"
     generate(settings.template, sample_spec(), output)
     result = render(output, tmp_path / "preview")
     assert result["page_count"] == len(result["images"]) == 5
+    raster = [c for c in commands if Path(c[0]).name == "pdftoppm"]
+    assert len(raster) == 5
+    assert [c[c.index("-f") + 1] for c in raster] == [str(i) for i in range(1, 6)]
+    assert all("-singlefile" in c for c in raster)
 
 
 def test_safe_layout_repair_keeps_approved_text(settings, tmp_path):
