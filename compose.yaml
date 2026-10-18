@@ -29,7 +29,7 @@ x-runtime: &runtime
     RSA_WEB_CLIENT_ID: ${RSA_WEB_CLIENT_ID:-research-slide-web}
     RSA_ALLOWED_SUBS: ${RSA_ALLOWED_SUBS:-}
     RSA_SESSION_KEY: ${RSA_SESSION_KEY:?Set 32+ random characters}
-    RSA_ATTACHMENT_HOSTS: ${RSA_ATTACHMENT_HOSTS:-}
+    RSA_ATTACHMENT_HOSTS: ${RSA_ATTACHMENT_HOSTS-*.oaiusercontent.com}
     RSA_WORKER_LIMIT: "1"
   logging:
     driver: none

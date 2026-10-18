@@ -49,13 +49,13 @@ async def download_attachment(file: OpenAIFile):
         raise StateError("ATTACHMENT_URL_INVALID") from exc
     if (
         url.scheme != "https"
-        or url.hostname not in hosts
+        or not attachment_host_allowed(url.hostname, hosts)
         or url.username
         or url.password
         or port not in (None, 443)
     ):
         raise StateError(
-            "ATTACHMENT_ORIGIN_NOT_ALLOWED: administrator must configure the exact trusted download host "
+            "ATTACHMENT_ORIGIN_NOT_ALLOWED: administrator must configure a trusted download host "
             f"{str(url.hostname)[:150]} in RSA_ATTACHMENT_HOSTS, then retry register_chatgpt_file"
         )
     try:
@@ -87,6 +87,22 @@ async def download_attachment(file: OpenAIFile):
 
 def attachment_hosts():
     return {host.strip().lower() for host in os.getenv("RSA_ATTACHMENT_HOSTS", "").split(",") if host.strip()}
+
+
+def attachment_host_allowed(hostname: str | None, allowed_hosts: set[str]) -> bool:
+    """Match exact hosts or an explicit wildcard suffix such as *.oaiusercontent.com."""
+    if not hostname:
+        return False
+    hostname = hostname.lower().rstrip(".")
+    for allowed in allowed_hosts:
+        allowed = allowed.lower().rstrip(".")
+        if allowed.startswith("*."):
+            suffix = allowed[1:]
+            if hostname.endswith(suffix) and hostname != suffix[1:]:
+                return True
+        elif hostname == allowed:
+            return True
+    return False
 
 
 def attachment_name(file: OpenAIFile, data: bytes):
@@ -237,7 +253,7 @@ def make_mcp(store, settings, auth):
         return {"method": "register_chatgpt_file", "configured_download_hosts": sorted(attachment_hosts()),
                 "download_hosts_configured": bool(attachment_hosts()), "max_bytes": MAX_FILE,
                 "upload_url_requires_owner_authentication": settings.cloudflare,
-                "configuration": "RSA_ATTACHMENT_HOSTS: comma-separated exact trusted download hostnames"}
+                "configuration": "RSA_ATTACHMENT_HOSTS: exact hostnames or wildcard suffixes such as *.oaiusercontent.com"}
 
     @tool(mcp, annotations=write, meta={**meta, "openai/fileParams": ["file"]})
     async def register_chatgpt_file(

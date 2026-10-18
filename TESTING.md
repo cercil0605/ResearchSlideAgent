@@ -127,7 +127,7 @@ UV_OFFLINE=1で実行した。製品の通信・依存設定は変更してい�
 
 1. APIを更新し、MCP接続をRefreshして新しいチャットでget_authoring_contextとget_file_transfer_infoを確認。
 2. 実際の論文PDFを添付しregister_chatgpt_fileを呼ぶ。失敗時はツール名・エラーコード・HTTP状態で分類する。
-   ORIGIN_NOT_ALLOWEDなら管理者が示されたホストの正当性を確認し、RSA_ATTACHMENT_HOSTSへ完全一致で設定してAPIを再作成。
+   ORIGIN_NOT_ALLOWEDならChatGPTの取得先が `*.oaiusercontent.com` 配下か確認し、許可設定後にAPIを再作成。
    署名URLやトークンを公開せず、Cloudflare/所有者認証は解除しない。
 3. 添付の新しいfile引数で再試行し、get_projectにPDFが1件、read_sourceが17ページと本文を返すことを確認。
 4. 原図6/7/8等をrender→crop。図ごとのアップロード・著者年入力なしで出典が元PDFに対応することを確認。
@@ -135,3 +135,10 @@ UV_OFFLINE=1で実行した。製品の通信・依存設定は変更してい�
 
 本番の添付取得先・実際のエラー応答はこの作業環境では確認していないため、設定変更や再ログインだけで
 今回の本番障害が解消したとは報告しない。Dockerビルド・PowerPoint実機・実ChatGPT添付の受入も別途確認する。
+
+## 添付ドメイン設定と文書整理の確認（2026-10-18）
+
+- 添付転送・PDF操作・MCPの関連テストは38件成功（依存ライブラリの非推奨警告1件）。
+- ワイルドカード配下と多段サブドメインの許可、親ドメイン・類似ドメイン・別ドメイン接尾辞の拒否、明示的な空設定での取得拒否を確認。
+- ComposeとPortainer Stackの両方で、未設定時は `*.oaiusercontent.com`、明示的な空文字は空、完全一致ホスト指定はその値を維持することを `docker compose config` で確認。
+- ruffと差分の空白検査に成功。実ChatGPT添付の転送、本番配備、PowerPoint実機の受入は今回の検証に含めない。

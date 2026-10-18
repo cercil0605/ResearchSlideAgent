@@ -55,8 +55,8 @@ SlideSpec全体は `schemas/slidespec.json` と `examples/research-format.slides
 `register_chatgpt_file` はMCP認証されたツールからサーバーが添付取得先へGETする方式。
 `download_url` と `file_id` は必須、`mime_type` と `file_name` は任意。名前がないPDF/PNG/JPEGはmagic bytes、
 その他は対応MIMEから拡張子を決め、安全な内部名を付ける。ファイル名がある場合も既存の形式・パス検査を適用する。
-取得先は `RSA_ATTACHMENT_HOSTS` の完全一致・HTTPS・公開IP・443番のみ。リダイレクトは追わず、MCP認証情報は送らない。
-空設定では拒否を維持する。管理者が実際に確認した取得元ホストを設定してAPIを再作成する。
+取得先は `RSA_ATTACHMENT_HOSTS` の完全一致または明示した `*.suffix` パターン・HTTPS・公開IP・443番のみ。リダイレクトは追わず、MCP認証情報は送らない。
+ChatGPT添付にはOpenAIが案内する `*.oaiusercontent.com` を指定する。空設定では拒否を維持する。
 `ATTACHMENT_ORIGIN_NOT_ALLOWED` はホスト設定、`ATTACHMENT_HTTP_<status>` は添付取得元の応答、
 `ATTACHMENT_DNS_FAILED/TIMEOUT/NETWORK_FAILED` は接続失敗を表す。URL・クエリ・レスポンス本文はエラーへ含めない。
 403だけで有効期限切れか認証設定かは断定できない。新しいfile引数でも失敗するなら取得元・配備環境を調べる。

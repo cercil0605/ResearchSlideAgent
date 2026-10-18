@@ -21,7 +21,7 @@ RSA_SESSION_KEY=<32文字以上のランダム値>
 `RSA_BASE_URL` はパス・末尾の `/` がない公開HTTPS origin。`RSA_CF_TEAM_DOMAIN` はZero Trustのチームドメインです。
 AUDは公開URLではなくAccessアプリの識別子です。公開URLとチームドメイン、AUD、メールは秘密ではありません。
 セッション鍵は `python3 -c 'import secrets; print(secrets.token_urlsafe(48))'` で生成し、更新後も同じ値を維持します。
-`RSA_ATTACHMENT_HOSTS` は最初は空でよく、資料は認証済みブラウザの登録ページからアップロードできます。
+`RSA_ATTACHMENT_HOSTS` はChatGPT添付用に `*.oaiusercontent.com` を設定します。資料は認証済みブラウザからも登録できます。
 `RSA_OAUTH_*`、`RSA_JWKS_URL`、`RSA_WEB_CLIENT_ID`、`RSA_ALLOWED_SUBS` はこの方式では不要です。
 
 ## Cloudflare側の設定
@@ -62,9 +62,10 @@ Accessがoriginへ渡す `Cf-Access-Jwt-Assertion` のRS256署名、チームiss
 ChatGPTの埋め込みビューアーでブラウザのAccess cookieが利用できない場合は、外部ブラウザでダウンロードURLを開きます。
 
 ChatGPTの添付は `register_chatgpt_file` でMCPサーバーが取得します。別HTTP PUTの本人認証に依存せず、
-既存の認証済みMCP呼出し内で処理します。`RSA_ATTACHMENT_HOSTS` に実際の添付取得先の完全一致ホストを設定します。
+既存の認証済みMCP呼出し内で処理します。ChatGPTの添付取得には `RSA_ATTACHMENT_HOSTS=*.oaiusercontent.com` を設定します。
+OpenAIはChatGPTのファイル用ドメインとして `*.oaiusercontent.com` を案内しています。正規URL内の一時的なホスト名ごとに追加する必要はありません。
 `get_file_transfer_info` で空設定を確認でき、`ATTACHMENT_ORIGIN_NOT_ALLOWED` は不足しているホスト名のみ返します。
-ホストの正当性を管理者が確認して設定し、APIコンテナを再作成してください。署名URL全体をログ・チャットへ貼らないでください。
+このワイルドカードはそのドメイン配下だけに限定されます。サーバーは引き続きHTTPS・443番・公開IPのみ接続し、リダイレクトを拒否します。設定後にAPIコンテナを再作成してください。署名URL全体をログ・チャットへ貼らないでください。
 `ATTACHMENT_HTTP_401/403` は添付取得元の応答であり、Accessへの再ログインが解決策とは限りません。
 新しいfile引数で再試行して切り分けます。任意ホストの許可、Access認証の解除、MCPトークンの取得元への転送はしません。
 
