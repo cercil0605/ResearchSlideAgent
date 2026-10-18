@@ -1,4 +1,4 @@
-# 正本の差し替え仕様（SlideSpec 1.1）
+# 正本の差し替え仕様（SlideSpec 1.2推奨、1.1互換）
 
 正本のSHA-256: `5f699f70dfa52726c17f6438cee84ece404ec852926b023f334f1a903f1832b5`。
 書式版: `skeleton-2026-10-18.1`。正本バイト列は維持し、図枠内の描画規則を更新した。
@@ -20,16 +20,29 @@
 | summary | まとめ。まとめ：目的、まとめ：方法、まとめ：結果、まとめ：今後の課題 |
 
 小見出しも名前をget_template_infoから選んで文字を差し替えられるが、色や寸法は変わらない。
+1.2では`section`を説明上の役割、`prototype_id`を表示見本として別々に指定する。
+sectionはcover/overview/example/background/related/objective/method/experiment/metric/results/discussion/summary。
+`part`はmain（既定）またはappendix。補足の後に本編へ戻らない。
+研究の本編は表紙・概要で始め、背景・関連研究・目的・手法・実験・結果・考察を含み、まとめで終える。
+具体例を背景より前へ、図付きの指標を実験説明より後へ置ける。複数実験の方法・結果・考察の反復も可能。
+1.1はsection/partを使わず、旧来の見本順の検査を維持する。新規制作は1.2を使う。
+
+methodは図と本文、results_figureは大きい図と短い説明、overviewは3群の本文とキー図。
+これらを導入・背景・実験・まとめ・補足でも再利用し、小見出しは内容へ合わせる。
+例えばまとめにoverviewを使い「目的」「方法」「結果と今後の課題」とすることができる。
+各欄に収まらなければ意味を保ってページを分ける。coverの見本は表紙専用。
 ロゴ、区切り線、タイトルの装飾、スライド番号の位置は固定。表紙に番号は出さず、後続ページは実際の順番を表示する。
 本文の省略欄には正本のダミー文や架空の引用を残さない。空の見出しごと削除したい場合は別の役割を選ぶ。
 
-1ページの指定例（全体にはmetadata、spec_version、schema_version="1.1"、purpose_mode等が必要）:
+1ページの指定例（全体にはmetadata、spec_version、schema_version="1.2"、purpose_mode等が必要）:
 
 ```json
 {
   "slide_id": "background-a",
   "slide_order": 3,
   "prototype_id": "background",
+  "section": "background",
+  "part": "main",
   "title": "研究背景",
   "replacements": {
     "背景の箇条書き": [
@@ -87,7 +100,13 @@ edgesなしは指定順の独立した要素を並べる。順序や集約があ
 元画像は1枠1枚。captionと同じ内容を図題へ指定し、citationsの表記も適切な欄へ含める。
 
 PPTX生成と構造検査の成功でcompletedになる。`get_job.download_url` を提示する。
-現在のMCPは完成PPTXのプレビューを生成・表示しない。モデルによる完成物レビューは必須にしない。
+保存時のauthoring_feedbackには、ページの役割・引継ぎ見出し・図の有無・図枠寸法と警告が含まれる。
+これは内容や可読性の自動合格判定ではない。図を置けない見本への指定は生成時にも拒否される。
+生成後はget_slide_previewを使い、overview=trueで6頁ずつ全体を確認してから重要ページを個別に見る。
+初回は隔離workerの描画jobを返す。queued/runningなら待って同じ画像取得を繰り返し、失敗時はpreview_job_idでretry_jobする。
+画像はjob内のPPTXのハッシュと対応し、次版には新しいjobを使う。参考PDFは描画後のget_preview.pdf_url。
+元画像と完成画像を混同しない。サーバーは画像を描画するだけで意味のレビューは行わない。
+PowerPoint実機の表示保証とは別。実際に画像を見ていなければ確認済みと主張しない。
 原論文は `render_pdf_page` で閲覧し、`crop_pdf_region` で選択領域をPNG登録できる。
 image_referencesには返された画像source_id、出典には元PDFのcitation_source_idとページ・図番号を指定する。
 本文切断や原図を短文だけで代替することはしない。Strictの枠と編集可能な図形の制約は維持する。

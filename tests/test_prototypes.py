@@ -195,7 +195,8 @@ def test_inventory_hash_schema_and_embedded_provenance(tmp_path):
     spec = table_spec()
     profile = template_info(TEMPLATE)
     assert len(profile["prototypes"]) == 11
-    assert profile["schema_version"] == "1.1"
+    assert profile["schema_version"] == "1.2"
+    assert profile["supported_schema_versions"] == ["1.1", "1.2"]
     output = tmp_path / "generated.pptx"
     manifest = generate(TEMPLATE, spec, output)
     assert manifest["code_commit"] and manifest["generator_source_sha256"]

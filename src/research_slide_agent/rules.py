@@ -11,11 +11,11 @@ from typing import Any
 
 RULES_RESOURCE_URI = "research-slides://authoring-context"
 SERVER_INSTRUCTIONS = (
-    "Before planning, call get_authoring_context and read all required documents in full, then "
-    "get_template_info. Apply the first-pass workflow: ground claims in the paper, plan audience-level "
-    "explanations and visuals, write concrete academic titles and concise bullets, self-check before "
-    "save_slide_spec. Use autonomous mode unless discussion is requested. Preserve meaning by "
-    "rewriting or splitting; never truncate. Use original evidence and editable explanatory diagrams."
+    "Before planning, call get_authoring_context and read all required documents in full, then get_template_info. "
+    "Use schema 1.2: separate section from prototype, explain an early concrete example, preserve "
+    "contributions, evaluation conditions and source caveats. Ground claims in the paper; never truncate. "
+    "Self-check before save_slide_spec, inspect feedback, then get_slide_preview after generation and fix "
+    "readability before delivery. Autonomous unless discussion is requested; preserve agreed scope."
 )
 
 DOCUMENTS = (

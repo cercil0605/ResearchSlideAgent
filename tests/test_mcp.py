@@ -34,7 +34,7 @@ async def test_real_streamable_http_workflow(settings, mode):
             tools = (await session.list_tools()).tools
             names = {t.name for t in tools}
             assert {"get_authoring_context", "create_project", "save_slide_spec",
-                    "enqueue_generation", "show_viewer"} <= names
+                    "enqueue_generation", "show_viewer", "get_slide_preview"} <= names
             assert "request_approval" not in names
             assert "get_preview_image" not in names
             context_tool = next(t for t in tools if t.name == "get_authoring_context")
@@ -81,7 +81,7 @@ async def test_real_streamable_http_workflow(settings, mode):
 
 
 @pytest.mark.asyncio
-async def test_canonical_generation_download_without_previews(settings):
+async def test_canonical_download_then_on_demand_preview(settings, preview_renderer):
     settings.template = Path("templates/lab-template.pptx")
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
@@ -100,11 +100,13 @@ async def test_canonical_generation_download_without_previews(settings):
             raw = json.loads(Path("examples/research-format.slidespec.json").read_text())
             item = next(s for s in raw["slides"] if s.get("table_spec"))
             item["slide_order"] = 1
-            raw.update(presentation_id=pid, purpose_mode="general", slides=[item])
+            item["section"] = "results"
+            raw.update(presentation_id=pid, purpose_mode="general", schema_version="1.2", slides=[item])
             spec = SlideSpec.model_validate(raw)
             saved = await session.call_tool("save_slide_spec", {
                 "presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0})
             assert not saved.is_error
+            assert saved.structured_content["authoring_feedback"]["pages"][0]["section"] == "results"
             queued = await session.call_tool("enqueue_generation", {"presentation_id": pid})
             jid = queued.structured_content["id"]
             pending = await session.call_tool("get_job", {"job_id": jid})
@@ -129,12 +131,39 @@ async def test_canonical_generation_download_without_previews(settings):
             report = await session.call_tool("get_generation_report", {"job_id": jid})
             assert report.structured_content["quality"]["format_conformance"] == "canonical_slide_xml_and_shared_parts"
             assert report.structured_content["provenance"]["code_commit"]
+            rendered = await session.call_tool("get_slide_preview", {"job_id": jid, "overview": True})
+            assert rendered.structured_content["state"] == "queued"
+            preview_job_id = rendered.structured_content["preview_job_id"]
+            assert not any(content.type == "image" for content in rendered.content)
+            assert not preview_renderer  # The networked API never launches LibreOffice.
+            await asyncio.to_thread(process_one, app.state.store, settings)
+            rendered = await session.call_tool("get_slide_preview", {"job_id": jid, "overview": True})
+            assert not rendered.is_error, rendered
+            assert rendered.structured_content["pages"] == [1]
+            assert rendered.structured_content["visual_review"] == "not_performed"
+            assert any(content.type == "image" for content in rendered.content)
+            rendering_job = await session.call_tool("get_job", {"job_id": preview_job_id})
+            assert rendering_job.structured_content["state"] == "completed"
+            assert "download_url" not in rendering_job.structured_content
+            assert (await session.call_tool("get_generation_report", {"job_id": preview_job_id})).is_error
+            links = await session.call_tool("get_preview", {"job_id": jid})
+            image_url = links.structured_content["images"][0]
+            pdf_url = links.structured_content["pdf_url"]
+            assert len(preview_renderer) == 1
+            async with httpx.AsyncClient(trust_env=False) as browser:
+                image = await browser.get(image_url)
+                assert image.status_code == 200 and image.content.startswith(b"\x89PNG")
+                pdf = await browser.get(pdf_url)
+                assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+                assert (await browser.get(image_url.replace("slide-1.png", "preview.json"))).status_code == 401
             with app.state.store.connect() as con:
                 con.execute("UPDATE projects SET expires=0 WHERE id=?", (pid,))
             expired = await session.call_tool("get_job", {"job_id": jid})
             assert expired.is_error
             async with httpx.AsyncClient(trust_env=False) as browser:
                 assert (await browser.get(url)).status_code == 400
+                assert (await browser.get(image_url)).status_code == 400
+                assert (await browser.get(pdf_url)).status_code == 400
     finally:
         server.should_exit = True
         await task

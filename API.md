@@ -23,7 +23,8 @@ MCPは `/mcp` のStreamable HTTP。公式SDKがinitialize、tools/list、tools/c
 | enqueue_generation | presentation_id, patch_id?。正本・パッチ元・上限をサーバーで検査 |
 | get_job | job_id。queued/running/validating/completed/failed。completed時は10分のdownload_urlを返す |
 | retry_job | job_id。最大3回まで |
-| get_preview | job_id。互換用。10分のPPTX URL、imagesは空配列 |
+| get_preview | job_id。10分のPPTX URL。描画済みならimagesとpdf_url。未描画ならimagesは空配列 |
+| get_slide_preview | job_id、page（1始まり、最大40）、overview（既定false）。未描画なら隔離workerへ依頼しpreview_job_id/stateを返す。準備後は個別PNG、trueなら最大6頁の一覧とnext_page。同じPPTXを再利用 |
 | get_generation_report | job_id。正本適合検査と生成来歴 |
 | show_viewer | job_id。状態・ダウンロード用MCP Apps UI（ページ画像なし） |
 | inspect_uploaded_pptx | presentation_id, source_id。slide_number/shape_id/name/sha256 |
@@ -82,13 +83,19 @@ get_projectのfiles[].originに元PDFのsource_id/hash、ページ、領域、DP
 正本の表は3列固定、本文1～3行。中央揃え、見出し15pt／本文16pt、見本の行高・余白・罫線を複製する。
 最下段は黒罫線を保持する。数値の丸め・並替は行わない。
 
-## SlideSpec 1.1
+## SlideSpec 1.2（推奨）と1.1（互換）
 
-`schema_version="1.1"`、`purpose_mode="research"`（または一般向けの`general`）。
+新規制作は`schema_version="1.2"`、`purpose_mode="research"`（または一般向けの`general`）。
+各ページに説明上の役割`section`と`part="main"|"appendix"`を指定し、`prototype_id`とは独立させる。
+sectionはcover/overview/example/background/related/objective/method/experiment/metric/results/discussion/summary。
+表紙はcover見本専用。研究の本編は表紙・概要で始まり、背景・関連研究・目的・手法・実験・結果・考察を含み、まとめで終わる。
+具体例の先行、実験説明後の指標図、複数実験の反復、まとめ後の補足を許可する。補足の後に本編へ戻る入力は拒否。
+1.1は既存の見本順検査を維持し、section/partの指定は1.2でのみ使用する。1.0の合成テンプレート経路も互換用途で維持。
+全体例は`examples/narrative.slidespec.json`。試験用の内容であり研究事実ではない。
 各ページは`prototype_id`、`title`、`replacements`を指定する。
 replacementsは見本の欄名→段落配列。各段落は`prototype_paragraph`と`text`、または`runs`の`text/style_run`。
 改行は継続行となり、別段落は配列を分ける。任意の書式・座標は受け付けない。
-旧key_message/body_blocks/chart_specは1.1で拒否する。正本には独立したグラフの見本がない。
+旧key_message/body_blocks/chart_specは1.1/1.2で拒否する。正本には独立したグラフの見本がない。
 表はtable_spec、図は対応するdiagram_specまたは登録済みimage_references。
 `get_template_info.diagram_capabilities`で、接続線・分岐・集約と配置制限を確認できる。
 `diagram_spec.edges`に関係を指定し、ノード座標・線色はサーバーが決める。循環や段を飛ばす接続は拒否する。
@@ -98,7 +105,19 @@ Strictでは`kind`にかかわらず接続関係に沿って段を配置する�
 引用表記は対応する近傍のreplacementsにも含める。詳細は [入力手順](plugins/research-slide-agent/skills/research-slides/references/canonical-skeleton.md)。
 
 新規生成・再生成・PPTXパッチに承認は不要。PPTX生成・構造検査の成功でcompletedとなる。
-完成PPTXのPDF・PNGプレビューは生成しない。原論文のページ表示・切り出し画像とは別機能。
+1.2のsave_slide_specはauthoring_feedbackとしてページの役割、引継ぎ見出し、図枠寸法と図の不足等の警告も返す。
+これは意味・可読性・教授ルールへの自動適合保証ではない。警告の修正には新しい仕様版を保存する。
+
+完成PPTXはget_slide_previewの要求を既存のジョブキューへ入れ、ネットワークから隔離されたworkerでPDF/PNGへ近似描画する。APIはLibreOfficeを起動しない。
+初回はpreview_job_idとqueued/running等のstateを返す。間隔を置いて元のjob_idで同ツールを呼ぶと、準備後にstate=readyと画像を返す。
+描画jobはPPTXのjobと別。PPTXは画像確認や承認を待たずcompletedとなる。描画失敗でもPPTXを取得できる。
+失敗時はretry_job(preview_job_id)で最大3試行まで再試行する。描画jobのget_jobは状態だけを返し、PPTXのdownload_urlは持たない。
+既存の所有者ごとの同時ジョブ上限とworker上限を適用。ツールは冪等だが描画jobを作るためreadOnlyHint=false。
+PREVIEW_BUSYは別のジョブが実行中、PREVIEW_RENDER_FAILEDは描画失敗、PREVIEW_PAGE_OUT_OF_RANGEは頁番号不正。
+手編集PPTXの出力等が40頁を超える場合はPREVIEW_PAGE_LIMITで描画を拒否する。PPTXの取得には影響しない。
+get_slide_previewの準備後の画像メタデータはpages、page_count、next_page、pptx_sha256、renderer、fidelityと確認状態を返す。
+画像を返してもvisual_reviewはnot_performed、powerpoint_verifiedはfalse。実際に見る・修正するのは作成側LLM。
+画像・参考PDFは既存と同じ所有者・期限・署名URL検査を適用し、別版のキャッシュを返さない。get_previewは描画を開始しない。
 既存DBはそのまま利用でき、旧承認テーブル／列は互換性のため保持する。旧ジョブの出力もPPTXを取得できる。
 `get_generation_report`はコミット・ソースhash・正本SHA・書式版・仕様版／digestと書式適合検査を返す。
 手動パッチには生成レポートがない場合があり、正本適合済みとして報告しない。

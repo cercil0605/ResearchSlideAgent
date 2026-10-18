@@ -24,6 +24,7 @@ from .engine import inspect_pptx, template_info
 from .files import MAX_FILE, extract
 from .models import Model, SlideSpec
 from .pdf_assets import PdfRegion, render_page
+from .previews import preview_files, preview_image
 from .rules import RULES_RESOURCE_URI, SERVER_INSTRUCTIONS, authoring_context
 from .store import StateError
 
@@ -203,7 +204,15 @@ def make_mcp(store, settings, auth):
         """Save a specification snapshot with optimistic version checking. First read get_authoring_context
         and apply its workflow; never truncate content to fit slots. No user approval state is stored.
         """
-        return store.save_spec(current_owner(ctx), presentation_id, spec, expected_version)
+        feedback = None
+        if spec.schema_version == "1.2":
+            from .prototypes import authoring_feedback
+
+            feedback = authoring_feedback(settings.template, spec)
+        result = store.save_spec(current_owner(ctx), presentation_id, spec, expected_version)
+        if feedback is not None:
+            result["authoring_feedback"] = feedback
+        return result
 
     @tool(mcp, annotations=write, meta=meta)
     def patch_slide(
@@ -347,6 +356,8 @@ def make_mcp(store, settings, auth):
         job = store.job(owner, job_id)
         result = {"job": job, "images": [], "download_url": None}
         if job["state"] == "completed":
+            if "pptx" not in json.loads(job["output"]):
+                return result  # Rendering jobs have a source_job_id, not another presentation.
             def link(name):
                 cap = auth.sign("artifact", {"owner": owner, "job": job_id, "name": name}, ttl=600)
                 return f"{settings.base_url}/artifact/{job_id}/{name}?{urlencode({'cap': cap})}"
@@ -355,12 +366,32 @@ def make_mcp(store, settings, auth):
             job["download_url"] = result["download_url"]
             job["expires_in"] = 600
             result["expires_in"] = 600
+            cached = preview_files(store, owner, job_id)
+            if cached:
+                _, preview = cached
+                result["images"] = [link(name) for name in preview["images"]]
+                result["pdf_url"] = link(preview["pdf"])
+                result["preview"] = {k: v for k, v in preview.items() if k not in {"images", "pdf"}}
         return result
 
     @tool(mcp, annotations=read, meta=meta)
     def get_preview(job_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Compatibility endpoint for PowerPoint download URLs. images is always empty."""
+        """Get PPTX and cached preview URLs. Use get_slide_preview to render on demand."""
         return links(job_id, ctx=ctx)
+
+    @tool(mcp, annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False,
+                                        open_world_hint=False, idempotent_hint=True), meta=meta)
+    def get_slide_preview(job_id: str, page: int = 1, overview: bool = False, *, ctx: Context) -> CallToolResult:
+        """Inspect completed output before delivery. overview=True returns up to six pages from page;
+        If not ready, queues isolated-worker rendering and returns preview_job_id/state; wait and retry.
+        Follow next_page for the rest, then inspect important pages individually. Rendering is cached
+        per immutable PPTX. Approximate LibreOffice display, not PowerPoint verification or review approval.
+        Fix unreadable evidence, broken phrases and missing explanations within the agreed scope.
+        """
+        data, metadata = preview_image(store, current_owner(ctx), job_id, page, overview)
+        if data is None:
+            return CallToolResult(content=[TextContent(text=json.dumps(metadata))], structuredContent=metadata)
+        return image_result(data, metadata)
 
     @tool(mcp, annotations=read, meta=meta)
     def get_generation_report(job_id: str, *, ctx: Context) -> dict[str, Any]:
@@ -369,6 +400,8 @@ def make_mcp(store, settings, auth):
         if job["state"] != "completed":
             raise StateError("JOB_NOT_COMPLETED")
         output = json.loads(job["output"])
+        if "pptx" not in output:
+            raise StateError("GENERATION_REPORT_UNAVAILABLE_FOR_PREVIEW")
         path = (store.root / output["pptx"]).with_suffix(".manifest.json")
         if not path.resolve().is_relative_to(store.root.resolve()) or not path.exists():
             raise StateError("GENERATION_REPORT_UNAVAILABLE_FOR_PATCH")
@@ -378,7 +411,7 @@ def make_mcp(store, settings, auth):
         mcp, annotations=read, meta={**meta, "ui": {"resourceUri": "ui://research-slide-agent/viewer.html"}}
     )
     def show_viewer(job_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Show job status and PowerPoint download in MCP Apps. No page previews are produced."""
+        """Show job status, PowerPoint download and any cached preview links in MCP Apps."""
         return links(job_id, ctx=ctx)
 
     @mcp.resource(RULES_RESOURCE_URI, mime_type="application/json")
