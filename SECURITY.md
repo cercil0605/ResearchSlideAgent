@@ -31,7 +31,7 @@ Cloudflare方式ではcap URLにも現在のAccess assertionとowner一致を要
 
 PNG/JPEGはPillow verifyと25M pixel制限。PDFは非暗号化500頁以下、text onlyで参照し、PDF script/添付/URL actionを実行しない。CSVはUTF-8と行・列制限。XLSXはread-only/data-only/keep_links=False。ChartDataのワークブックに数式として書かれるラベルを拒否する。
 
-ChatGPT添付は管理者の明示した完全一致HTTPSホストのみ。private/link-local IPを拒否、redirect追従せず、環境proxyを使わず、streamで容量を制限。ホスト許可がなければ直接取込不可。サーバーが任意のURLをfetchする機能は作らない。
+ChatGPT添付は `RSA_ATTACHMENT_HOSTS` に明示した完全一致ホスト、または明示的な `*.suffix` 許可パターンだけをHTTPSで取得する。標準設定例は `*.oaiusercontent.com`。private/link-local IPを拒否し、redirectを追わず、環境proxyを使わず、streamで容量を制限する。許可設定がなければ直接取込不可。サーバーが任意のURLをfetchする機能は作らない。
 
 ## コンテナ
 

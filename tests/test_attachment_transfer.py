@@ -85,3 +85,24 @@ async def test_network_errors_are_sanitized(monkeypatch, attachment, error, code
     with pytest.raises(StateError, match=code) as caught:
         await download_attachment(attachment)
     assert "secret-url" not in str(caught.value)
+
+
+@pytest.mark.parametrize("hostname,expected", [
+    ("files.oaiusercontent.com", True),
+    ("a.b.oaiusercontent.com", True),
+    ("FILES.OAIUSERCONTENT.COM.", True),
+    ("oaiusercontent.com", False),
+    ("evil-oaiusercontent.com", False),
+    ("files.oaiusercontent.com.evil.invalid", False),
+    (None, False),
+])
+def test_attachment_wildcard_boundary(hostname, expected):
+    assert server.attachment_host_allowed(hostname, {"*.oaiusercontent.com"}) is expected
+
+
+@pytest.mark.asyncio
+async def test_explicit_empty_hosts_disable_download(monkeypatch):
+    monkeypatch.setenv("RSA_ATTACHMENT_HOSTS", "")
+    with pytest.raises(StateError, match="ORIGIN_NOT_ALLOWED"):
+        await download_attachment(OpenAIFile(
+            download_url="https://files.oaiusercontent.com/paper", file_id="file-1"))

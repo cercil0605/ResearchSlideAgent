@@ -111,6 +111,8 @@ uv run python scripts/render_spec.py examples/research-format.slidespec.json --o
 
 `plugins/research-slide-agent/` にportable `plugin.json`、`mcp.json`、Skillがあります。`.agents/plugins/marketplace.json` はこのリポジトリ内のローカルカタログです。個人設定や他のPluginは変更しません。
 
+文書の読み分けは [ドキュメント案内](docs/README.md)、作成・更新の流れは [利用シーン](docs/USER_USE_CASES.md) を参照してください。
+
 ### MCPだけを接続する場合
 
 1. Cloudflare TunnelでPiのAPIを公開HTTPSにし、Accessで本人だけを許可してManaged OAuthを有効にします。`localhost` はChatGPTのクラウドから到達できません。
@@ -148,9 +150,9 @@ MCP URLの登録は、GitHubにあるSkillパッケージを自動インスト�
 `render_pdf_page` の実画像を見てChatGPTが図の領域を選び、`crop_pdf_region` がPNGを登録します。
 画像IDは既存の `image_references` でPPTXへ配置し、元PDFを引用します。切り直しでもPDFの再転送は不要です。
 
-`RSA_ATTACHMENT_HOSTS` は空のままでは直接取込できません。管理者が実際のfile引数の取得先を確認し、
-正確なホスト名を設定します。`ATTACHMENT_ORIGIN_NOT_ALLOWED` は必要なホスト名のみ返し、署名URLは表示しません。
-URLやトークンを共有せず、Amazon/Azure全体等の広い許可や認証の解除はしないでください。
+Compose/Portainerは `RSA_ATTACHMENT_HOSTS` が未設定なら `*.oaiusercontent.com` を使い、明示的な空文字なら直接取込を無効化します。ChatGPT添付には `*.oaiusercontent.com` を指定します。
+これはOpenAIがChatGPTのファイル用として案内するドメイン配下に限定され、URLごとの追加は不要です。
+サーバーはHTTPS・443番・公開IPのみ許可し、リダイレクトは拒否します。Amazon/Azure全体等の広い許可や認証の解除はしないでください。
 エラーをMCPログインの失敗と一括りにせず、[転送エラーの切り分け](API.md#pdfの転送原図)を参照します。
 予備の `create_upload.browser_url` は複数ファイルの手動登録に対応します。Cloudflare方式のPUT URLは別途Access本人認証も必要です。
 配備後は接続をRefreshし、新しいチャットで実際の添付PDF転送を確認してください。コード試験は本番疎通を保証しません。
@@ -186,7 +188,7 @@ URLやトークンを共有せず、Amazon/Azure全体等の広い許可や認�
 | `RSA_WEB_CLIENT_ID` | 従来OAuth方式のみ。資料登録ブラウザ用OAuthクライアントID |
 | `RSA_ALLOWED_SUBS` | 従来OAuth方式のみ。認可サーバーの許可済み安定sub |
 | `RSA_SESSION_KEY` | 32文字以上のランダム値。API再起動でも維持する |
-| `RSA_ATTACHMENT_HOSTS` | 添付ファイルの取得元ホストの完全一致リスト。空なら直接取込不可 |
+| `RSA_ATTACHMENT_HOSTS` | 添付取得元のホスト許可リスト。完全一致名または `*.oaiusercontent.com` 形式。空なら直接取込不可 |
 | `RSA_WORKER_LIMIT` | 1または2。Piは1を推奨 |
 | `RSA_IMAGE` | Compose/Portainerで利用するイメージ |
 
