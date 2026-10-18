@@ -92,6 +92,8 @@ replacementsは見本の欄名→段落配列。各段落は`prototype_paragraph
 表はtable_spec、図は対応するdiagram_specまたは登録済みimage_references。
 `get_template_info.diagram_capabilities`で、接続線・分岐・集約と配置制限を確認できる。
 `diagram_spec.edges`に関係を指定し、ノード座標・線色はサーバーが決める。循環や段を飛ばす接続は拒否する。
+Strictでは`kind`にかかわらず接続関係に沿って段を配置する。`kind: "comparison"`の2入力→共通要素→結果も同じ扱い。
+接続を指定しない場合は、従来どおりノードの記述順に並べる。
 箇条書き段落へ手入力の「・」「•」「- 」を重ねた場合はDUPLICATE_BULLETで修正を求める。
 引用表記は対応する近傍のreplacementsにも含める。詳細は [入力手順](plugins/research-slide-agent/skills/research-slides/references/canonical-skeleton.md)。
 

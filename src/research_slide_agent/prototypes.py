@@ -316,7 +316,7 @@ def _figure(root, item, entry, slide, media):
 
     # Keep all geometry server-owned; reserve room for short connector labels.
     gap = Inches(0.7) if any(e.label for e in diagram.edges) else Inches(0.32)
-    layout = diagram if diagram.edges else diagram.model_copy(update={"kind": "timeline"})
+    layout = diagram.model_copy(update={"kind": "flowchart" if diagram.edges else "timeline"})
     positions = graph_positions(layout, Box(x + 120000, y + 120000, w - 240000, h - 240000), gap=gap)
     horizontal = diagram.direction == "horizontal"
     for edge in diagram.edges:
@@ -403,7 +403,10 @@ def _diagram_text(tx, size):
         rpr.set("b", "1")
         for fill in query(rpr, "./a:solidFill"):
             rpr.remove(fill)
-        E.SubElement(E.SubElement(rpr, f"{{{NS['a']}}}solidFill"), f"{{{NS['a']}}}schemeClr", val="tx1")
+        fill = E.Element(f"{{{NS['a']}}}solidFill")
+        E.SubElement(fill, f"{{{NS['a']}}}schemeClr", val="tx1")
+        # DrawingML puts fill after the optional line and before effects/fonts.
+        rpr.insert(1 if query(rpr, "./a:ln") else 0, fill)
 
 
 def build_slide(archive, entry, item, slide, media):

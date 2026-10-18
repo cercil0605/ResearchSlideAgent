@@ -13,10 +13,10 @@ from research_slide_agent.prototypes import query, replace_text
 TEMPLATE = Path("templates/lab-template.pptx")
 
 
-def example(nodes, edges, direction="horizontal"):
+def example(nodes, edges, direction="horizontal", kind="flowchart"):
     raw = json.loads(Path("examples/research-format.slidespec.json").read_text())
     item = next(s for s in raw["slides"] if s["prototype_id"] == "method")
-    item.update(slide_order=1, diagram_spec={"kind": "flowchart", "direction": direction,
+    item.update(slide_order=1, diagram_spec={"kind": kind, "direction": direction,
                                           "nodes": nodes, "edges": edges})
     raw.update(purpose_mode="general", slides=[item])
     return SlideSpec.model_validate(raw)
@@ -38,7 +38,7 @@ def test_native_explanation_preserves_relationships(tmp_path, direction, pattern
     edges = [{"source": str(a), "target": str(b)} for a, b in links]
     if pattern == "branch":
         edges[0]["label"], edges[1]["label"] = "はい", "いいえ"
-    spec = example(nodes, edges, direction)
+    spec = example(nodes, edges, direction, kind="comparison" if pattern == "comparison" else "flowchart")
     output = tmp_path / f"{pattern}-{direction}.pptx"
     manifest = generate(TEMPLATE, spec, output)
     slide = Presentation(output).slides[0]
@@ -58,6 +58,13 @@ def test_native_explanation_preserves_relationships(tmp_path, direction, pattern
     if pattern == "branch":
         assert named["rsa:node:0"]._element.xpath("./p:spPr/a:prstGeom/@prst") == ["diamond"]
         assert named["rsa:edge-label:0"].text == "はい"
+    for name, shape in named.items():
+        if name.startswith(("rsa:node-label:", "rsa:edge-label:")):
+            for props in shape._element.xpath("./p:txBody/a:p/a:r/a:rPr | ./p:txBody/a:p/a:pPr/a:defRPr"):
+                children = [etree.QName(child).localname for child in props]
+                # DrawingML requires fill after the optional line and before fonts/effects.
+                assert children.index("solidFill") == int(children[0] == "ln")
+                assert props.xpath("./a:solidFill/a:schemeClr/@val") == ["tx1"]
     assert verify(TEMPLATE, output, spec, manifest)["status"] == "passed"
     with ZipFile(TEMPLATE) as source, ZipFile(output) as target:
         for name in source.namelist():
