@@ -11,11 +11,11 @@ from typing import Any
 
 RULES_RESOURCE_URI = "research-slides://authoring-context"
 SERVER_INSTRUCTIONS = (
-    "Before planning, saving or generating slides, call get_authoring_context and read every "
-    "required document in full, then call get_template_info. Apply the returned workflow and "
-    "professor/presentation rules. Use autonomous mode for delegated creation, or agree on content "
-    "and detail in conversation in collaborative mode. Never truncate text to fix overflow; "
-    "preserve meaning by rewriting or splitting slides. Do not substitute figure labels for figures."
+    "Before planning, call get_authoring_context and read all required documents in full, then "
+    "get_template_info. Apply the first-pass workflow: ground claims in the paper, plan audience-level "
+    "explanations and visuals, write concrete academic titles and concise bullets, self-check before "
+    "save_slide_spec. Use autonomous mode unless discussion is requested. Preserve meaning by "
+    "rewriting or splitting; never truncate. Use original evidence and editable explanatory diagrams."
 )
 
 DOCUMENTS = (
