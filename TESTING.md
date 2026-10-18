@@ -9,8 +9,8 @@ SlideSpec 1.2でsection・partと表示見本を分離し、旧1.1/1.0を維持�
 `test_previews.py`はキャッシュ、PPTXハッシュ不一致、版の分離、所有者・期限、描画中の期限切れ、同時実行制限、失敗後の再試行を確認する。
 `test_mcp.py`は実HTTPのMCPから画像を取得し、画像・PDFの署名URL、改ざん・期限切れの拒否を確認する。
 API/cache試験の描画は模擬処理。`scripts/preview_smoke.py`は実際のworker→LibreOffice→ページごとのPoppler描画を確認し、
-CIのMicrosoft SDK検証に1.2のPPTXも加える。ローカルで19ページの一覧と個別画像を確認した。
-一括PNG化で再利用テキストが欠けたローカル環境の事例を受け、各頁を独立プロセスで画像化し、全体の時間上限を適用する。
+CIのMicrosoft SDK検証に1.2のPPTXも加える。ローカルで19ページの一覧と重要な個別画像を確認した。
+一覧で読みにくい箇所は個別画像で確認する。既存のLibreOffice・Poppler描画処理を再利用する。
 
 生成記録は同梱rules_digestも保持するが、作成側LLMの読解・遵守の証明とは扱わない。
 描画済みでもサーバーのvisual_reviewはnot_performedで、画像の意味を確認して修正するのは接続先LLM。

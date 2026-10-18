@@ -9,7 +9,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-import time
 import unicodedata
 import zipfile
 from copy import deepcopy
@@ -877,7 +876,6 @@ def render(pptx: Path, directory: Path, timeout=240):
     soffice, pdftoppm = shutil.which("soffice"), shutil.which("pdftoppm")
     if not soffice or not pdftoppm:
         raise RuntimeError("RENDERER_MISSING: install LibreOffice and Poppler")
-    deadline = time.monotonic() + timeout
     directory.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="rsa-lo-") as profile:
         result = subprocess.run(
@@ -901,20 +899,16 @@ def render(pptx: Path, directory: Path, timeout=240):
     for old_page in directory.glob("slide-*.png"):
         if re.fullmatch(r"slide-\d+\.png", old_page.name):
             old_page.unlink()
+    subprocess.run(
+        [pdftoppm, "-scale-to", "1600", "-png", str(pdf), str(directory / "slide")],
+        capture_output=True,
+        check=True,
+        timeout=timeout,
+    )
+    images = sorted(directory.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[-1]))
     from pypdf import PdfReader
 
     page_count = len(PdfReader(pdf).pages)
-    # Isolate page rendering: some Poppler builds omit reused text in multi-page conversion.
-    for page in range(1, page_count + 1):
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            raise RuntimeError("RENDER_TIMEOUT")
-        subprocess.run(
-            [pdftoppm, "-f", str(page), "-l", str(page), "-singlefile", "-scale-to", "1600",
-             "-png", str(pdf), str(directory / f"slide-{page}")],
-            capture_output=True, check=True, timeout=remaining,
-        )
-    images = sorted(directory.glob("slide-*.png"), key=lambda p: int(p.stem.split("-")[-1]))
     if page_count != len(Presentation(pptx).slides) or len(images) != page_count:
         raise RuntimeError("RENDER_PAGE_COUNT_MISMATCH")
     return {
