@@ -26,6 +26,9 @@ if __name__ == "__main__":
     assert job["state"] == "completed", job
     assert preview_files(store, "smoke", job["id"]) is None
     image, info = preview_image(store, "smoke", job["id"], overview=True)
+    assert image is None and info["state"] == "queued"
+    assert process_one(store, settings)
+    image, info = preview_image(store, "smoke", job["id"], overview=True)
     assert info["pages"] == [1, 2, 3, 4, 5, 6] and info["next_page"] == 7
     assert info["page_count"] == len(spec.slides)
     assert info["visual_review"] == "not_performed" and not info["powerpoint_verified"]

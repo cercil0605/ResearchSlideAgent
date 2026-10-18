@@ -132,10 +132,20 @@ async def test_canonical_download_then_on_demand_preview(settings, preview_rende
             assert report.structured_content["quality"]["format_conformance"] == "canonical_slide_xml_and_shared_parts"
             assert report.structured_content["provenance"]["code_commit"]
             rendered = await session.call_tool("get_slide_preview", {"job_id": jid, "overview": True})
+            assert rendered.structured_content["state"] == "queued"
+            preview_job_id = rendered.structured_content["preview_job_id"]
+            assert not any(content.type == "image" for content in rendered.content)
+            assert not preview_renderer  # The networked API never launches LibreOffice.
+            await asyncio.to_thread(process_one, app.state.store, settings)
+            rendered = await session.call_tool("get_slide_preview", {"job_id": jid, "overview": True})
             assert not rendered.is_error, rendered
             assert rendered.structured_content["pages"] == [1]
             assert rendered.structured_content["visual_review"] == "not_performed"
             assert any(content.type == "image" for content in rendered.content)
+            rendering_job = await session.call_tool("get_job", {"job_id": preview_job_id})
+            assert rendering_job.structured_content["state"] == "completed"
+            assert "download_url" not in rendering_job.structured_content
+            assert (await session.call_tool("get_generation_report", {"job_id": preview_job_id})).is_error
             links = await session.call_tool("get_preview", {"job_id": jid})
             image_url = links.structured_content["images"][0]
             pdf_url = links.structured_content["pdf_url"]

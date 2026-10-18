@@ -6,9 +6,9 @@ SlideSpec 1.2でsection・partと表示見本を分離し、旧1.1/1.0を維持�
 `test_narrative.py`は、背景前の具体例、実験後の指標図、まとめ後の補足、複数実験と、図付き見本の各節への再利用を確認する。
 全体例は`examples/narrative.slidespec.json`で、数値・本文は明示した描画試験用。発表品質の完成見本や新しい研究結果ではない。
 
-`test_previews.py`はキャッシュ、PPTXハッシュ不一致、版の分離、所有者・期限、描画中の期限切れ、同時実行制限、失敗後の再試行を確認する。
+`test_previews.py`はAPIが変換せず隔離workerへ依頼すること、要求の重複排除、キャッシュ、PPTXハッシュ不一致、版の分離、所有者・期限、描画中の期限切れ、同時実行制限、失敗後の再試行を確認する。
 `test_mcp.py`は実HTTPのMCPから画像を取得し、画像・PDFの署名URL、改ざん・期限切れの拒否を確認する。
-API/cache試験の描画は模擬処理。`scripts/preview_smoke.py`は実際のworker→LibreOffice→ページごとのPoppler描画を確認し、
+API/cache試験の描画は模擬処理。`scripts/preview_smoke.py`は実際の生成worker→描画job→LibreOffice・Popplerを確認し、
 CIのMicrosoft SDK検証に1.2のPPTXも加える。ローカルで19ページの一覧と重要な個別画像を確認した。
 一覧で読みにくい箇所は個別画像で確認する。既存のLibreOffice・Poppler描画処理を再利用する。
 

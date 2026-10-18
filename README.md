@@ -108,6 +108,7 @@ uv run python scripts/render_spec.py examples/narrative.slidespec.json --output 
 `get_generation_report`でコードコミット・ソースハッシュ・正本SHA・仕様版と書式検査を取得できます。
 `get_job` はcompleted時に期限付き `download_url` を返します。
 `get_slide_preview`は要求時に完成画像を返し、overview=trueなら最大6頁の一覧、falseなら個別頁です。
+初回は隔離workerの描画jobを返すため、準備後に同じjob_idで画像を取得します。失敗時はpreview_job_idでretry_jobできます。
 同じPPTXはキャッシュを再利用し、描画後の`get_preview.pdf_url`から参考PDFも取得できます。
 描画は近似表示です。構造検査や画像の取得だけを、読解やPowerPoint実機の表示確認の合格と扱いません。
 

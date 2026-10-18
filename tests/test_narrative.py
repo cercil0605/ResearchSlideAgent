@@ -99,3 +99,12 @@ def test_feedback_exposes_inherited_headings_and_missing_visuals():
     assert "評価指標" in {h["text"] for h in experiment["inherited_headings"]}
     assert any(w["slide_id"] == experiment["slide_id"] and w["code"] == "MISSING_EXPLANATORY_VISUAL"
                for w in info["warnings"])
+
+
+def test_feedback_flags_table_on_a_non_table_prototype():
+    raw = narrative()
+    item = next(s for s in raw["slides"] if s.get("table_spec"))
+    item["prototype_id"] = "method"
+    info = authoring_feedback(TEMPLATE, SlideSpec.model_validate(raw))
+    assert any(w["slide_id"] == item["slide_id"] and w["code"] == "VISUAL_LAYOUT_UNSUPPORTED"
+               and "results_table" in w["guidance"] for w in info["warnings"])

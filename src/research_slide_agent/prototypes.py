@@ -95,6 +95,9 @@ def authoring_feedback(template, spec):
         if (item.diagram_spec or item.image_references) and "figure" not in entry:
             warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
                              "guidance": "Select method, results_figure or overview while keeping section unchanged."})
+        if item.table_spec and "table" not in entry:
+            warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
+                             "guidance": "Select results_table for a native table while keeping section unchanged."})
         pages.append(page)
     return {"pages": pages, "warnings": warnings, "content_review": "not_performed",
             "visual_review": "not_performed"}

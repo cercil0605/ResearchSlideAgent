@@ -1,4 +1,4 @@
-"""Render immutable completed outputs on demand; never treat rendering as visual review."""
+"""Queue isolated-worker previews and serve cached images; rendering is not visual review."""
 
 from __future__ import annotations
 
@@ -18,7 +18,8 @@ from .store import StateError
 _RENDER_SLOT = threading.BoundedSemaphore(1)
 
 
-def preview_files(store, owner, job_id, *, create=False):
+def preview_files(store, owner, job_id, *, create=False, expected_sha=None):
+    """Only the isolated worker calls create=True; the API reads completed render jobs."""
     job = store.job(owner, job_id)
     if job["state"] != "completed":
         if create:
@@ -36,6 +37,8 @@ def preview_files(store, owner, job_id, *, create=False):
     directory = pptx.parent / "preview"
     with pptx.open("rb") as file:
         digest = hashlib.file_digest(file, "sha256").hexdigest()
+    if expected_sha is not None and expected_sha != digest:
+        raise StateError("PREVIEW_SOURCE_CHANGED")
 
     def cached():
         try:
@@ -50,8 +53,11 @@ def preview_files(store, owner, job_id, *, create=False):
         return None
 
     result = cached()
-    if result is not None or not create:
-        return (directory, result) if result is not None else None
+    if not create:
+        queued = store.preview_job(owner, job_id) if result is not None else None
+        return (directory, result) if result is not None and queued and queued["state"] == "completed" else None
+    if result is not None:
+        return directory, result
     if not _RENDER_SLOT.acquire(blocking=False):
         raise StateError("PREVIEW_BUSY: retry after the current rendering finishes")
     try:
@@ -78,18 +84,23 @@ def preview_files(store, owner, job_id, *, create=False):
 def preview_image(store, owner, job_id, page=1, overview=False):
     if not 1 <= page <= 40:
         raise StateError("PREVIEW_PAGE_OUT_OF_RANGE")
-    from pptx import Presentation
-
     job = store.job(owner, job_id)
     if job["state"] != "completed":
         raise StateError("JOB_NOT_COMPLETED")
     output = json.loads(job["output"])
-    pptx = (store.root / output["pptx"]).resolve()
-    if not pptx.is_relative_to(store.root.resolve()):
-        raise StateError("INVALID_OUTPUT_PATH")
-    if page > len(Presentation(pptx).slides):
+    if "pptx" not in output:
+        raise StateError("NOT_PRESENTATION_JOB")
+    if output.get("slide_count") and page > output["slide_count"]:
         raise StateError("PREVIEW_PAGE_OUT_OF_RANGE")
-    directory, result = preview_files(store, owner, job_id, create=True)
+    cached = preview_files(store, owner, job_id)
+    if cached is None:
+        queued = store.preview_job(owner, job_id, enqueue=True)
+        return None, {"job_id": job_id, "preview_job_id": queued["id"], "state": queued["state"],
+                      "error": queued["error"], "retry_after_seconds": 2, "visual_review": "not_performed",
+                      "guidance": "Wait, then call get_slide_preview again. On failure use retry_job(preview_job_id)."}
+    directory, result = cached
+    if page > result["page_count"]:
+        raise StateError("PREVIEW_PAGE_OUT_OF_RANGE")
     pages = list(range(page, min(page + (6 if overview else 1), result["page_count"] + 1)))
     if overview:
         # Six pages per sheet keep image responses bounded even for a 40-page presentation.
@@ -109,6 +120,6 @@ def preview_image(store, owner, job_id, page=1, overview=False):
     else:
         data = (directory / result["images"][page - 1]).read_bytes()
     metadata = {**{k: v for k, v in result.items() if k not in {"images", "pdf"}},
-                "job_id": job_id, "pages": pages, "overview": overview,
+                "job_id": job_id, "state": "ready", "pages": pages, "overview": overview,
                 "next_page": pages[-1] + 1 if pages[-1] < result["page_count"] else None}
     return data, metadata

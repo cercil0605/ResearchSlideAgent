@@ -356,6 +356,8 @@ def make_mcp(store, settings, auth):
         job = store.job(owner, job_id)
         result = {"job": job, "images": [], "download_url": None}
         if job["state"] == "completed":
+            if "pptx" not in json.loads(job["output"]):
+                return result  # Rendering jobs have a source_job_id, not another presentation.
             def link(name):
                 cap = auth.sign("artifact", {"owner": owner, "job": job_id, "name": name}, ttl=600)
                 return f"{settings.base_url}/artifact/{job_id}/{name}?{urlencode({'cap': cap})}"
@@ -377,14 +379,18 @@ def make_mcp(store, settings, auth):
         """Get PPTX and cached preview URLs. Use get_slide_preview to render on demand."""
         return links(job_id, ctx=ctx)
 
-    @tool(mcp, annotations=read, meta=meta)
+    @tool(mcp, annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False,
+                                        open_world_hint=False, idempotent_hint=True), meta=meta)
     def get_slide_preview(job_id: str, page: int = 1, overview: bool = False, *, ctx: Context) -> CallToolResult:
         """Inspect completed output before delivery. overview=True returns up to six pages from page;
-        follow next_page for the rest, then inspect important pages individually. Rendering is cached
+        If not ready, queues isolated-worker rendering and returns preview_job_id/state; wait and retry.
+        Follow next_page for the rest, then inspect important pages individually. Rendering is cached
         per immutable PPTX. Approximate LibreOffice display, not PowerPoint verification or review approval.
         Fix unreadable evidence, broken phrases and missing explanations within the agreed scope.
         """
         data, metadata = preview_image(store, current_owner(ctx), job_id, page, overview)
+        if data is None:
+            return CallToolResult(content=[TextContent(text=json.dumps(metadata))], structuredContent=metadata)
         return image_result(data, metadata)
 
     @tool(mcp, annotations=read, meta=meta)
@@ -394,6 +400,8 @@ def make_mcp(store, settings, auth):
         if job["state"] != "completed":
             raise StateError("JOB_NOT_COMPLETED")
         output = json.loads(job["output"])
+        if "pptx" not in output:
+            raise StateError("GENERATION_REPORT_UNAVAILABLE_FOR_PREVIEW")
         path = (store.root / output["pptx"]).with_suffix(".manifest.json")
         if not path.resolve().is_relative_to(store.root.resolve()) or not path.exists():
             raise StateError("GENERATION_REPORT_UNAVAILABLE_FOR_PATCH")

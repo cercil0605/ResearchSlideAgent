@@ -103,6 +103,7 @@ PPTX生成と構造検査の成功でcompletedになる。`get_job.download_url`
 保存時のauthoring_feedbackには、ページの役割・引継ぎ見出し・図の有無・図枠寸法と警告が含まれる。
 これは内容や可読性の自動合格判定ではない。図を置けない見本への指定は生成時にも拒否される。
 生成後はget_slide_previewを使い、overview=trueで6頁ずつ全体を確認してから重要ページを個別に見る。
+初回は隔離workerの描画jobを返す。queued/runningなら待って同じ画像取得を繰り返し、失敗時はpreview_job_idでretry_jobする。
 画像はjob内のPPTXのハッシュと対応し、次版には新しいjobを使う。参考PDFは描画後のget_preview.pdf_url。
 元画像と完成画像を混同しない。サーバーは画像を描画するだけで意味のレビューは行わない。
 PowerPoint実機の表示保証とは別。実際に画像を見ていなければ確認済みと主張しない。

@@ -26,9 +26,10 @@ workerは`network_mode:none`。元資料からの外部リンクは入力検証�
 
 テンプレート更新は `templates/lab-template.pptx` と `.profile.json` を更新してイメージを再ビルドする。同じイメージタグをAPIとworkerに指定すると、両者が同じ書式を使う。研究本文を含む原本PPTX、手本PDF、プレビュー、開発用キャッシュは同梱しない。PDF由来の内容ルールMarkdownは配布用Pluginに含める。資料・DB・生成結果は `research_data` volumeへ保存する。
 
-完成PPTXのプレビューはAPIへのget_slide_preview要求時に描画し、volume内のjob出力に保存する。
-既存イメージのLibreOffice・Poppler・日本語フォントを使う。1 APIプロセスにつき描画1件、一覧は最大6頁。
-描画失敗でもPPTXは取得でき、同じjobで再試行可能。Piでの処理時間・メモリとPowerPointとの差は本番受入で確認する。
+完成PPTXのプレビューはget_slide_previewの要求を既存キューへ入れ、network_mode:noneのworkerで描画する。
+既存イメージのLibreOffice・Poppler・日本語フォントとuser/workerの同時ジョブ上限を使う。一覧は最大6頁。
+APIは変換を実行しない。描画失敗でもPPTXは取得でき、retry_job(preview_job_id)で再試行可能。
+Piでの処理時間・メモリとPowerPointとの差は本番受入で確認する。
 
 ホストのテンプレートに差し替える場合だけ、Stackの `x-runtime.volumes` に `/srv/research-slide-agent/lab-template.pptx:/templates/lab-template.pptx:ro` を追加する。この場合は両コンテナを停止してファイルを更新し、同時に再起動する。
 

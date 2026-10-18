@@ -12,7 +12,7 @@ APIと生成ワーカーは同一Piの共有Docker volumeを使い、SQLite WAL�
 | モジュール | 責務 |
 |---|---|
 | models.py | SlideSpec 1.0/1.1/1.2、説明上の役割と表示見本、本編・補足、意味的図表、参照、引用、JSON Schema |
-| previews.py | 完成jobのPDF・PNGを要求時に描画。所有者・期限確認、PPTXハッシュ対応、描画の同時実行制限 |
+| previews.py | 完成jobの描画を隔離workerへ依頼し、準備後の画像を配信。所有者・期限、PPTXハッシュと描画jobの完了を確認 |
 | pdf_assets.py | 登録PDFのCropBox画像化、表示に沿った正規化領域の切り出し。既存PopplerをAPI側で再利用 |
 | engine.py | 生成経路の選択、旧テンプレート互換処理、LibreOffice/Poppler、OPC差分編集 |
 | prototypes.py | 正本ページの複製、直接書式と表の保持、適合検査、生成来歴 |
@@ -51,9 +51,10 @@ PPTX生成・構造検査の成功でcompletedとなり、get_jobは期限付き
 1.2はsectionとpartを表示見本から分離し、導入の具体例、実験後の指標図、複数実験、まとめ後の補足を許可する。
 save_slide_specは図の不足と引継ぎ見出し等の確認情報を返すが、内容の正確さは判定しない。
 
-workerは画像確認を待たずPPTX生成を完了する。APIのget_slide_previewは既存render関数でPDF・PNGを要求時に生成し、
-jobの出力ディレクトリ内へ一時生成後に公開する。キャッシュはPPTXのSHAに対応し、別版の画像を返さない。
-同一APIプロセスの描画は1件に制限する。原論文のPDF画像・図の切り出しは独立した処理。
+workerは画像確認を待たずPPTX生成を完了する。APIのget_slide_previewはsource jobとPPTXハッシュで描画jobを重複排除してenqueueする。
+ネットワークを持たない既存workerがrender関数でPDF・PNGを生成し、元のjob出力ディレクトリ内へ一時生成後に保存する。
+APIはハッシュ・ファイル・描画job完了を確認して配信する。キャッシュだけ存在しても未完了なら配信しない。
+既存のuser_active、worker_limit、lease、retry上限を再利用し、新しい承認状態・DBテーブルは追加しない。原論文のPDF画像・図の切り出しとは別処理。
 描画は近似表示でvisual_review=not_performedのまま。画像を実際に確認・修正するのは接続先LLMで、サーバーにLLMや承認状態は追加しない。
 get_generation_reportは書式適合と来歴を返す。
 

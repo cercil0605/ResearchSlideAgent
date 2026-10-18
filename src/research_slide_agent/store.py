@@ -355,6 +355,44 @@ class Store:
     def _job_public(row):
         return {k: row[k] for k in ("id", "project", "version", "state", "attempts", "error", "output")}
 
+    def preview_job(self, owner, source_job_id, *, enqueue=False):
+        """Deduplicate rendering requests in the existing isolated-worker queue."""
+        with self.connect() as con:
+            source = con.execute("SELECT * FROM jobs WHERE id=? AND owner=?", (source_job_id, owner)).fetchone()
+            if not source:
+                raise StateError("JOB_NOT_FOUND")
+            self._project(con, owner, source["project"])
+            if source["state"] != "completed" or json.loads(source["payload"])["kind"] == "preview":
+                raise StateError("JOB_NOT_COMPLETED_OR_NOT_PRESENTATION")
+            path = (self.root / json.loads(source["output"])["pptx"]).resolve()
+            if not path.is_relative_to(self.root):
+                raise StateError("INVALID_OUTPUT_PATH")
+            with path.open("rb") as file:
+                sha = hashlib.file_digest(file, "sha256").hexdigest()
+            digest = hashlib.sha256(f"preview:{source_job_id}:{sha}".encode()).hexdigest()
+            prior = con.execute("SELECT * FROM jobs WHERE project=? AND digest=?",
+                                (source["project"], digest)).fetchone()
+            if not enqueue or (prior and prior["state"] != "completed"):
+                return self._job_public(prior) if prior else None
+            if prior and prior["attempts"] >= 3:
+                raise StateError("PREVIEW_RETRY_LIMIT")
+            if con.execute("SELECT 1 FROM jobs WHERE owner=? AND state IN ('queued','running','validating')",
+                           (owner,)).fetchone():
+                raise StateError("PREVIEW_BUSY: another job is active; retry later")
+            if prior:
+                # Called again only when the completed cache is missing or invalid.
+                con.execute("UPDATE jobs SET state='queued',available=?,output=NULL,error=NULL WHERE id=?",
+                            (time.time(), prior["id"]))
+                job_id = prior["id"]
+            else:
+                job_id = uid()
+                payload = {"kind": "preview", "source_job_id": source_job_id, "pptx_sha256": sha}
+                con.execute(
+                    "INSERT INTO jobs(id,project,owner,version,digest,payload,state,available,created) VALUES(?,?,?,?,?,?,'queued',?,?)",
+                    (job_id, source["project"], owner, source["version"], digest, json.dumps(payload),
+                     time.time(), time.time()))
+            return self._job_public(con.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone())
+
     def job(self, owner, job):
         with self.connect() as con:
             row = con.execute("SELECT * FROM jobs WHERE id=? AND owner=?", (job, owner)).fetchone()

@@ -36,6 +36,7 @@ results_figure、図と本文にはmethod、まとめとキー図にはoverview�
 save_slide_specのauthoring_feedbackで図の不足・引継ぎ見出し・実際の図枠寸法を確認する。警告なしを内容の合格とは扱わない。
 
 生成後はget_slide_previewのoverview=trueで全ページを確認し、重要な原図・表・操作画面を個別に拡大して確認する。
+初回は描画jobのstateが返る。準備前なら待って画像取得を繰り返し、失敗時はpreview_job_idでretry_jobする。
 読めない原図は分割・拡大し、単語や引用の途中改行、意味の合わない見出し、説明不足を直して再生成する。
 ユーザーの修正指示を待たず、合意した範囲で最大2巡まで仕上げる。未解決事項や画像を確認できない場合は明示する。
 描画はLibreOfficeの近似表示。画像取得だけで視覚レビュー済み・PowerPoint確認済みとは主張しない。
