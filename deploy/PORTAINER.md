@@ -63,7 +63,7 @@ CIが公開した`deploy/production`の`compose.yaml`を取得する。
 同じコミットSHAのイメージで起動する。取得に失敗した場合は既存コンテナを停止しない。
 起動後はGitHub Deployments APIへ`production`環境の成功状態をすぐ登録するため、
 GitHubリポジトリのDeployments画面でPiが稼働させたコミットSHAを確認できる。
-報告に失敗した場合は`var/deploy/github-pending.json`へ保持し、次の5分ごとの実行で再送する。
+報告に失敗した場合は`var/deploy/github-pending.json`へ保持し、次回の実行で再送する。
 GitHub API認証にはPi上の`.env.deploy`にある`RSA_DEPLOY_GITHUB_TOKEN`を使う。
 このtokenには対象repoのContents読み取りとDeployments書き込み権限が必要。tokenはコンテナへ渡さず、
 Pi上の更新スクリプトだけが読み取る。既に稼働中の版も初回実行時に報告する。
@@ -71,7 +71,7 @@ Pi上の更新スクリプトだけが読み取る。既に稼働中の版も初
 
 このPi用の`research-slide-agent-update.service`と`.timer`を`/etc/systemd/system/`へ配置して
 `sudo systemctl enable --now research-slide-agent-update.timer`で有効にすると、
-起動2分後と、前回処理の終了から5分ごとに確認する。
+起動1分後と、前回処理の終了から1分ごとに確認する。
 serviceは`User=kei`、repoの場所と認証ファイルの場所もこのPiに合わせている。
 別ホストではこれらを変更する。Dockerへのアクセス権が必要。
 
@@ -82,7 +82,7 @@ serviceは`User=kei`、repoの場所と認証ファイルの場所もこのPiに
 Composeと環境変数の変更はこのrepoと`.env.cloudflare`で管理する。
 `var/deploy/`に適用したComposeと状態を保存する。認証情報はGitHubへ送らない。
 
-### CIと連携した定期確認
+### Portainer GitOpsの定期確認
 
 `main`のCIはテストとARM64/AMD64イメージの公開に成功すると、`deploy/production`ブランチの
 `compose.yaml`を更新する。このファイルは両サービスのイメージを同じコミットSHAに固定する。
@@ -94,14 +94,16 @@ Portainerでこの連携を使う場合は、StackをGit repositoryから作り�
 - Repository: `https://github.com/cercil0605/ResearchSlideAgent`
 - Reference: `refs/heads/deploy/production`
 - Compose path: `compose.yaml`
-- GitOps updates: Polling、例5分
+- GitOps updates: 有効、MechanismはPolling、Fetch intervalは1分
 - Re-pull image: 有効
 - Force redeployment: 無効（新しいデプロイが公開されたときだけ更新）
 
 非公開repoのGit認証とGHCRのpull認証は別々に登録する。環境変数は`.env.example`に従う。
 公開済みComposeではイメージが固定されるため、`RSA_IMAGE`の環境変数による上書きはしない。
-Portainerのバージョン・エディションでGitOpsの利用可否を確認する。
+PortainerのGitOps Pollingが利用できるバージョン・エディションを使う。
 GitHubからPortainerへ接続する必要はなく、Portainerの公開設定を追加する必要もない。
+
+このPortainer GitOps方式を使う場合は、Pi上の `research-slide-agent-update.timer` は有効にしない。Piから直接Composeを更新する方式とPortainer GitOpsを同時に動かすと、同じコンテナを二重に管理して更新が競合する。
 
 ロールバックはPortainerで一時的にGitOps更新を止め、`deploy/production`の直前のコミットを
 Referenceに指定して再配置する。運用再開時はReferenceを上記ブランチに戻す。

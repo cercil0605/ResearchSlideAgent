@@ -1,10 +1,9 @@
 [Unit]
-Description=Check Research Slide Agent deployment every five minutes
+Description=Check Research Slide Agent deployment every minute
 
 [Timer]
-OnBootSec=2min
-OnUnitInactiveSec=5min
-RandomizedDelaySec=20s
+OnBootSec=1min
+OnUnitInactiveSec=1min
 Unit=research-slide-agent-update.service
 
 [Install]
