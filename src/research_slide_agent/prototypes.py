@@ -30,7 +30,7 @@ NS = {
     "ct": "http://schemas.openxmlformats.org/package/2006/content-types",
 }
 ENGINE = "prototype-clone-v1"
-STYLE_VERSION = "skeleton-2026-10-17.1"
+STYLE_VERSION = "skeleton-2026-10-18.1"
 PROTOTYPE_IDS = (
     "cover", "overview", "background", "related", "objective", "method", "experiment",
     "results_figure", "results_table", "discussion", "summary",
@@ -168,6 +168,13 @@ def replace_text(container, paragraphs):
             if len(styles) > 1:
                 raise ValueError("MIXED_RUN_STYLES: provide runs with template style_run indices")
             selections = [(value.text, 0)]
+        leading_marker = "".join(text for text, _ in selections).lstrip().startswith(
+            ("・", "•", "●", "▪", "- ", "* "))
+        # Model strips run whitespace; a separate '- ' run arrives as '-'. Keep numeric negatives.
+        split_marker = len(selections) > 1 and selections[0][0] in {"-", "*"} and not (
+            "".join(text for text, _ in selections[1:]).lstrip()[:1].isdigit())
+        if query(original, "./a:pPr/a:buChar | ./a:pPr/a:buAutoNum") and (leading_marker or split_marker):
+            raise ValueError("DUPLICATE_BULLET: supply item text without a leading bullet; the template adds it")
         for text, style in selections:
             prototype = _run_style(original, style)
             for i, line in enumerate(text.split("\n")):
@@ -276,7 +283,8 @@ def _figure(root, item, entry, slide, media):
     source_shape = next(s for s in slide.shapes if s.name == entry["figure"]["frame"])
     x, y, w, h = source_shape.left, source_shape.top, source_shape.width, source_shape.height
     tree = frame.getparent()
-    # Keep the frame; replace only the sample label inside it.
+    # Dashed sample frames are authoring guides, not part of the completed evidence.
+    tree.remove(frame)
     label.getparent().remove(label)
     if item.image_references:
         if len(item.image_references) != 1:
@@ -300,18 +308,60 @@ def _figure(root, item, entry, slide, media):
         tree.append(pic)
         return name, data
     diagram = item.diagram_spec
-    if diagram.edges or any(n.kind != "process" or n.emphasis for n in diagram.nodes):
-        raise LayoutError("Canonical diagram supports ordered process boxes; use separate pages for complex graphs")
-    n = len(diagram.nodes)
-    if n > 4:
-        raise LayoutError("DIAGRAM_OVERFLOW: split the page")
-    vertical = diagram.direction == "vertical"
-    gap = 120000
+    if any(n.emphasis for n in diagram.nodes):
+        raise LayoutError("Canonical diagrams do not support custom emphasis")
+    from pptx.util import Inches
+
+    from .engine import Box, graph_positions
+
+    # Keep all geometry server-owned; reserve room for short connector labels.
+    gap = Inches(0.7) if any(e.label for e in diagram.edges) else Inches(0.32)
+    layout = diagram if diagram.edges else diagram.model_copy(update={"kind": "timeline"})
+    positions = graph_positions(layout, Box(x + 120000, y + 120000, w - 240000, h - 240000), gap=gap)
+    horizontal = diagram.direction == "horizontal"
+    for edge in diagram.edges:
+        a, b = positions[edge.source], positions[edge.target]
+        if (a.x + a.w >= b.x if horizontal else a.y + a.h >= b.y):
+            raise LayoutError("DIAGRAM_DIRECTION: use a forward graph; explain feedback loops separately")
+    shape_ids = {node.id: 1000 + i * 2 for i, node in enumerate(diagram.nodes)}
+    connectors = []
+    for index, edge in enumerate(diagram.edges):
+        a, b = positions[edge.source], positions[edge.target]
+        x1, y1 = (a.x + a.w, a.y + a.h // 2) if horizontal else (a.x + a.w // 2, a.y + a.h)
+        x2, y2 = (b.x, b.y + b.h // 2) if horizontal else (b.x + b.w // 2, b.y)
+        # A connector through an unrelated node changes the apparent meaning of the graph.
+        if any(c.id not in {edge.source, edge.target} and (
+            a.x < positions[c.id].x < b.x if horizontal else a.y < positions[c.id].y < b.y
+        ) for c in diagram.nodes):
+            raise LayoutError("DIAGRAM_SKIPPED_STAGE: split shortcuts into a separate explanation")
+        connector = xml(f'''<p:cxnSp xmlns:p="{NS['p']}" xmlns:a="{NS['a']}">
+          <p:nvCxnSpPr><p:cNvPr id="{2000 + index}" name="rsa:edge:{index}"/>
+          <p:cNvCxnSpPr><a:stCxn id="{shape_ids[edge.source]}" idx="{3 if horizontal else 2}"/>
+          <a:endCxn id="{shape_ids[edge.target]}" idx="{1 if horizontal else 0}"/></p:cNvCxnSpPr><p:nvPr/></p:nvCxnSpPr>
+          <p:spPr><a:xfrm flipH="{int(x2 < x1)}" flipV="{int(y2 < y1)}">
+          <a:off x="{min(x1, x2)}" y="{min(y1, y2)}"/><a:ext cx="{abs(x2-x1)}" cy="{abs(y2-y1)}"/></a:xfrm>
+          <a:prstGeom prst="bentConnector3"><a:avLst/></a:prstGeom>
+          <a:ln w="19050"><a:solidFill><a:schemeClr val="accent1"/></a:solidFill>
+          <a:tailEnd type="triangle"/></a:ln></p:spPr></p:cxnSp>''')
+        connectors.append(connector)
+        if edge.label:
+            caption = deepcopy(label)
+            query(caption, "./p:nvSpPr/p:cNvPr")[0].set("id", str(3000 + index))
+            query(caption, "./p:nvSpPr/p:cNvPr")[0].set("name", "rsa:edge-label:" + str(index))
+            lw, lh = (x2 - x1, 240000) if horizontal else (700000, 240000)
+            lx, ly = (x1, y2 - lh - 24000) if horizontal else (x2 + 24000, y1 + (y2-y1)//2 + 24000)
+            lw = min(lw, x + w - lx)
+            _diagram_transform(caption, lx, ly, lw, lh)
+            tx = query(caption, "./p:txBody")[0]
+            replace_text(tx, [PrototypeParagraph(text=edge.label)])
+            _diagram_text(tx, 1200)
+            check_text_fit(tx, lw, lh, fallback=12, name="edge " + str(index))
+            if lx < x or ly < y or lx + lw > x + w or ly + lh > y + h:
+                raise LayoutError("DIAGRAM_LABEL_OVERFLOW: shorten labels or put conditions in nodes")
+            connectors.append(caption)
+    tree.extend(connectors)
     for i, node in enumerate(diagram.nodes):
-        nw = w - gap * 2 if vertical else (w - gap * (n + 1)) // n
-        nh = (h - gap * (n + 1)) // n if vertical else min(h - gap * 2, 850000)
-        nx = x + gap if vertical else x + gap + i * (nw + gap)
-        ny = y + gap + i * (nh + gap) if vertical else y + (h - nh) // 2
+        b = positions[node.id]
         box = deepcopy(frame)
         caption = deepcopy(label)
         for el, sid, name in [(box, 1000 + i * 2, "rsa:node:" + node.id),
@@ -319,17 +369,41 @@ def _figure(root, item, entry, slide, media):
             nv = query(el, "./p:nvSpPr/p:cNvPr")[0]
             nv.set("id", str(sid))
             nv.set("name", name)
-            transform = query(el, "./p:spPr/a:xfrm")[0]
-            off, size = query(transform, "./a:off")[0], query(transform, "./a:ext")[0]
-            off.set("x", str(nx))
-            off.set("y", str(ny))
-            size.set("cx", str(nw))
-            size.set("cy", str(nh))
+            _diagram_transform(el, b.x, b.y, b.w, b.h)
+        geometry = query(box, "./p:spPr/a:prstGeom")[0]
+        geometry.set("prst", {"process": "rect", "decision": "diamond", "terminator": "roundRect"}[node.kind])
+        line = query(box, "./p:spPr/a:ln")[0]
+        for el in list(line):
+            line.remove(el)
+        E.SubElement(E.SubElement(line, f"{{{NS['a']}}}solidFill"), f"{{{NS['a']}}}schemeClr", val="accent1")
+        if node.kind == "decision":
+            _diagram_transform(caption, b.x + b.w // 5, b.y + b.h // 5, b.w * 3 // 5, b.h * 3 // 5)
         tx = query(caption, "./p:txBody")[0]
         replace_text(tx, [PrototypeParagraph(text=node.text)])
-        check_text_fit(tx, nw, nh, fallback=15, name=node.id)
+        _diagram_text(tx, 1500)
+        size = query(caption, "./p:spPr/a:xfrm/a:ext")[0]
+        check_text_fit(tx, int(size.get("cx")), int(size.get("cy")), fallback=15, name=node.id)
         tree.extend([box, caption])
     return None
+
+
+def _diagram_transform(shape, x, y, w, h):
+    transform = query(shape, "./p:spPr/a:xfrm")[0]
+    off, size = query(transform, "./a:off")[0], query(transform, "./a:ext")[0]
+    off.set("x", str(x))
+    off.set("y", str(y))
+    size.set("cx", str(w))
+    size.set("cy", str(h))
+
+
+def _diagram_text(tx, size):
+    query(tx, "./a:bodyPr")[0].set("anchor", "ctr")
+    for rpr in query(tx, "./a:p/a:r/a:rPr | ./a:p/a:pPr/a:defRPr"):
+        rpr.set("sz", str(size))
+        rpr.set("b", "1")
+        for fill in query(rpr, "./a:solidFill"):
+            rpr.remove(fill)
+        E.SubElement(E.SubElement(rpr, f"{{{NS['a']}}}solidFill"), f"{{{NS['a']}}}schemeClr", val="tx1")
 
 
 def build_slide(archive, entry, item, slide, media):

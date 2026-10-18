@@ -127,7 +127,13 @@ def template_info(path: Path):
         return {"template_id": "lab", "sha256": profile["template_sha256"],
                 "engine": profile["engine"], "style_version": profile["style_version"],
                 "schema_version": "1.1", "prototypes": profile["prototypes"],
-                "layouts": [], "generation": "clone canonical examples; replace selected text only"}
+                "layouts": [], "generation": "clone canonical pages; replace text and framed evidence",
+                "diagram_capabilities": {
+                    "native_connectors": True, "branches_and_merges": True,
+                    "max_nodes": 12, "max_stages": 6, "max_parallel_nodes": 4,
+                    "forward_adjacent_stages_only": True, "custom_emphasis": False,
+                    "fit_policy": "reject overflow; shorten labels or split the explanation",
+                }}
     prs = Presentation(path)
     layouts = []
     for i, layout in enumerate(layouts_of(prs)):
@@ -271,7 +277,7 @@ def text_box(slide, name, text, box, theme, size=None, fill=None, center=False):
     return shape
 
 
-def graph_positions(diagram, box, repair=0):
+def graph_positions(diagram, box, repair=0, gap=None):
     nodes = diagram.nodes
     if diagram.kind in {"comparison", "timeline"}:
         levels = [[n.id] for n in nodes]
@@ -294,7 +300,7 @@ def graph_positions(diagram, box, repair=0):
             visited |= set(level)
     if len(levels) > 6 or max(map(len, levels)) > 4:
         raise LayoutError("Diagram too dense; split it")
-    gap = Inches(0.32)
+    gap = Inches(0.32) if gap is None else gap
     result = {}
     for i, level in enumerate(levels):
         for j, node_id in enumerate(level):

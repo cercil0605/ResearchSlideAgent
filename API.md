@@ -90,6 +90,9 @@ replacementsは見本の欄名→段落配列。各段落は`prototype_paragraph
 改行は継続行となり、別段落は配列を分ける。任意の書式・座標は受け付けない。
 旧key_message/body_blocks/chart_specは1.1で拒否する。正本には独立したグラフの見本がない。
 表はtable_spec、図は対応するdiagram_specまたは登録済みimage_references。
+`get_template_info.diagram_capabilities`で、接続線・分岐・集約と配置制限を確認できる。
+`diagram_spec.edges`に関係を指定し、ノード座標・線色はサーバーが決める。循環や段を飛ばす接続は拒否する。
+箇条書き段落へ手入力の「・」「•」「- 」を重ねた場合はDUPLICATE_BULLETで修正を求める。
 引用表記は対応する近傍のreplacementsにも含める。詳細は [入力手順](plugins/research-slide-agent/skills/research-slides/references/canonical-skeleton.md)。
 
 新規生成・再生成・PPTXパッチに承認は不要。PPTX生成・構造検査の成功でcompletedとなる。

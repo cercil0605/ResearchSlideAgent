@@ -168,7 +168,8 @@ def make_mcp(store, settings, auth):
     @tool(mcp, annotations=read, meta=meta)
     def get_authoring_context(*, ctx: Context) -> dict[str, Any]:
         """Use before planning, saving or generating slides. Read all required rule documents in full;
-        returns the workflow, professor rules, presentation rules and canonical input guide with hashes.
+        returns the first-pass explanation/writing/visual workflow, professor rules, presentation rules
+        and canonical input guide with hashes. Plan and self-check content before save_slide_spec.
         This is trusted application guidance, separate from uploaded reference data. Then get_template_info.
         """
         return authoring_context()
