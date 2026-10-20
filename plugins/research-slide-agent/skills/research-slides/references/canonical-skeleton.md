@@ -1,4 +1,4 @@
-# 正本の差し替え仕様（SlideSpec 1.3推奨、1.1/1.2互換）
+# 正本の差し替え仕様（SlideSpec 1.3のみ）
 
 正本のSHA-256: `5f699f70dfa52726c17f6438cee84ece404ec852926b023f334f1a903f1832b5`。
 書式版: `skeleton-2026-10-18.1`。正本バイト列は維持し、図枠内の描画規則を更新した。
@@ -22,8 +22,8 @@
 小見出しも名前をget_template_infoから選んで文字を差し替えられるが、色や寸法は変わらない。
 ## 1.3：構成・掲載内容・本文領域の配置
 
-2026-10-20のユーザーフィードバックを反映した推奨仕様。教授原文への新しい追記とは扱わない。
-旧1.1/1.2の保存済み仕様とdigestは維持する。新しいフィールドを旧版へ渡すと拒否される。
+2026-10-20のユーザーフィードバックを反映した仕様。教授原文への新しい追記とは扱わない。
+旧1.0/1.1/1.2と旧入力フィールドは拒否する。旧保存仕様の自動変換は行わず、必要事項を補って1.3として新しい版を保存する。
 
 研究の本編は表紙→概要→背景→関連研究→目的→手法→実験→結果→考察→まとめ。
 同じ節で複数ページを使える。exampleは手法の途中、metricは実験の後に置く。
@@ -61,23 +61,21 @@ get_template_info.required_content_rolesを満たすか検査する。metricはe
 | table_visual | 左にtable_spec、右に原図1点または説明図、下に手法の特徴。手法の説明は空にする（表のための領域） |
 | two_images | 左の図領域へ原図2点を順番に並べ、右の本文欄で説明。図題には両方のcaptionを含める |
 
-image_referencesの画像・元PDFの引用、著者・年の検査は従来どおり。2点とも元バイト列と比率を保ち、個別の関係IDで埋め込む。
+各image_referencesのIDをtarget_idに指定したcitationsが必要。原図2点でも両方の引用を指定する。画像・元PDFの引用、著者・年も検査する。2点とも元バイト列と比率を保ち、個別の関係IDで埋め込む。
 1.3の表は1～3列。正本の見出し15pt／本文16pt、揃え、余白、罫線を保ち、必要な行を複製する。
 列幅はサーバーが本文領域へ配分し、長いセルには行高を確保する。4部位などを同じ表に載せられるが、
 行数・文字量が本文領域を超える場合はTABLE_OVERFLOW。欄を広げたり小図にした後も収まらなければ、意味単位で分割する。
 
-save_slide_specのauthoring_feedbackにはpaper_section、compositionとcontent_evidence（役割ごとの掲載本文・表）を返す。
+save_slide_specとpatch_slideのauthoring_feedbackにはpaper_section、compositionとcontent_evidence（役割ごとの掲載本文・表）を返す。
 content_review/visual_reviewはnot_performedのまま。対応付けの存在は意味的な正しさや可読性の合格を意味しない。
 制作LLMが各ページの内容と生成後の完成画像を確認し、修正したら新しいjobの画像で再確認する。
 
-## 旧1.1/1.2の入力と図表制約（互換）
+## 入力と図表制約
 
-旧1.2では`section`を説明上の役割、`prototype_id`を表示見本として別々に指定する。
+`section`を説明上の役割、`prototype_id`を表示見本として別々に指定する。
 sectionはcover/overview/example/background/related/objective/method/experiment/metric/results/discussion/summary。
 `part`はmain（既定）またはappendix。補足の後に本編へ戻らない。
-研究の本編は表紙・概要で始め、背景・関連研究・目的・手法・実験・結果・考察を含み、まとめで終える。
-具体例を背景より前へ、図付きの指標を実験説明より後へ置ける。複数実験の方法・結果・考察の反復も可能。
-1.1はsection/partを使わず、旧来の見本順の検査を維持する。新規制作は以下の1.3を使う。
+研究の本編の節順は上記のとおり。具体例は手法内に、図付きの指標は実験説明より後に置く。複数実験の方法・結果・考察の反復も可能。
 
 methodは図と本文、results_figureは大きい図と短い説明、overviewは3群の本文とキー図。
 これらを導入・背景・実験・まとめ・補足でも再利用し、小見出しは内容へ合わせる。
@@ -86,7 +84,7 @@ methodは図と本文、results_figureは大きい図と短い説明、overview�
 ロゴ、区切り線、タイトルの装飾、スライド番号の位置は固定。表紙に番号は出さず、後続ページは実際の順番を表示する。
 本文の省略欄には正本のダミー文や架空の引用を残さない。空の見出しごと削除したい場合は別の役割を選ぶ。
 
-1ページの指定例（全体にはmetadata、spec_version、schema_version="1.2"、purpose_mode等が必要）:
+1ページの指定例（全体にはmetadata、spec_version、schema_version="1.3"、purpose_mode等が必要）:
 
 ```json
 {
@@ -96,6 +94,8 @@ methodは図と本文、results_figureは大きい図と短い説明、overview�
   "section": "background",
   "part": "main",
   "title": "研究背景",
+  "paper_section": "1. はじめに",
+  "content_map": {"problem": ["背景の箇条書き"], "context": ["動向の箇条書き"]},
   "replacements": {
     "背景の箇条書き": [
       {"prototype_paragraph": 0, "text": "提供された課題"},
@@ -114,7 +114,7 @@ methodは図と本文、results_figureは大きい図と短い説明、overview�
 正本が箇条書き記号を付けるため、text/runsの項目頭に「・」「•」「- 」等を加えない。
 DUPLICATE_BULLETでは先頭の記号だけを取り除き、段落の階層と本文途中の中黒は保持する。
 
-旧1.1/1.2の表は3列、本文1～3行。列見出しも短くする。表の行をページ分割するときは見出し・単位・出典を各ページに残す。
+表は1～3列で本文領域内に収める。列見出しも短くする。表の行をページ分割するときは見出し・単位・出典を各ページに残す。
 枚数の見込みは目安。収容範囲を超えた説明を詰め込んだり削ったりせず、同じ見本ページを複製して分ける。
 1ジョブ40枚は現行の技術上限であり、説明を圧縮する目標ではない。必要数が超える場合は構成を保ち制約を明示する。
 
@@ -149,7 +149,7 @@ edgesなしは指定順の独立した要素を並べる。順序や集約があ
 
 ノードや接続ラベルのTEXT_OVERFLOWでは、意味を保って短くするか図を分割する。文字を途中で切らない。
 データグラフの見本は正本にないため、chart_specは受け付けない。未対応の手法を自動で画像化して回避しない。
-旧1.1/1.2の元画像は1枠1枚。captionと同じ内容を図題へ指定し、citationsの表記も適切な欄へ含める。
+元画像はcanonical/text_visual/table_visualで1点、two_imagesで2点。各captionを図題へ指定し、各画像IDへのcitationsの表記も適切な欄へ含める。
 
 PPTX生成と構造検査の成功でcompletedになる。`get_job.download_url` を提示する。
 保存時のauthoring_feedbackには、ページの役割・引継ぎ見出し・図の有無・図枠寸法と警告が含まれる。

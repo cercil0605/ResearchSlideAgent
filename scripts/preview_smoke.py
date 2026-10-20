@@ -16,7 +16,7 @@ if __name__ == "__main__":
     settings = Settings(data_dir=destination / "data", template=Path("templates/lab-template.pptx"), dev=True)
     store = Store(settings)
     project = store.create("smoke")
-    raw = json.loads(Path("examples/narrative.slidespec.json").read_text())
+    raw = json.loads(Path("examples/research-quality.slidespec.json").read_text())
     raw["presentation_id"] = project["id"]
     spec = SlideSpec.model_validate(raw)
     store.save_spec("smoke", project["id"], spec, 0)

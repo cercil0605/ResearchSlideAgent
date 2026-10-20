@@ -1,3 +1,4 @@
+import json
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -33,6 +34,24 @@ def test_regenerate_new_version_without_approval(store, settings):
     assert store.job("alice", second["id"])["state"] == "completed"
     with pytest.raises(StateError, match="VERSION_CONFLICT"):
         store.save_spec("alice", p["id"], newer, 1)
+
+
+def test_old_saved_spec_requires_current_spec_before_regeneration(store, settings):
+    p, spec = saved_project(store)
+    old = spec.model_dump()
+    old["schema_version"] = "1.2"
+    with store.connect() as con:
+        con.execute("UPDATE projects SET spec=? WHERE id=?", (json.dumps(old), p["id"]))
+    with pytest.raises(ValidationError, match="1.3"):
+        store.enqueue("alice", p["id"])
+    assert store.project("alice", p["id"])["spec"] == old
+    with store.connect() as con:
+        assert con.execute("SELECT count(*) FROM jobs").fetchone()[0] == 0
+    current = SlideSpec.model_validate({**spec.model_dump(), "spec_version": 2})
+    store.save_spec("alice", p["id"], current, 1)
+    job = store.enqueue("alice", p["id"])
+    assert process_one(store, settings)
+    assert store.job("alice", job["id"])["state"] == "completed"
 
 
 def test_owner_isolation_and_expiry(store):
@@ -125,7 +144,7 @@ def test_reference_metadata_and_source_ownership(store):
     slide = spec.model_dump()["slides"][0]
     slide["source_references"] = [{"source_id": source["source_id"], "locator": "row 2"}]
     slide["citations"] = [
-        {"source": slide["source_references"][0], "author": "Wrong", "year": 2026, "target_id": "key_message"}
+        {"source": slide["source_references"][0], "author": "Wrong", "year": 2026, "target_id": "背景の箇条書き"}
     ]
     spec = SlideSpec.model_validate({**spec.model_dump(), "slides": [slide]})
     with pytest.raises(StateError, match="SOURCE_METADATA_MISMATCH"):
@@ -146,7 +165,7 @@ def test_reuploaded_pptx_patch_workflow(store, settings, tmp_path):
     generate(settings.template, sample_spec(), path)
     p = store.create("alice")
     uploaded = store.register("alice", p["id"], "manual.pptx", path.read_bytes())
-    shape = next(s for s in inspect_pptx(path)[0]["shapes"] if s["name"] == "rsa:key_message")
+    shape = next(s for s in inspect_pptx(path)[0]["shapes"] if s["name"] == "背景の箇条書き")
     change = {
         "slide_number": 1,
         "shape_id": shape["shape_id"],
@@ -227,7 +246,7 @@ def test_patch_base_change_rejected_at_enqueue_and_execution(store, settings, tm
     generate(settings.template, sample_spec(), path)
     p = store.create("alice")
     source = store.register("alice", p["id"], "base.pptx", path.read_bytes())["source_id"]
-    shape = next(s for s in inspect_pptx(path)[0]["shapes"] if s["name"] == "rsa:key_message")
+    shape = next(s for s in inspect_pptx(path)[0]["shapes"] if s["name"] == "背景の箇条書き")
     change = {"slide_number": 1, "shape_id": shape["shape_id"],
               "expected_sha256": shape["sha256"], "text": "Updated"}
     with pytest.raises(StateError):

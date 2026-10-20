@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.3",
   "purpose_mode": "research",
   "presentation_id": "research-check",
   "spec_version": 1,
@@ -27,7 +27,8 @@
         ]
       },
       "slide_id": "page1",
-      "slide_order": 1
+      "slide_order": 1,
+      "section": "cover"
     },
     {
       "prototype_id": "overview",
@@ -73,7 +74,20 @@
         ]
       },
       "slide_id": "page2",
-      "slide_order": 2
+      "slide_order": 2,
+      "section": "overview",
+      "paper_section": "合成試験例：overview",
+      "content_map": {
+        "purpose": [
+          "目的の記入欄"
+        ],
+        "approach": [
+          "方法の記入欄"
+        ],
+        "result": [
+          "結果の記入欄"
+        ]
+      }
     },
     {
       "prototype_id": "background",
@@ -101,7 +115,17 @@
         ]
       },
       "slide_id": "page3",
-      "slide_order": 3
+      "slide_order": 3,
+      "section": "background",
+      "paper_section": "合成試験例：background",
+      "content_map": {
+        "problem": [
+          "背景の箇条書き"
+        ],
+        "context": [
+          "動向の箇条書き"
+        ]
+      }
     },
     {
       "prototype_id": "background",
@@ -131,7 +155,17 @@
         ]
       },
       "slide_id": "page4",
-      "slide_order": 4
+      "slide_order": 4,
+      "section": "background",
+      "paper_section": "合成試験例：background",
+      "content_map": {
+        "problem": [
+          "背景の箇条書き"
+        ],
+        "context": [
+          "動向の箇条書き"
+        ]
+      }
     },
     {
       "prototype_id": "related",
@@ -159,7 +193,23 @@
         ]
       },
       "slide_id": "page5",
-      "slide_order": 5
+      "slide_order": 5,
+      "section": "related",
+      "paper_section": "合成試験例：related",
+      "content_map": {
+        "purpose": [
+          "研究例"
+        ],
+        "approach": [
+          "研究例"
+        ],
+        "result": [
+          "研究例"
+        ],
+        "gap": [
+          "研究の課題"
+        ]
+      }
     },
     {
       "prototype_id": "objective",
@@ -189,7 +239,20 @@
         ]
       },
       "slide_id": "page6",
-      "slide_order": 6
+      "slide_order": 6,
+      "section": "objective",
+      "paper_section": "合成試験例：objective",
+      "content_map": {
+        "purpose": [
+          "研究目的"
+        ],
+        "approach": [
+          "手段"
+        ],
+        "novelty": [
+          "根拠の記入例"
+        ]
+      }
     },
     {
       "prototype_id": "method",
@@ -238,7 +301,20 @@
         ]
       },
       "slide_id": "page7",
-      "slide_order": 7
+      "slide_order": 7,
+      "section": "method",
+      "paper_section": "合成試験例：method",
+      "content_map": {
+        "input": [
+          "手法の説明"
+        ],
+        "process": [
+          "手法の説明"
+        ],
+        "output": [
+          "手法の特徴"
+        ]
+      }
     },
     {
       "prototype_id": "experiment",
@@ -268,7 +344,20 @@
         ]
       },
       "slide_id": "page8",
-      "slide_order": 8
+      "slide_order": 8,
+      "section": "experiment",
+      "paper_section": "合成試験例：experiment",
+      "content_map": {
+        "purpose": [
+          "実験目的"
+        ],
+        "conditions": [
+          "実験条件"
+        ],
+        "metric": [
+          "指標"
+        ]
+      }
     },
     {
       "prototype_id": "results_figure",
@@ -305,7 +394,14 @@
         ]
       },
       "slide_id": "page9",
-      "slide_order": 9
+      "slide_order": 9,
+      "section": "results",
+      "paper_section": "合成試験例：results",
+      "content_map": {
+        "result": [
+          "結果の要点"
+        ]
+      }
     },
     {
       "prototype_id": "results_table",
@@ -333,7 +429,17 @@
         ]
       },
       "slide_id": "page10",
-      "slide_order": 10
+      "slide_order": 10,
+      "section": "results",
+      "paper_section": "合成試験例：results",
+      "content_map": {
+        "result": [
+          "table"
+        ],
+        "interpretation": [
+          "表の結果要点"
+        ]
+      }
     },
     {
       "prototype_id": "results_table",
@@ -371,7 +477,17 @@
         ]
       },
       "slide_id": "page11",
-      "slide_order": 11
+      "slide_order": 11,
+      "section": "results",
+      "paper_section": "合成試験例：results",
+      "content_map": {
+        "result": [
+          "table"
+        ],
+        "interpretation": [
+          "表の結果要点"
+        ]
+      }
     },
     {
       "prototype_id": "discussion",
@@ -401,7 +517,20 @@
         ]
       },
       "slide_id": "page12",
-      "slide_order": 12
+      "slide_order": 12,
+      "section": "discussion",
+      "paper_section": "合成試験例：discussion",
+      "content_map": {
+        "achievement": [
+          "達成"
+        ],
+        "interpretation": [
+          "解釈"
+        ],
+        "limitation": [
+          "制約"
+        ]
+      }
     },
     {
       "prototype_id": "summary",
@@ -433,7 +562,23 @@
         ]
       },
       "slide_id": "page13",
-      "slide_order": 13
+      "slide_order": 13,
+      "section": "summary",
+      "paper_section": "合成試験例：summary",
+      "content_map": {
+        "purpose": [
+          "まとめ：目的"
+        ],
+        "approach": [
+          "まとめ：方法"
+        ],
+        "result": [
+          "まとめ：結果"
+        ],
+        "future": [
+          "まとめ：今後の課題"
+        ]
+      }
     }
   ]
 }

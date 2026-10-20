@@ -182,13 +182,13 @@ def test_unsupported_compositions_fail_without_publishing(tmp_path, failure):
     assert not (tmp_path / "bad.pptx").exists()
 
 
-@pytest.mark.parametrize("name,digest", [
-    ("research-format", "7601bca00d6e95aeed95992dc4216cdf9f66bc028136babf44dff93d71f66860"),
-    ("narrative", "12b6545859d47d132945a941db6d048591d23dc6b09c62fb868677f06960d14b"),
-])
-def test_saved_legacy_job_digests_are_unchanged(name, digest):
-    spec = SlideSpec.model_validate_json(Path(f"examples/{name}.slidespec.json").read_text())
-    assert spec.digest() == digest
+@pytest.mark.parametrize("version", ["1.0", "1.1", "1.2"])
+def test_unsupported_schema_versions_are_rejected(version):
+    raw = quality()
+    raw["schema_version"] = version
+    with pytest.raises(ValidationError, match="1.3"):
+        SlideSpec.model_validate(raw)
+
 
 
 def test_template_catalog_advertises_new_contract():
@@ -222,4 +222,52 @@ def test_mixed_evidence_retains_each_citation_requirement(target):
     item = raw["slides"][1]
     item["citations"] = [c for c in item["citations"] if c["target_id"] != target]
     with pytest.raises(ValidationError, match="Sourced visual requires a citation"):
+        SlideSpec.model_validate(raw)
+
+
+@pytest.mark.parametrize("missing", ["all", "first", "second", "duplicate_first"])
+def test_two_images_require_a_citation_for_each_id(missing):
+    raw = quality()
+    item = deepcopy(next(s for s in raw["slides"] if s.get("composition") == "text_visual"))
+    item.update(slide_order=1, composition="two_images")
+    item.pop("diagram_spec")
+    item["image_references"] = [{"id": f"image{i}", "source_id": f"picture{i}", "caption": f"原図{i}"}
+                                 for i in range(2)]
+    cites = [{"source": {"source_id": f"picture{i}", "locator": f"figure {i}"},
+              "target_id": f"image{i}", "author": "試験", "year": 2026} for i in range(2)]
+    item["citations"] = [] if missing == "all" else [cites[1]] if missing == "first" else [cites[0]]
+    if missing == "duplicate_first":
+        item["citations"] *= 2
+    raw.update(purpose_mode="general", slides=[item])
+    with pytest.raises(ValidationError, match="Each image requires a citation"):
+        SlideSpec.model_validate(raw)
+
+
+def test_direct_store_save_cannot_persist_heading_as_content(store):
+    from research_slide_agent.sample import sample_spec
+
+    project = store.create("alice")
+    spec = sample_spec(project["id"], 1)
+    store.save_spec("alice", project["id"], spec, 0)
+    raw = spec.model_dump()
+    raw["spec_version"] = 2
+    slide = raw["slides"][0]
+    slide["replacements"]["小見出し：社会的な問題・ニーズ"] = [{"text": "課題という見出し"}]
+    slide["content_map"] = {"problem": ["小見出し：社会的な問題・ニーズ"]}
+    replacement = SlideSpec.model_validate(raw)  # Valid fields, invalid template-aware content target.
+    with pytest.raises(LayoutError, match="explanatory body slots"):
+        store.save_spec("alice", project["id"], replacement, 1)
+    current = store.project("alice", project["id"])
+    assert current["version"] == 1 and current["spec"] == spec.model_dump()
+    with store.connect() as con:
+        assert con.execute("SELECT count(*) FROM specs WHERE project=?", (project["id"],)).fetchone()[0] == 1
+
+
+@pytest.mark.parametrize("field,value", [
+    ("layout_id", 1), ("key_message", "old field"), ("body_blocks", []), ("chart_spec", None),
+])
+def test_removed_legacy_fields_are_rejected(field, value):
+    raw = quality()
+    raw["slides"][0][field] = value
+    with pytest.raises(ValidationError, match="Extra inputs"):
         SlideSpec.model_validate(raw)

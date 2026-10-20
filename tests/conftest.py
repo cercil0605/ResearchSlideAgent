@@ -1,7 +1,9 @@
+import shutil
+from pathlib import Path
+
 import pytest
 
 from research_slide_agent.config import Settings
-from research_slide_agent.engine import create_test_template
 from research_slide_agent.sample import sample_spec
 from research_slide_agent.store import Store
 
@@ -9,7 +11,9 @@ from research_slide_agent.store import Store
 @pytest.fixture
 def settings(tmp_path):
     template = tmp_path / "template.pptx"
-    create_test_template(template)
+    source = Path("templates/lab-template.pptx")
+    shutil.copyfile(source, template)
+    shutil.copyfile(source.with_suffix(".profile.json"), template.with_suffix(".profile.json"))
     return Settings(data_dir=tmp_path / "data", template=template, dev=True)
 
 

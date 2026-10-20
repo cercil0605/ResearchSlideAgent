@@ -7,7 +7,7 @@ def main():
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     demo = sub.add_parser("demo")
-    demo.add_argument("--template", type=Path, default=Path("artifacts/synthetic-template.pptx"))
+    demo.add_argument("--template", type=Path, default=Path("templates/lab-template.pptx"))
     demo.add_argument("--output", type=Path, default=Path("artifacts/demo.pptx"))
     demo.add_argument("--slides", type=int, default=5)
     demo.add_argument("--render", action="store_true")
@@ -17,11 +17,9 @@ def main():
     sub.add_parser("cleanup")
     args = parser.parse_args()
     if args.command == "demo":
-        from .engine import create_test_template, generate, render
+        from .engine import generate, render
         from .sample import sample_spec
 
-        if not args.template.exists():
-            create_test_template(args.template)
         spec = sample_spec(count=args.slides)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.with_suffix(".spec.json").write_text(spec.model_dump_json(indent=2))

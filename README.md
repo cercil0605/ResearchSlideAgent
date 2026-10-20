@@ -15,7 +15,7 @@ Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDK�
 | `src/`、`ui/` | サーバーとビューアーの実装。Git管理 |
 | `templates/` | 実行用の正本PPTXと対応表JSONをGit管理し、Dockerへ同梱。プレビューPDF／JSONは生成物でGit対象外 |
 | `plugins/`、`.agents/` | 配布用Plugin・Skillと開発用Skill。Git管理 |
-| `examples/` | 再生成できる入力JSON・出典メモ・試験CSV。Git管理。合成デモ用PPTXは実行時に生成 |
+| `examples/` | 再生成できる入力JSON・出典メモ・試験CSV。Git管理。デモも同梱の正本で生成 |
 | `scripts/`、`tests/`、`schemas/`、`tools/` | 開発・検証用。ソースと仕様はGit管理、ビルド結果は対象外 |
 | `reference_materials/` | 教授のガイドラインとルールの根拠。原文テキストはGit管理、提供されたPDF・PPTXは対象外 |
 | `artifacts/` | ローカル生成PPTX・描画画像・検証ログ。READMEだけGit管理。サーバー実行には不要 |
@@ -57,7 +57,7 @@ uv run pytest -q
 ```
 
 `artifacts/canonical-research/` に正本書式のPPTXが生成されます。数値はソフトウェア試験用で、研究事実を主張するものではありません。
-旧生成経路の合成デモが必要な場合だけ `uv run rsa demo` を使います。その合成テンプレートも `artifacts/` に生成されます。
+`uv run rsa demo` も同じ正本とSlideSpec 1.3を使う一般向けの試験例です。
 
 ターミナルを2つ開いて、同じディレクトリで起動します。
 
@@ -83,26 +83,31 @@ Inspectorで **Streamable HTTP**、URL `http://127.0.0.1:8000/mcp` を指定し�
 
 正本はユーザー修正版「学会発表スケルトン.pptx」。同一バイトのコピーを `templates/lab-template.pptx` として同梱しています。
 マスターだけでなく見本ページ全体を複製し、直接書式・段落・表を保持します。
-新規制作はSlideSpec 1.2。`section`で説明上の役割、`part`で本編・補足、`prototype_id`で表示見本を選びます。
-研究各節を含みつつ、導入の具体例、実験説明後の指標図、複数実験、まとめ後の補足を置けます。
+対応する入力はSlideSpec 1.3のみ。`section`で説明上の役割、`part`で本編・補足、`prototype_id`で表示見本を選びます。
+研究の本編は表紙→概要→背景→関連研究→目的→手法→実験→結果→考察→まとめの順です。
+`paper_section`で論文の節との対応、`content_map`で必要事項を実際の本文・表へ結び付けます。
+手法内の具体例、実験後の指標、複数実験と補足に対応します。
 method（図と本文）、results_figure（大きい図）、overview（本文3群とキー図）を各節で再利用できます。
 
 優先順位はユーザー指示、修正版、教授のガイドライン、過去PDFの推定です。
-表は修正版の中央揃え・最下段黒罫線・見出し／本文の行高と文字書式を保持し、少ない行数でも引き伸ばしません。
-収まらない場合は短縮・分割を求めます。表の色・罫線・文字サイズ等の改変を検査で検出します。
+methodの本文領域には本文＋小図、表＋図、原図2点の配置を選べます。
+表は1～3列。修正版の中央揃え・最下段黒罫線・文字書式・最低行高を保持し、改行に必要な行高を確保します。
+収まらない場合は配置と図表比率を見直し、それでも収まらなければ意味を保った短縮・分割を求めます。表の色・罫線・文字サイズ等の改変を検査で検出します。
 
 ```bash
 uv run python scripts/prepare_skeleton_template.py
 uv run python scripts/render_spec.py examples/eggs.slidespec.json --output artifacts/canonical-eggs
 uv run python scripts/render_spec.py examples/research-format.slidespec.json --output artifacts/canonical-research
-uv run python scripts/render_spec.py examples/narrative.slidespec.json --output artifacts/narrative --render
+uv run python scripts/render_spec.py examples/research-quality.slidespec.json --output artifacts/quality-check --render
 ```
 
 正本とprofileはGit管理してDockerに同梱するため、生成時に元の添付ファイルは不要です。
 元の「学会発表スケルトン.pptx」と旧卵例は、内容を変えず `reference_materials/local-inputs/` へ保管しています（Git対象外）。
 新しいスケルトンを登録する場合だけ `--source /path/to/new-skeleton.pptx` を指定します。
 `RSA_TEMPLATE`で変更する場合は対応するprofileも指定先に置き、サーバーとワーカーで同じ正本を使います。
-旧1.1は見本順の検査とともに維持し、1.0と合成テンプレートも互換試験用に保持します。正本は1.1/1.2に対応します。
+旧1.0/1.1/1.2、layout_id・key_message・body_blocks・chart_specと旧生成エンジンは廃止しました。
+旧版の保存済み仕様を再生成する場合は、1.3の必要事項を補って新しい仕様版として保存してください。自動変換は行いません。
+既存DBのリセットは不要で、保持期限内の生成済みPPTXは引き続き取得できます。
 詳細なページ対応・入力・制約は [書式テンプレートと発表内容ルール](docs/TEMPLATE_AND_CONTENT_RULES.md)。
 
 `get_generation_report`でコードコミット・ソースハッシュ・正本SHA・仕様版と書式検査を取得できます。
@@ -150,7 +155,7 @@ MCP URLの登録は、GitHubにあるSkillパッケージを自動インスト�
 文字の文中切断、図題だけで原図を置いた扱い、ダミー見出しの放置を避け、収まらなければ説明を保って分割します。
 本文先頭の箇条書き記号は正本と重複する場合に拒否します。項目テキストだけを入力してください。
 Strictの図枠内では、手順・分岐・集約を編集可能なノードと接続線で表せます。
-図枠・共有マスター・本文書式は維持し、図枠内の描画規則だけを更新しました。原論文のPDFページ画像化・cropにも対応しています。
+共有マスター・本文書式は維持し、本文領域の配置はサーバーが定義します。原論文のPDFページ画像化・cropにも対応しています。
 
 制作ルールの更新はサーバーの再ビルド・再配置で反映します。MCPメタデータ変更時はRefreshし、Skillの入口やツール契約を変える場合は
 完全なPluginも更新します。公開済みPluginは配布先の版更新・審査手順に従います。
@@ -208,7 +213,7 @@ Compose/Portainerは `RSA_ATTACHMENT_HOSTS` が未設定なら `*.oaiusercontent
 
 - 1ジョブの技術上限は40枚（推奨枚数ではない）。必要な説明が超える場合は省略せず制約を明示する。アップロード資料10件＋派生画像80件、各20 MiB、両者合計100 MiB。ユーザー同時ジョブ1、研究室実行上限2。
 - PDF/PPTX/PNG/JPEG/UTF-8 CSV/XLSX。資料抽出は1回24,000文字まで。画像PDFのOCRは未対応。
-- 正本の1.1/1.2経路は、3列・本文最大3行のネイティブ表、ノードと接続線の説明図、元画像に対応します。旧1.0経路のグラフ等は合成デモ・互換性試験用です。
+- SlideSpec 1.3のネイティブ表、ノードと接続線の説明図、元画像と複合配置に対応します。グラフの直接生成は未対応です。
 - 部分修正は、明示フォントを持つ単純なトップレベルのテキスト図形のみ。複数ラン・グループ・SmartArt・表/グラフの部分更新は停止する。
 - 再生成は正本の見本ページを複製します。手動編集を維持したいときは再アップロードと部分修正を使います。
 - 文字幅検査は保守的な推定。図形接続・領域・重なり・引用・元データ・保存した本文の構造検査を行いますが、図の意味や描画品質を完全自動判定しません。

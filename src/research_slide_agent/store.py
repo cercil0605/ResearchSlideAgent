@@ -151,7 +151,6 @@ class Store:
             for slide in spec.slides:
                 refs = (
                     slide.source_references
-                    + [r for b in slide.body_blocks for r in b.source_references]
                     + [c.source for c in slide.citations]
                 )
                 for ref in refs:
@@ -168,6 +167,9 @@ class Store:
                         "jpeg",
                     }:
                         raise StateError("Image source is unavailable")
+            from .prototypes import authoring_feedback
+
+            feedback = authoring_feedback(self.settings.template, spec)
             body = spec.model_dump_json()
             con.execute(
                 "UPDATE projects SET version=?, spec=? WHERE id=?", (spec.spec_version, body, project)
@@ -185,6 +187,7 @@ class Store:
         return {
             "spec_version": spec.spec_version,
             "digest": spec.digest(),
+            "authoring_feedback": feedback,
         }
 
     def register(self, owner, project, name, data, author=None, year=None, *, _origin=None):

@@ -1,93 +1,43 @@
+from copy import deepcopy
+
 from .models import SlideSpec
 
 
 def sample_spec(presentation_id="demo", count=5):
-    """Synthetic fixture, never research evidence or fabricated bibliography."""
+    """Canonical synthetic fixture, never research evidence or fabricated bibliography."""
     slides = [
-        {
-            "slide_id": "overview",
-            "slide_order": 1,
-            "layout_id": 1,
-            "title": "Editable presentation demo",
-            "key_message": "Synthetic content for software verification",
-            "body_blocks": [
-                {
-                    "id": "intro",
-                    "text": "All figures use native PowerPoint objects.\nReplace the fixture with approved research content.",
-                }
-            ],
-        },
-        {
-            "slide_id": "flow",
-            "slide_order": 2,
-            "layout_id": 1,
-            "title": "Processing flow",
-            "key_message": "A simple process with connected native shapes",
-            "diagram_spec": {
-                "kind": "flowchart",
-                "nodes": [
-                    {"id": "a", "text": "Input"},
-                    {"id": "b", "text": "Process", "emphasis": True},
-                    {"id": "c", "text": "Output"},
-                ],
-                "edges": [{"source": "a", "target": "b"}, {"source": "b", "target": "c"}],
-            },
-        },
-        {
-            "slide_id": "system",
-            "slide_order": 3,
-            "layout_id": 1,
-            "title": "System components",
-            "key_message": "The API delegates generation to the worker",
-            "diagram_spec": {
-                "kind": "system",
-                "nodes": [
-                    {"id": "a", "text": "MCP API"},
-                    {"id": "b", "text": "Job queue"},
-                    {"id": "c", "text": "Worker"},
-                ],
-                "edges": [{"source": "a", "target": "b"}, {"source": "b", "target": "c"}],
-            },
-        },
-        {
-            "slide_id": "table",
-            "slide_order": 4,
-            "layout_id": 1,
-            "title": "Editable table",
-            "key_message": "Synthetic values used only as test data",
-            "table_spec": {"columns": ["Case", "Value"], "rows": [["A", "10"], ["B", "20"], ["C", "30"]]},
-        },
-        {
-            "slide_id": "chart",
-            "slide_order": 5,
-            "layout_id": 1,
-            "title": "Editable chart",
-            "key_message": "The chart includes its original workbook",
-            "chart_spec": {
-                "kind": "bar",
-                "categories": ["A", "B", "C"],
-                "series": [{"name": "Synthetic", "values": [10, 20, 30]}],
-                "x_label": "Case",
-                "y_label": "Test units",
-            },
-        },
+        {"prototype_id": "background", "section": "background", "title": "Synthetic presentation demo",
+         "replacements": {"背景の箇条書き": [{"text": "Synthetic content for software verification"}],
+                          "動向の箇条書き": [{"text": "Replace with source-grounded research content"}]}},
+        {"prototype_id": "method", "section": "method", "title": "Processing flow",
+         "replacements": {"小見出し：［提案手法の名称］": [{"text": "Synthetic process"}],
+                          "手法の特徴": [{"text": "Native shapes"}],
+                          "手法の説明": [{"text": "Editable"}], "図題": [{"text": "Test flow"}]},
+         "diagram_spec": {"kind": "flowchart", "nodes": [
+             {"id": "a", "text": "Input"}, {"id": "b", "text": "Process"}, {"id": "c", "text": "Output"}],
+             "edges": [{"source": "a", "target": "b"}, {"source": "b", "target": "c"}]}},
+        {"prototype_id": "results_figure", "section": "results", "title": "System components",
+         "replacements": {"図題": [{"text": "Synthetic system"}], "結果の要点": [{"text": "Software test only"}]},
+         "diagram_spec": {"kind": "system", "nodes": [
+             {"id": "a", "text": "MCP API"}, {"id": "b", "text": "Queue"}, {"id": "c", "text": "Worker"}],
+             "edges": [{"source": "a", "target": "b"}, {"source": "b", "target": "c"}]}},
+        {"prototype_id": "results_table", "section": "results", "title": "Editable table",
+         "replacements": {"表の結果要点": [{"text": "Synthetic values; not research results"}]},
+         "table_spec": {"columns": ["Case", "Value"], "rows": [["A", "10"], ["B", "20"], ["C", "30"]]}},
+        {"prototype_id": "summary", "section": "summary", "title": "Summary",
+         "replacements": {"まとめ：目的": [{"text": "Verify software behavior"}],
+                          "まとめ：方法": [{"text": "Canonical template generation"}],
+                          "まとめ：結果": [{"text": "Native diagrams and table"}],
+                          "まとめ：今後の課題": [{"text": "Human content and visual review"}]}},
     ]
     expanded = []
     for i in range(count):
-        item = dict(slides[i % len(slides)])
+        item = deepcopy(slides[i % len(slides)])
         item.update(slide_id=f"s{i + 1}", slide_order=i + 1)
         expanded.append(item)
-    return SlideSpec.model_validate(
-        {
-            "presentation_id": presentation_id,
-            "spec_version": 1,
-            "presentation_metadata": {
-                "title": "Research Slide Agent PoC",
-                "audience": "Developers",
-                "purpose": "Software verification",
-                "duration_minutes": 10,
-                "language": "en",
-            },
-            "slides": expanded,
-        }
-    )
+    return SlideSpec.model_validate({
+        "schema_version": "1.3", "purpose_mode": "general", "presentation_id": presentation_id, "spec_version": 1,
+        "presentation_metadata": {"title": "Research Slide Agent demo", "audience": "Developers",
+                                  "purpose": "Software verification", "duration_minutes": 10, "language": "en"},
+        "slides": expanded,
+    })

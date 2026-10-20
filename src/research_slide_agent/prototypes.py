@@ -311,31 +311,26 @@ def check_text_fit(container, width, height, fallback=16, margins=(0, 0, 0, 0), 
     return math.ceil(required * 12700) + top + bottom
 
 
-def clone_table(shape, data, *, flexible=False, max_height=None):
+def clone_table(shape, data, *, max_height):
     from .engine import LayoutError
 
     tbl = query(shape, ".//a:tbl")[0]
     original = query(tbl, "./a:tr")
     widths = list(map(int, query(tbl, "./a:tblGrid/a:gridCol/@w")))
-    if not flexible and len(data.columns) != len(widths):
-        raise LayoutError(f"TABLE_COLUMNS: canonical table has {len(widths)} fixed-width columns")
-    if flexible:
-        if len(data.columns) > 3:
-            raise LayoutError("TABLE_COLUMNS: compositions support at most three readable columns")
-        frame_width = int(query(shape, "./p:xfrm/a:ext/@cx")[0])
-        weights = widths if len(data.columns) == len(widths) else [9, 16] if len(data.columns) == 2 else [1]
-        widths = [int(frame_width * weight / sum(weights)) for weight in weights]
-        widths[-1] += frame_width - sum(widths)
-        grid = query(tbl, "./a:tblGrid")[0]
-        for col in list(grid):
-            grid.remove(col)
-        for width in widths:
-            E.SubElement(grid, f"{{{NS['a']}}}gridCol", w=str(width))
-        needed = int(original[0].get("h")) + len(data.rows) * int(original[1].get("h"))
-        if max_height is None or needed > max_height:
-            raise LayoutError("TABLE_OVERFLOW: select a larger composition or split at a meaningful boundary")
-    elif len(data.rows) > len(original) - 1:
-        raise LayoutError("TABLE_OVERFLOW: split rows across duplicate results_table pages")
+    if len(data.columns) > 3:
+        raise LayoutError("TABLE_COLUMNS: compositions support at most three readable columns")
+    frame_width = int(query(shape, "./p:xfrm/a:ext/@cx")[0])
+    weights = widths if len(data.columns) == len(widths) else [9, 16] if len(data.columns) == 2 else [1]
+    widths = [int(frame_width * weight / sum(weights)) for weight in weights]
+    widths[-1] += frame_width - sum(widths)
+    grid = query(tbl, "./a:tblGrid")[0]
+    for col in list(grid):
+        grid.remove(col)
+    for width in widths:
+        E.SubElement(grid, f"{{{NS['a']}}}gridCol", w=str(width))
+    needed = int(original[0].get("h")) + len(data.rows) * int(original[1].get("h"))
+    if needed > max_height:
+        raise LayoutError("TABLE_OVERFLOW: select a larger composition or split at a meaningful boundary")
     rows = []
     for index, values in enumerate([data.columns, *data.rows]):
         # Keep the header, each body row, and the final row with its black bottom rule.
@@ -347,12 +342,11 @@ def clone_table(shape, data, *, flexible=False, max_height=None):
         for c, (cell, text) in enumerate(zip(query(row, "./a:tc"), values)):
             tx = query(cell, "./a:txBody")[0]
             replace_text(tx, [PrototypeParagraph(text=text)] if text else [])
-            needed = check_text_fit(tx, widths[c], max_height if flexible else int(row.get("h")),
+            needed = check_text_fit(tx, widths[c], max_height,
                                     margins=(91440, 91440, 45720, 45720), name=f"table row {index} column {c}")
-            if flexible:
-                row.set("h", str(max(int(row.get("h")), needed)))
+            row.set("h", str(max(int(row.get("h")), needed)))
         rows.append(row)
-    if flexible and sum(int(row.get("h")) for row in rows) > max_height:
+    if sum(int(row.get("h")) for row in rows) > max_height:
         raise LayoutError("TABLE_OVERFLOW: select a larger composition or split at a meaningful boundary")
     for row in original:
         tbl.remove(row)
@@ -538,7 +532,7 @@ def _apply_composition(archive, root, entry, item):
     return entry
 
 
-def build_slide(archive, entry, item, slide, media, schema_version="1.2"):
+def build_slide(archive, entry, item, slide, media):
     from .engine import LayoutError
 
     root = xml(archive.read(entry["part"]))
@@ -585,7 +579,7 @@ def build_slide(archive, entry, item, slide, media, schema_version="1.2"):
         shape = _shape(root, entry["table"]["name"])
         top = int(query(shape, "./p:xfrm/a:off/@y")[0])
         bottom = round((4.35 if item.composition == "table_visual" else 4.38) * 914400)
-        clone_table(shape, item.table_spec, flexible=schema_version == "1.3", max_height=bottom - top)
+        clone_table(shape, item.table_spec, max_height=bottom - top)
     media_item = []
     if item.diagram_spec or item.image_references:
         if "figure" not in entry:
@@ -639,8 +633,8 @@ def generate_prototypes(template, spec, output, images=None):
     if template.resolve() == output.resolve():
         raise LayoutError("Original template must not be overwritten")
     profile = profile_for(template)
-    if not profile or spec.schema_version not in {"1.1", "1.2", "1.3"}:
-        raise LayoutError("Canonical template requires SlideSpec 1.1 or 1.2 or 1.3 prototype_id/replacements")
+    if not profile:
+        raise LayoutError("CANONICAL_TEMPLATE_REQUIRED: prepare the template profile")
     entries = {e["prototype_id"]: e for e in profile["prototypes"]}
     prs = Presentation(template)
     info = provenance(template, spec)
@@ -664,7 +658,7 @@ def generate_prototypes(template, spec, output, images=None):
             if item.prototype_id not in entries:
                 raise LayoutError("Unknown prototype_id")
             entry = entries[item.prototype_id]
-            root, media = build_slide(src, entry, item, prs.slides[entry["source_page"] - 1], images or {}, spec.schema_version)
+            root, media = build_slide(src, entry, item, prs.slides[entry["source_page"] - 1], images or {})
             part = f"ppt/slides/slide{i}.xml"
             src_rels = posixpath.join(posixpath.dirname(entry["part"]), "_rels",
                                       posixpath.basename(entry["part"]) + ".rels")
@@ -741,7 +735,7 @@ def verify_prototypes(template, output, spec, manifest, images=None):
                     issues.append("Fixed template part changed: " + name)
         for slide, item in zip(actual.slides, sorted(spec.slides, key=lambda s: s.slide_order)):
             entry = entries[item.prototype_id]
-            expected, media = build_slide(src, entry, item, prototypes.slides[entry["source_page"] - 1], images or {}, spec.schema_version)
+            expected, media = build_slide(src, entry, item, prototypes.slides[entry["source_page"] - 1], images or {})
             part = str(slide.part.partname).lstrip("/")
             found = xml(dst.read(part))
             if E.tostring(expected, method="c14n") != E.tostring(found, method="c14n"):
