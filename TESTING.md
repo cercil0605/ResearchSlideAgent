@@ -60,9 +60,9 @@ F01–F06で、論文の読解、説明粒度、原図と説明図の選択、�
 提供原本や過去の `artifacts/` がなくても、新しいcloneでテスト・生成ができる構成とする。
 
 承認・プレビュー必須の撤廃後、全テストは **99 passed / スキップなし**（依存ライブラリの非推奨警告1件）。ruff、差分チェック、UIビルド、Skill検証、template/container smokeも成功。
-Cloudflareの自動試験は25件で、テスト用RS256鍵で署名したassertionを使う。
+Cloudflareの自動試験はテスト用RS256鍵で署名したassertionを使う。
 MCP経由の本人確認・プロジェクト作成→仕様保存→承認なしのPPTX生成・構造検査→completed時のリンク取得・ダウンロードを確認した。ブラウザ資料登録のcookie/CSRF/Origin検査は維持する。
-別チーム／別AUD／期限切れ／改ざん／不足claim／service token／許可外メールを拒否し、古いcookieやcap URLだけではAccess認証を迂回できないことも確認した。
+別チーム／別AUD／期限切れ／改ざん／必須claim不足／service tokenを拒否する。メールclaimの有無や値にかかわらず署名済みユーザーassertionを受け入れ、古いcookieやcap URLだけではAccess認証を迂回できないことも確認する。
 旧OAuth・loopback開発認証の既存テストも維持している。
 
 以前の整理時は69 passed。実行ログは `artifacts/canonical-review/cleanup-test-results.txt`。

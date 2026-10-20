@@ -33,7 +33,7 @@ Portainer Stackで `api` と `worker` を常駐。SQLite WALの永続キュー�
 GitHub Actionsはテストと `linux/arm64,linux/amd64` のイメージ作成・GHCR登録に使います。Portainerで検証済みコミットタグを指定して更新します。研究資料をActionsのジョブ入力や成果物に送る構成にはしていません。
 
 1人利用はCloudflare Tunnel + AccessのManaged OAuthを推奨します。Accessで自分のメールだけを許可し、ChatGPTと資料登録ブラウザの本人確認をまとめます。
-別のOAuthサーバーは不要です。`.env.example` にイメージ・公開URL・認証方式・Accessチームドメイン／AUD・許可メール・セッション鍵を設定します。
+別のOAuthサーバーは不要です。`.env.example` にイメージ・公開URL・認証方式・Accessチームドメイン／AUD・セッション鍵を設定します。利用者の許可はCloudflare Accessポリシーで管理します。
 Cloudflareの画面設定と初回のChatGPTログインは [deploy/AUTH.md](deploy/AUTH.md) を参照してください。
 
 推奨する開始条件はPi 5、64-bit OS、RAM 8 GB、SSD、冷却です。これは設計上の目安であり実測要件ではありません。Pi 4/4 GBでもワーカー1件なら試験対象になりますが、40枚の生成時間とメモリは実機で測ってください。[運用方法の比較](docs/RASPBERRY_PI.md)。
@@ -191,7 +191,6 @@ Compose/Portainerは `RSA_ATTACHMENT_HOSTS` が未設定なら `*.oaiusercontent
 | `RSA_AUTH_MODE` | `cloudflare`でAccess認証。省略時`oauth`で従来方式を維持 |
 | `RSA_CF_TEAM_DOMAIN` | Cloudflare方式のチームURL。例`https://lab.cloudflareaccess.com` |
 | `RSA_CF_AUDIENCE` | Cloudflare AccessアプリのAUD Tag。公開URLとは別 |
-| `RSA_ALLOWED_EMAILS` | Cloudflare方式の許可メール。1人利用は自分の1件を指定 |
 | `RSA_DATA_DIR` | 状態DB・資料・出力の保存場所。既定`var` |
 | `RSA_TEMPLATE` | 固定マスターのPPTXパス |
 | `RSA_BASE_URL` | 公開HTTPSのorigin。開発は`http://127.0.0.1:8000` |

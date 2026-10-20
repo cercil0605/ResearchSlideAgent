@@ -13,11 +13,11 @@ PPTXハッシュと描画jobの完了を確認して配信する。既存の同�
 
 ## 認証・所有権
 
-`RSA_AUTH_MODE=cloudflare` は各HTTP要求で `Cf-Access-Jwt-Assertion` のRS256署名・チームissuer・アプリAUD・iat/exp・type=app・空でないsub・署名内の許可メールを検証する。
+`RSA_AUTH_MODE=cloudflare` は各HTTP要求で `Cf-Access-Jwt-Assertion` のRS256署名・チームissuer・アプリAUD・iat/exp・type=app・空でないsubを検証する。ユーザー許可ポリシーはCloudflare Accessで管理し、アプリはメールアドレスを認可判定に使わない。
 JWKSは設定済みチームの `/cdn-cgi/access/certs` から取得し、キャッシュは5分。鍵単位の無期限キャッシュは使わない。
 OAuthの不透明なBearerやメールヘッダー、Access cookieを直接信用しない。Service tokenは人の本人確認に使えない。
 全ホスト名をAccessで保護し、Managed OAuthの認可・登録・トークン発行・更新はCloudflareが担当する。
-ownerは `cloudflare:<Access sub>` としてMCP・ブラウザで共通化する。メールは許可判定に使い、所有者の主キーには使わない。
+ownerは `cloudflare:<Access sub>` としてMCP・ブラウザで共通化する。メールアドレスは所有者IDやアプリの許可判定に使わない。
 healthとリソースメタデータ以外はoriginでもassertionを要求する。
 
 `RSA_AUTH_MODE=oauth`（省略時）は従来どおりMCP要求でRS256署名・issuer・audience・iat/exp・slides:write・許可subを検証する。
@@ -54,6 +54,6 @@ ChatGPT添付は `RSA_ATTACHMENT_HOSTS` に明示した完全一致ホスト、�
 
 これは侵入試験済み製品ではない。PDF/Office/Pillow/LibreOfficeに未知の脆弱性がないとは主張しない。依存はlockfileを更新し再試験する。
 上流IdPの強制ログアウトやAccessポリシー変更が既存トークンへ直ちに反映されるとは限らない。トークンを短期発行にし、更新時にAccessがポリシーを再評価する。
-Cloudflare方式のRSA_ALLOWED_EMAILSの除去はAPI設定反映後、各保護要求で拒否する。従来方式のRSA_ALLOWED_SUBSの除去も同様。
+Cloudflare Accessポリシーの変更は、Accessが新しいassertionを発行してから各保護要求に反映される。従来方式のRSA_ALLOWED_SUBSの除去はAPI設定反映後、各保護要求で拒否する。
 
 Cloudflare Managed OAuthとの初回接続・更新、OAuthプロバイダーとのGoogle login、CIMD/DCR/事前登録、resource indicator、issuer応答、ChatGPTホスト側の実動作は未検証。公開前にAUTH.mdの受入試験が必要。開発認証はloopback限定で本番環境では起動できない。

@@ -18,12 +18,6 @@ class Settings:
         default_factory=lambda: os.getenv("RSA_CF_TEAM_DOMAIN", "").rstrip("/")
     )
     cf_audience: str = field(default_factory=lambda: os.getenv("RSA_CF_AUDIENCE", ""))
-    allowed_emails: frozenset[str] = field(
-        default_factory=lambda: frozenset(
-            email.strip().casefold()
-            for email in os.getenv("RSA_ALLOWED_EMAILS", "").split(",") if email.strip()
-        )
-    )
     issuer: str = field(default_factory=lambda: os.getenv("RSA_OAUTH_ISSUER", ""))
     audience: str = field(default_factory=lambda: os.getenv("RSA_OAUTH_AUDIENCE", ""))
     jwks_url: str = field(default_factory=lambda: os.getenv("RSA_JWKS_URL", ""))
@@ -61,10 +55,8 @@ class Settings:
                 self.cf_team_domain,
             ):
                 raise ValueError("RSA_CF_TEAM_DOMAIN must be https://<team>.cloudflareaccess.com")
-            if not self.cf_audience or not self.allowed_emails or any(
-                not re.fullmatch(r"[^\s@,*]+@[^\s@,*]+", email) for email in self.allowed_emails
-            ):
-                raise ValueError("Cloudflare requires an application AUD and exact allowed email addresses")
+            if not self.cf_audience:
+                raise ValueError("Cloudflare requires an application AUD")
         elif (
             url.scheme != "https"
             or not all([self.issuer, self.audience, self.jwks_url, self.allowed_subs])

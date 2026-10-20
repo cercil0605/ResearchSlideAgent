@@ -11,7 +11,7 @@
 ## 初回
 
 1. ローカルビルドならリポジトリ直下で `docker build -t research-slide-agent:local .`。GHCRなら事前にprivate registry認証をPortainerへ登録。
-2. `.env.example` の公開URL、Cloudflareチームドメイン、AccessアプリAUD、自分の許可メール、セッション鍵を設定。
+2. `.env.example` の公開URL、Cloudflareチームドメイン、AccessアプリAUD、セッション鍵を設定。ユーザー許可はCloudflare Accessのポリシーで設定。
    既存の独自OAuthを使う場合だけ `.env.oauth.example` を使う。
 3. Portainer → Stacks → Add stack → Web editor に `deploy/portainer-stack.yml` を貼り付ける。Web editorはbuild contextを持たないためこのファイルにbuild命令はない。
 4. Environment variablesに全ての値を設定。`RSA_IMAGE` は実在するコミットSHAタグを推奨。CIが作るタグは `latest` と完全commit SHAであり、`0.1.0`タグは手動で付与しない限り存在しない。

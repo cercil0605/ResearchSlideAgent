@@ -66,17 +66,14 @@ class Auth:
                 algorithms=["RS256"],
                 audience=self.settings.cf_audience,
                 issuer=self.settings.cf_team_domain,
-                options={"require": ["sub", "email", "type", "exp", "iat", "iss", "aud"]},
+                options={"require": ["sub", "type", "exp", "iat", "iss", "aud"]},
             )
-            email = claims["email"]
             if (
                 claims["type"] != "app"
                 or not isinstance(claims["sub"], str)
                 or not claims["sub"].strip()
-                or not isinstance(email, str)
-                or email.casefold() not in self.settings.allowed_emails
             ):
-                raise AuthError("Cloudflare user is not allowed")
+                raise AuthError("Cloudflare user assertion is invalid")
             return "cloudflare:" + claims["sub"]
         except (jwt.PyJWTError, KeyError, TypeError) as exc:
             raise AuthError("Invalid Cloudflare Access assertion") from exc

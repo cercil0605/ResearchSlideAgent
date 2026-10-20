@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = (
     "RSA_BASE_URL", "RSA_CF_TEAM_DOMAIN", "RSA_CF_AUDIENCE",
-    "RSA_ALLOWED_EMAILS", "RSA_SESSION_KEY",
+    "RSA_SESSION_KEY",
 )
 GITHUB_API = "https://api.github.com/repos/cercil0605/ResearchSlideAgent"
 

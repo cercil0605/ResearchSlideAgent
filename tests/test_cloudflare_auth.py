@@ -17,7 +17,7 @@ def cloudflare(settings):
     settings = replace(
         settings, dev=False, auth_mode="cloudflare", base_url="https://slides.example.org",
         cf_team_domain="https://lab.cloudflareaccess.com", cf_audience="application-aud",
-        allowed_emails=frozenset({"alice@example.org", "bob@example.org"}), session_key="s" * 48,
+        session_key="s" * 48,
     )
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     app = create_app(settings)
@@ -74,7 +74,6 @@ def test_cloudflare_generation_without_approval(cloudflare):
 
 @pytest.mark.parametrize("change", [
     {"iss": "https://other.cloudflareaccess.com"}, {"aud": ["another-app"]},
-    {"email": "intruder@example.org"}, {"email": None}, {"email": ["alice@example.org"]},
     {"sub": ""}, {"sub": None}, {"type": "org"}, {"exp": 0}, {"iat": int(time.time()) + 3600},
 ])
 def test_invalid_cloudflare_claims_rejected(cloudflare, change):
@@ -89,12 +88,18 @@ def test_cloudflare_signature_missing_claims_and_service_tokens_rejected(cloudfl
     other_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     invalid = ["", "oauth:opaque-access-token", jwt.encode(claims, other_key, algorithm="RS256")]
     invalid.append(jwt.encode(claims, "not-an-rsa-key" * 4, algorithm="HS256"))
-    for required in ("email", "sub", "exp", "iat", "iss", "aud", "type"):
+    for required in ("sub", "exp", "iat", "iss", "aud", "type"):
         invalid.append(token(_drop=(required,)))
     invalid.append(token(sub="", email="", common_name="service-token.access"))
+    # Access owns the email allow policy; the origin accepts any signed user identity.
+    invalid.append(token(_drop=("email",)))
+    with_email_from_unrestricted_access = token(email="another-user@example.org")
     with TestClient(app, base_url=settings.base_url) as client:
         for assertion in invalid:
             assert client.get("/", headers={"Cf-Access-Jwt-Assertion": assertion}).status_code == 401
+        assert client.get("/", headers={
+            "Cf-Access-Jwt-Assertion": with_email_from_unrestricted_access,
+        }).status_code != 401
         assert client.get("/", headers={
             "Cf-Access-Authenticated-User-Email": "alice@example.org", "Authorization": "Bearer " + token(),
         }).status_code == 401
@@ -119,10 +124,9 @@ def test_cloudflare_cookies_and_capabilities_cannot_bypass_identity(cloudflare):
         assert client.get("/project/" + pid).status_code == 401
         assert client.put(path, content=b"a,b", headers={"X-Filename": "other.csv"}).status_code == 401
         assert client.cookies["rsa_session"] == browser_cookie
-        # Revoking an email is enforced even while the browser session remains valid.
+        # Access policy changes are enforced when a fresh assertion is issued.
         client.headers["Cf-Access-Jwt-Assertion"] = token()
-        settings.allowed_emails = frozenset({"bob@example.org"})
-        assert client.get("/project/" + pid).status_code == 401
+        assert client.get("/project/" + pid).status_code == 200
 
 
 def test_cloudflare_discovery_health_and_login(cloudflare):
@@ -152,7 +156,6 @@ def test_cloudflare_discovery_health_and_login(cloudflare):
     {"cf_team_domain": "https://lab.cloudflareaccess.com@attacker.example"},
     {"cf_team_domain": "http://lab.cloudflareaccess.com"},
     {"cf_team_domain": "https://lab.cloudflareaccess.com/path"}, {"cf_audience": ""},
-    {"allowed_emails": frozenset()}, {"allowed_emails": frozenset({"*@example.org", "bad"})},
     {"session_key": "short"}, {"base_url": "http://slides.example.org"},
 ])
 def test_cloudflare_config_fails_closed(cloudflare, change):

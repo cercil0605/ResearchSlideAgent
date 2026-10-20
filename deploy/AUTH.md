@@ -14,12 +14,11 @@ RSA_BASE_URL=https://slides.example.org
 RSA_AUTH_MODE=cloudflare
 RSA_CF_TEAM_DOMAIN=https://YOUR_TEAM.cloudflareaccess.com
 RSA_CF_AUDIENCE=<AccessアプリケーションのApplication Audience (AUD) Tag>
-RSA_ALLOWED_EMAILS=you@example.org
 RSA_SESSION_KEY=<32文字以上のランダム値>
 ```
 
 `RSA_BASE_URL` はパス・末尾の `/` がない公開HTTPS origin。`RSA_CF_TEAM_DOMAIN` はZero Trustのチームドメインです。
-AUDは公開URLではなくAccessアプリの識別子です。公開URLとチームドメイン、AUD、メールは秘密ではありません。
+AUDは公開URLではなくAccessアプリの識別子です。公開URL、チームドメイン、AUDは秘密ではありません。
 セッション鍵は `python3 -c 'import secrets; print(secrets.token_urlsafe(48))'` で生成し、更新後も同じ値を維持します。
 `RSA_ATTACHMENT_HOSTS` はChatGPT添付用に `*.oaiusercontent.com` を設定します。資料は認証済みブラウザからも登録できます。
 `RSA_OAUTH_*`、`RSA_JWKS_URL`、`RSA_WEB_CLIENT_ID`、`RSA_ALLOWED_SUBS` はこの方式では不要です。
@@ -52,7 +51,7 @@ Cloudflareから受け取ったOAuthトークンをChatGPTが後続のMCP要求�
 
 Managed OAuthのアクセストークンは不透明な文字列です。PiはそれをJWTとして解析しません。
 Accessがoriginへ渡す `Cf-Access-Jwt-Assertion` のRS256署名、チームissuer、アプリAUD、iat/exp、
-アプリトークン種別、許可メール、空でないユーザーsubを検証します。メールヘッダーだけは信用せず、service tokenは拒否します。
+アプリトークン種別、空でないユーザーsubを検証します。ユーザー許可はCloudflare Accessのポリシーで管理し、アプリではメールclaimを認可判定に使いません。メールヘッダーだけは信用せず、service tokenは拒否します。
 所有者IDは `cloudflare:<Accessのsub>` で固定し、MCPとブラウザで同じIDを使います。
 
 資料登録ブラウザもAccessで本人認証します。アプリの `/login` は別のOAuthへ飛ばず、
@@ -78,7 +77,7 @@ Cloudflareを経由したアクセスにはAccess側の設定が適用されま�
 - ChatGPTから初回接続→Accessで本人認証→`get_profile`→プロジェクト作成ができる。
 - MCPと資料登録ブラウザの利用者が一致し、資料登録→仕様保存→生成→PPTX取得ができる。
 - アプリ独自のログイン画面／Keycloakへ遷移しない。
-- 許可外メール、別AUD、別チーム、改ざん／期限切れJWT、JWTなし、Service Authを拒否する。
+- AccessのAllowポリシー外ユーザー、別AUD、別チーム、改ざん／期限切れJWT、JWTなし、Service Authを拒否する。
 - cookieや署名付きURLだけではoriginへ直接アクセスできず、別の許可利用者でも他人の成果物を取得できない。
 - トークン更新と期限後の再ログイン、Pi再起動、同一ユーザーでの再接続後も所有者が維持される。
 - ChatGPTの実際のOAuth callback、MCP discovery、埋め込みビューアー表示まで確認する。
