@@ -198,3 +198,27 @@ UV_OFFLINE=1で実行した。製品の通信・依存設定は変更してい�
 - ワイルドカード配下と多段サブドメインの許可、親ドメイン・類似ドメイン・別ドメイン接尾辞の拒否、明示的な空設定での取得拒否を確認。
 - ComposeとPortainer Stackの両方で、未設定時は `*.oaiusercontent.com`、明示的な空文字は空、完全一致ホスト指定はその値を維持することを `docker compose config` で確認。
 - ruffと差分の空白検査に成功。実ChatGPT添付の転送、本番配備、PowerPoint実機の受入は今回の検証に含めない。
+
+## SlideSpec 1.3：構成と掲載内容、複合配置
+
+`tests/test_research_quality.py` は次を回帰試験にする。
+
+- 背景・関連研究・目的・手法の順序、背景より先の独立した具体例の拒否。
+- 目的・アプローチ・新規性の欠落、空の本文、存在しない欄、見出し・図題だけを内容とする指定の拒否。
+- paper_section、節ごとのcontent_mapと実際のcontent_evidence。意味の審査はnot_performedのまま。
+- 複数実験と補足、旧1.1/1.2の入力・ジョブdigestの維持。
+- 本文＋小図、表＋原図／説明図、原図2点の配置。各画像の元バイト列、関係ID、図題、比率の保持。
+- 改行に応じた表の行高、4部位を同じネイティブ表に載せる処理、文字サイズ・共有パーツの維持。
+- 過密な表、未対応配置、表の裏へ本文が隠れる指定は完成ファイルを公開せず拒否。
+
+合成試験と、改善版の重要3ページに対応する回帰入力を生成・描画する手順：
+
+```sh
+uv run python scripts/render_spec.py examples/research-quality.slidespec.json --output artifacts/quality-check --render
+uv run python scripts/render_spec.py tests/fixtures/construction-regression.slidespec.json --output artifacts/construction-check --render
+```
+
+CIは両PPTXもMicrosoft Open XML SDKへ渡す。画像を返すことは内容レビューの成功ではない。
+受入済み24枚の全体をLLMが原論文から再生成する試験と、別論文での品質・再現性の評価は未実施。
+その試験では旧本文を答えとして渡さず複数回生成し、必要事項、原文の根拠、全ページの可読性を比較する。
+枚数・文字列の完全一致や自己申告のチェック済みフラグを合格条件にしない。

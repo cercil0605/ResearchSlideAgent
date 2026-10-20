@@ -1,0 +1,516 @@
+{
+  "schema_version": "1.3",
+  "purpose_mode": "research",
+  "presentation_id": "quality-example",
+  "spec_version": 1,
+  "presentation_metadata": {
+    "title": "合成データによる制作仕様の回帰試験",
+    "audience": "書式確認者",
+    "purpose": "新しい構成・内容対応・配置の試験。研究上の実証結果ではない",
+    "duration_minutes": 10
+  },
+  "slides": [
+    {
+      "prototype_id": "cover",
+      "title": "編集可能な操作手順の生成\n合成データによる試験",
+      "replacements": {
+        "著者": [
+          {
+            "runs": [
+              {
+                "text": "合成例",
+                "style_run": 0
+              }
+            ]
+          }
+        ]
+      },
+      "slide_id": "quality-1",
+      "slide_order": 1,
+      "section": "cover",
+      "paper_section": "cover",
+      "content_map": {}
+    },
+    {
+      "prototype_id": "overview",
+      "title": "概要",
+      "replacements": {
+        "目的の記入欄": [
+          {
+            "text": "操作手順の確認・修正を支援"
+          }
+        ],
+        "方法の記入欄": [
+          {
+            "text": "操作ログをブロックへ変換"
+          }
+        ],
+        "結果の記入欄": [
+          {
+            "text": "試験用の3課題で生成を確認"
+          }
+        ],
+        "図題": [
+          {
+            "text": "合成例の入出力"
+          }
+        ]
+      },
+      "slide_id": "quality-2",
+      "slide_order": 2,
+      "section": "overview",
+      "paper_section": "overview",
+      "content_map": {
+        "purpose": [
+          "目的の記入欄"
+        ],
+        "approach": [
+          "方法の記入欄"
+        ],
+        "result": [
+          "結果の記入欄"
+        ]
+      },
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "a",
+            "text": "操作ログ"
+          },
+          {
+            "id": "b",
+            "text": "ブロック列"
+          }
+        ],
+        "edges": [
+          {
+            "source": "a",
+            "target": "b"
+          }
+        ]
+      }
+    },
+    {
+      "prototype_id": "background",
+      "title": "研究背景",
+      "replacements": {
+        "背景の箇条書き": [
+          {
+            "text": "条件ごとに手順を作る負担がある"
+          }
+        ],
+        "動向の箇条書き": [
+          {
+            "text": "実演から手順を生成する方針に着目"
+          }
+        ]
+      },
+      "slide_id": "quality-3",
+      "slide_order": 3,
+      "section": "background",
+      "paper_section": "background",
+      "content_map": {
+        "problem": [
+          "背景の箇条書き"
+        ],
+        "context": [
+          "動向の箇条書き"
+        ]
+      }
+    },
+    {
+      "prototype_id": "related",
+      "title": "関連研究",
+      "replacements": {
+        "研究例": [
+          {
+            "text": "軌道の再現を目的に実演を学習\n試験では操作列を生成"
+          }
+        ],
+        "研究の課題": [
+          {
+            "text": "生成後の編集を扱う必要がある"
+          }
+        ]
+      },
+      "slide_id": "quality-4",
+      "slide_order": 4,
+      "section": "related",
+      "paper_section": "related",
+      "content_map": {
+        "purpose": [
+          "研究例"
+        ],
+        "approach": [
+          "研究例"
+        ],
+        "result": [
+          "研究例"
+        ],
+        "gap": [
+          "研究の課題"
+        ]
+      }
+    },
+    {
+      "prototype_id": "objective",
+      "title": "研究目的とアプローチ",
+      "replacements": {
+        "研究目的": [
+          {
+            "text": "操作員による手順の確認・修正を支援"
+          }
+        ],
+        "手段": [
+          {
+            "text": "実演から編集可能なブロック列を生成"
+          }
+        ],
+        "根拠の記入例": [
+          {
+            "text": "再現と編集を同じ表現で扱う"
+          }
+        ]
+      },
+      "slide_id": "quality-5",
+      "slide_order": 5,
+      "section": "objective",
+      "paper_section": "objective",
+      "content_map": {
+        "purpose": [
+          "研究目的"
+        ],
+        "approach": [
+          "手段"
+        ],
+        "novelty": [
+          "根拠の記入例"
+        ]
+      }
+    },
+    {
+      "prototype_id": "method",
+      "title": "提案手法：操作ログの区間化",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "入力と区間化"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "区間化の出力"
+          }
+        ],
+        "手法の説明": [
+          {
+            "text": "入力：時刻付きの操作ログ\n動く部位の組合せで区間を分ける\n同じ組合せの間を1区間にする"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "出力：部位と継続時間を持つ区間"
+          }
+        ],
+        "図題": [
+          {
+            "text": "処理の関係"
+          }
+        ]
+      },
+      "slide_id": "quality-6",
+      "slide_order": 6,
+      "section": "method",
+      "paper_section": "method",
+      "content_map": {
+        "input": [
+          "手法の説明"
+        ],
+        "process": [
+          "手法の説明"
+        ],
+        "output": [
+          "手法の特徴"
+        ]
+      },
+      "composition": "text_visual",
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "a",
+            "text": "操作ログ"
+          },
+          {
+            "id": "b",
+            "text": "動く部位で区分"
+          },
+          {
+            "id": "c",
+            "text": "操作区間"
+          }
+        ],
+        "edges": [
+          {
+            "source": "a",
+            "target": "b"
+          },
+          {
+            "source": "b",
+            "target": "c"
+          }
+        ]
+      }
+    },
+    {
+      "prototype_id": "method",
+      "title": "提案手法：ブロック生成",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "区間と生成する命令"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "生成結果"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "区間の目標値と待機時間を編集可能な列として保存"
+          }
+        ],
+        "図題": [
+          {
+            "text": "並列処理の例"
+          }
+        ]
+      },
+      "slide_id": "quality-7",
+      "slide_order": 7,
+      "section": "method",
+      "paper_section": "method",
+      "content_map": {
+        "process": [
+          "table"
+        ],
+        "output": [
+          "手法の特徴"
+        ]
+      },
+      "composition": "table_visual",
+      "table_spec": {
+        "columns": [
+          "区間",
+          "生成する処理"
+        ],
+        "rows": [
+          [
+            "保持",
+            "時間Tだけ待機"
+          ],
+          [
+            "1部位",
+            "目標値を設定"
+          ],
+          [
+            "複数部位",
+            "並列で設定"
+          ]
+        ]
+      },
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "a",
+            "text": "並列設定"
+          },
+          {
+            "id": "b",
+            "text": "時間Tだけ待機"
+          }
+        ],
+        "edges": [
+          {
+            "source": "a",
+            "target": "b"
+          }
+        ]
+      }
+    },
+    {
+      "prototype_id": "experiment",
+      "title": "実験方法",
+      "replacements": {
+        "実験目的": [
+          {
+            "text": "3種類の操作列を生成・実行できるか確認"
+          }
+        ],
+        "実験条件": [
+          {
+            "text": "合成ログを用いた機能試験\n各条件につきログ1本"
+          }
+        ],
+        "指標": [
+          {
+            "text": "生成可否と出力した命令の数"
+          }
+        ]
+      },
+      "slide_id": "quality-8",
+      "slide_order": 8,
+      "section": "experiment",
+      "paper_section": "experiment",
+      "content_map": {
+        "purpose": [
+          "実験目的"
+        ],
+        "conditions": [
+          "実験条件"
+        ],
+        "metric": [
+          "指標"
+        ]
+      }
+    },
+    {
+      "prototype_id": "results_table",
+      "title": "実験結果：4部位の出力",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "4部位を同じ表で比較。値は合成試験用"
+          }
+        ]
+      },
+      "slide_id": "quality-9",
+      "slide_order": 9,
+      "section": "results",
+      "paper_section": "results",
+      "content_map": {
+        "result": [
+          "table"
+        ],
+        "interpretation": [
+          "表の結果要点"
+        ]
+      },
+      "table_spec": {
+        "columns": [
+          "部位",
+          "試験値A",
+          "試験値B"
+        ],
+        "rows": [
+          [
+            "旋回体",
+            "2.0",
+            "2.1"
+          ],
+          [
+            "ブーム",
+            "2.2",
+            "2.3"
+          ],
+          [
+            "アーム",
+            "3.0",
+            "3.1"
+          ],
+          [
+            "バケット",
+            "4.0",
+            "4.1"
+          ]
+        ]
+      }
+    },
+    {
+      "prototype_id": "discussion",
+      "title": "考察",
+      "replacements": {
+        "達成": [
+          {
+            "text": "合成ログを編集可能な操作列へ変換"
+          }
+        ],
+        "解釈": [
+          {
+            "text": "手順を明示したまま再利用できる"
+          }
+        ],
+        "制約": [
+          {
+            "text": "操作員の編集効果と実機動作は未評価"
+          }
+        ]
+      },
+      "slide_id": "quality-10",
+      "slide_order": 10,
+      "section": "discussion",
+      "paper_section": "discussion",
+      "content_map": {
+        "achievement": [
+          "達成"
+        ],
+        "interpretation": [
+          "解釈"
+        ],
+        "limitation": [
+          "制約"
+        ]
+      }
+    },
+    {
+      "prototype_id": "summary",
+      "title": "まとめ",
+      "replacements": {
+        "まとめ：目的": [
+          {
+            "text": "操作手順の確認・修正を支援"
+          }
+        ],
+        "まとめ：方法": [
+          {
+            "text": "ログを編集可能な操作列へ変換"
+          }
+        ],
+        "まとめ：結果": [
+          {
+            "text": "合成ログの生成処理を確認"
+          }
+        ],
+        "まとめ：今後の課題": [
+          {
+            "text": "操作員の編集効果を評価"
+          }
+        ]
+      },
+      "slide_id": "quality-11",
+      "slide_order": 11,
+      "section": "summary",
+      "paper_section": "summary",
+      "content_map": {
+        "purpose": [
+          "まとめ：目的"
+        ],
+        "approach": [
+          "まとめ：方法"
+        ],
+        "result": [
+          "まとめ：結果"
+        ],
+        "future": [
+          "まとめ：今後の課題"
+        ]
+      }
+    }
+  ]
+}

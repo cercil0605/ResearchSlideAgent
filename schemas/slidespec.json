@@ -468,6 +468,53 @@
           "title": "Part",
           "type": "string"
         },
+        "composition": {
+          "default": "canonical",
+          "enum": [
+            "canonical",
+            "text_visual",
+            "table_visual",
+            "two_images"
+          ],
+          "title": "Composition",
+          "type": "string"
+        },
+        "paper_section": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Paper Section",
+          "type": "string"
+        },
+        "content_map": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "propertyNames": {
+            "enum": [
+              "purpose",
+              "approach",
+              "novelty",
+              "problem",
+              "context",
+              "gap",
+              "input",
+              "process",
+              "output",
+              "conditions",
+              "metric",
+              "result",
+              "interpretation",
+              "achievement",
+              "limitation",
+              "future"
+            ]
+          },
+          "title": "Content Map",
+          "type": "object"
+        },
         "replacements": {
           "additionalProperties": {
             "items": {
@@ -626,7 +673,8 @@
       "enum": [
         "1.0",
         "1.1",
-        "1.2"
+        "1.2",
+        "1.3"
       ],
       "title": "Schema Version",
       "type": "string"

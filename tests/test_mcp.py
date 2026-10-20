@@ -81,7 +81,8 @@ async def test_real_streamable_http_workflow(settings, mode):
 
 
 @pytest.mark.asyncio
-async def test_canonical_download_then_on_demand_preview(settings, preview_renderer):
+@pytest.mark.parametrize("schema", ["1.2", "1.3"])
+async def test_canonical_download_then_on_demand_preview(settings, preview_renderer, schema):
     settings.template = Path("templates/lab-template.pptx")
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
@@ -97,11 +98,12 @@ async def test_canonical_download_then_on_demand_preview(settings, preview_rende
         async with Client(settings.base_url + "/mcp") as session:
             created = await session.call_tool("create_project", {})
             pid = created.structured_content["id"]
-            raw = json.loads(Path("examples/research-format.slidespec.json").read_text())
+            name = "research-quality" if schema == "1.3" else "research-format"
+            raw = json.loads(Path(f"examples/{name}.slidespec.json").read_text())
             item = next(s for s in raw["slides"] if s.get("table_spec"))
             item["slide_order"] = 1
             item["section"] = "results"
-            raw.update(presentation_id=pid, purpose_mode="general", schema_version="1.2", slides=[item])
+            raw.update(presentation_id=pid, purpose_mode="general", schema_version=schema, slides=[item])
             spec = SlideSpec.model_validate(raw)
             saved = await session.call_tool("save_slide_spec", {
                 "presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0})

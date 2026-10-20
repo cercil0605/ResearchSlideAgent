@@ -9,6 +9,18 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+RESEARCH_CONTENT_ROLES = {
+    "overview": {"purpose", "approach", "result"},
+    "background": {"problem", "context"},
+    "related": {"purpose", "approach", "result", "gap"},
+    "objective": {"purpose", "approach", "novelty"},
+    "method": {"input", "process", "output"},
+    "experiment": {"purpose", "conditions"},
+    "results": {"result"},
+    "discussion": {"achievement", "interpretation", "limitation"},
+    "summary": {"purpose", "approach", "result", "future"},
+}
+
 
 class Model(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
@@ -142,6 +154,12 @@ class Slide(Model):
         "experiment", "metric", "results", "discussion", "summary",
     ] | None = None
     part: Literal["main", "appendix"] = "main"
+    composition: Literal["canonical", "text_visual", "table_visual", "two_images"] = "canonical"
+    paper_section: str = Field(default="", max_length=200)
+    content_map: dict[Literal[
+        "purpose", "approach", "novelty", "problem", "context", "gap", "input", "process", "output",
+        "conditions", "metric", "result", "interpretation", "achievement", "limitation", "future",
+    ], list[str]] = Field(default_factory=dict)
     replacements: dict[str, list[PrototypeParagraph]] = Field(default_factory=dict)
     title: str = Field(min_length=1, max_length=180)
     key_message: str = Field(default="", max_length=400)
@@ -165,8 +183,33 @@ class Slide(Model):
             sum(x is not None for x in [self.diagram_spec, self.table_spec, self.chart_spec])
             + bool(self.image_references)
             > 1
+        ) and self.composition != "table_visual":
+            raise ValueError("Multiple evidence types require table_visual composition")
+        if self.composition != "canonical" and self.prototype_id != "method":
+            raise ValueError("Compositions use the method prototype and its original text styles")
+        if self.composition == "table_visual" and (
+            not self.table_spec or bool(self.diagram_spec) == bool(self.image_references) or self.chart_spec
         ):
-            raise ValueError("MVP supports one visual per slide; split the slide")
+            raise ValueError("table_visual requires a table and one diagram or original image")
+        if self.composition == "two_images" and (
+            len(self.image_references) != 2 or self.diagram_spec or self.table_spec or self.chart_spec
+        ):
+            raise ValueError("two_images requires exactly two original images")
+        if self.composition != "two_images" and len(self.image_references) > 1:
+            raise ValueError("Two original images require two_images composition")
+        if self.composition == "text_visual" and (
+            bool(self.diagram_spec) == bool(self.image_references) or self.table_spec or self.chart_spec
+        ):
+            raise ValueError("text_visual requires one diagram or original image")
+        for role, slots in self.content_map.items():
+            if not slots or len(slots) != len(set(slots)):
+                raise ValueError(f"Content role {role} needs distinct nonempty content targets")
+            for slot in slots:
+                if slot == "table" and self.table_spec and any(any(row) for row in self.table_spec.rows):
+                    continue
+                paragraphs = self.replacements.get(slot, [])
+                if not any(p.text or any(r.text for r in p.runs) for p in paragraphs):
+                    raise ValueError(f"Content role {role} must point to populated content: {slot}")
         if self.source_references and not self.citations:
             raise ValueError("Slide source references require citations")
         refs = {r.source_id for r in self.source_references}
@@ -177,9 +220,8 @@ class Slide(Model):
         for block in self.body_blocks:
             if block.source_references and not any(c.target_id == block.id for c in self.citations):
                 raise ValueError("Sourced block requires a nearby citation")
-        if refs and any([self.diagram_spec, self.table_spec, self.chart_spec]):
-            target = "diagram" if self.diagram_spec else "table" if self.table_spec else "chart"
-            if not any(c.target_id == target for c in self.citations):
+        for target, visual in {"diagram": self.diagram_spec, "table": self.table_spec, "chart": self.chart_spec}.items():
+            if refs and visual and not any(c.target_id == target for c in self.citations):
                 raise ValueError("Sourced visual requires a citation")
         return self
 
@@ -193,7 +235,7 @@ class Metadata(Model):
 
 
 class SlideSpec(Model):
-    schema_version: Literal["1.0", "1.1", "1.2"] = "1.0"
+    schema_version: Literal["1.0", "1.1", "1.2", "1.3"] = "1.0"
     presentation_id: str
     template_id: str = "lab"
     purpose_mode: Literal["research", "general"] = "research"
@@ -207,12 +249,16 @@ class SlideSpec(Model):
             raise ValueError("Duplicate slide ID")
         if sorted(s.slide_order for s in self.slides) != list(range(1, len(self.slides) + 1)):
             raise ValueError("Slide order must be contiguous from 1")
-        if self.schema_version != "1.2" and any(s.section is not None or s.part != "main" for s in self.slides):
+        if self.schema_version not in {"1.2", "1.3"} and any(s.section is not None or s.part != "main" for s in self.slides):
             raise ValueError("section/part require schema_version 1.2")
-        if self.schema_version in {"1.1", "1.2"}:
+        if self.schema_version != "1.3" and any(
+            s.composition != "canonical" or s.paper_section or s.content_map for s in self.slides
+        ):
+            raise ValueError("composition/paper_section/content_map require schema_version 1.3")
+        if self.schema_version in {"1.1", "1.2", "1.3"}:
             if any(not s.prototype_id or s.key_message or s.body_blocks or s.chart_spec for s in self.slides):
                 raise ValueError("Canonical schemas require prototype_id/replacements; legacy common slots and unsampled charts are unsupported")
-            if self.schema_version == "1.2":
+            if self.schema_version in {"1.2", "1.3"}:
                 ordered = sorted(self.slides, key=lambda s: s.slide_order)
                 if any(s.section is None for s in ordered):
                     raise ValueError("1.2 requires a section independent of prototype_id on every page")
@@ -235,6 +281,8 @@ class SlideSpec(Model):
                         raise ValueError("Research main presentation must end with a summary before appendices")
                     if any(s.section in {"cover", "overview"} for s in ordered if s.part == "appendix"):
                         raise ValueError("Appendices cannot contain a cover or overview")
+                    if self.schema_version == "1.3":
+                        self.check_research_content(ordered)
             elif self.purpose_mode == "research":
                 order = [s.prototype_id for s in sorted(self.slides, key=lambda s: s.slide_order)]
                 ranks = {name: i for i, name in enumerate([
@@ -256,9 +304,41 @@ class SlideSpec(Model):
             raise ValueError("Prototype inputs require schema_version 1.1 or 1.2")
         return self
 
+    def check_research_content(self, ordered):
+        main = [s for s in ordered if s.part == "main"]
+        ranks = {name: i for i, name in enumerate([
+            "cover", "overview", "background", "related", "objective", "method", "experiment",
+            "metric", "results", "discussion", "summary",
+        ])}
+        previous = 0
+        for slide in main:
+            if slide.section == "example":
+                if previous != ranks["method"]:
+                    raise ValueError("Research examples belong in the method section after the objective")
+                continue
+            rank = ranks[slide.section]
+            if rank < previous and not (slide.section == "experiment" and previous >= ranks["results"]):
+                raise ValueError("Research sections must follow background, related, objective, method, experiments")
+            previous = rank
+        for slide in main:
+            if slide.section != "cover" and (not slide.paper_section or not slide.content_map):
+                raise ValueError("Research pages need a paper_section and content_map tied to displayed content")
+        for section, roles in RESEARCH_CONTENT_ROLES.items():
+            present = {role for s in main if s.section == section for role in s.content_map}
+            if roles - present:
+                raise ValueError(f"Missing {section} content roles: {', '.join(sorted(roles - present))}")
+        if not any("metric" in s.content_map for s in main if s.section in {"experiment", "metric"}):
+            raise ValueError("Experiments need a metric explained in experiment or metric pages")
+
     def digest(self) -> str:
+        value = self.model_dump(mode="json")
+        if self.schema_version != "1.3":
+            # Preserve saved job identities when loading pre-1.3 specifications.
+            for slide in value["slides"]:
+                for name in ("composition", "paper_section", "content_map"):
+                    slide.pop(name)
         return hashlib.sha256(
-            json.dumps(self.model_dump(mode="json"), sort_keys=True, ensure_ascii=False).encode()
+            json.dumps(value, sort_keys=True, ensure_ascii=False).encode()
         ).hexdigest()
 
     def outline(self) -> dict:

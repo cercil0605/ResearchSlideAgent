@@ -36,6 +36,11 @@ PROTOTYPE_IDS = (
     "cover", "overview", "background", "related", "objective", "method", "experiment",
     "results_figure", "results_table", "discussion", "summary",
 )
+COMPOSITIONS = {
+    "text_visual": "method: explanatory text on the left, small evidence on the right, full-width points below",
+    "table_visual": "method: native table on the left, one image or diagram on the right, points below",
+    "two_images": "method: two original images side by side, with captions and explanatory text",
+}
 
 
 def xml(data):
@@ -66,6 +71,16 @@ def profile_for(template):
     return profile
 
 
+def _check_content_targets(entry, item):
+    from .engine import LayoutError
+
+    content_slots = {slot["name"] for slot in entry["slots"] if slot["kind"] == "content"}
+    content_slots -= {"図題", entry.get("figure", {}).get("label")}
+    if any(target != "table" and target not in content_slots
+           for targets in item.content_map.values() for target in targets):
+        raise LayoutError("Content roles must reference explanatory body slots, not titles, headings or captions")
+
+
 def authoring_feedback(template, spec):
     """Expose inherited headings and actual visual capacity; do not claim semantic review."""
     profile = profile_for(template)
@@ -78,9 +93,17 @@ def authoring_feedback(template, spec):
         entry = entries.get(item.prototype_id)
         if entry is None:
             raise ValueError("Unknown prototype_id")
+        _check_content_targets(entry, item)
         visual = bool(item.diagram_spec or item.table_spec or item.image_references)
         page = {"slide_id": item.slide_id, "page": item.slide_order, "section": item.section,
                 "part": item.part, "prototype_id": item.prototype_id, "has_visual": visual,
+                "composition": item.composition, "paper_section": item.paper_section,
+                "content_evidence": {
+                    role: {slot: ([item.table_spec.columns, *item.table_spec.rows] if slot == "table" else
+                                  [p.text or "".join(r.text for r in p.runs) for p in item.replacements[slot]])
+                           for slot in slots}
+                    for role, slots in item.content_map.items()
+                },
                 "inherited_headings": [
                     {"slot": s["name"], "text": " ".join(p["example"] for p in s["paragraphs"])}
                     for s in entry["slots"] if s["kind"] == "heading" and s["name"] not in item.replacements
@@ -88,14 +111,16 @@ def authoring_feedback(template, spec):
         if "figure" in entry:
             frame = next(s for s in presentation.slides[entry["source_page"] - 1].shapes
                          if s.name == entry["figure"]["frame"])
-            page["visual_frame_inches"] = [round(frame.width / 914400, 2), round(frame.height / 914400, 2)]
+            page["visual_frame_inches"] = ([2.25, 2.45] if item.composition in {"text_visual", "table_visual"}
+                                            else [4.4, 2.7] if item.composition == "two_images"
+                                            else [round(frame.width / 914400, 2), round(frame.height / 914400, 2)])
         if item.section != "cover" and not visual:
             warnings.append({"slide_id": item.slide_id, "code": "MISSING_EXPLANATORY_VISUAL",
                              "guidance": "Use a compatible visual prototype and a meaningful explanation, not decoration."})
         if (item.diagram_spec or item.image_references) and "figure" not in entry:
             warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
                              "guidance": "Select method, results_figure or overview while keeping section unchanged."})
-        if item.table_spec and "table" not in entry:
+        if item.table_spec and "table" not in entry and item.composition != "table_visual":
             warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
                              "guidance": "Select results_table for a native table while keeping section unchanged."})
         pages.append(page)
@@ -283,68 +308,95 @@ def check_text_fit(container, width, height, fallback=16, margins=(0, 0, 0, 0), 
         required -= _space(ps[-1], "spcAft", _size(ps[-1], fallback))
     if required > available + 0.5:
         raise LayoutError(f"TEXT_OVERFLOW: {name}; shorten content or duplicate this prototype page")
+    return math.ceil(required * 12700) + top + bottom
 
 
-def clone_table(shape, data):
+def clone_table(shape, data, *, flexible=False, max_height=None):
     from .engine import LayoutError
 
     tbl = query(shape, ".//a:tbl")[0]
     original = query(tbl, "./a:tr")
     widths = list(map(int, query(tbl, "./a:tblGrid/a:gridCol/@w")))
-    if len(data.columns) != len(widths):
+    if not flexible and len(data.columns) != len(widths):
         raise LayoutError(f"TABLE_COLUMNS: canonical table has {len(widths)} fixed-width columns")
-    if len(data.rows) > len(original) - 1:
+    if flexible:
+        if len(data.columns) > 3:
+            raise LayoutError("TABLE_COLUMNS: compositions support at most three readable columns")
+        frame_width = int(query(shape, "./p:xfrm/a:ext/@cx")[0])
+        weights = widths if len(data.columns) == len(widths) else [9, 16] if len(data.columns) == 2 else [1]
+        widths = [int(frame_width * weight / sum(weights)) for weight in weights]
+        widths[-1] += frame_width - sum(widths)
+        grid = query(tbl, "./a:tblGrid")[0]
+        for col in list(grid):
+            grid.remove(col)
+        for width in widths:
+            E.SubElement(grid, f"{{{NS['a']}}}gridCol", w=str(width))
+        needed = int(original[0].get("h")) + len(data.rows) * int(original[1].get("h"))
+        if max_height is None or needed > max_height:
+            raise LayoutError("TABLE_OVERFLOW: select a larger composition or split at a meaningful boundary")
+    elif len(data.rows) > len(original) - 1:
         raise LayoutError("TABLE_OVERFLOW: split rows across duplicate results_table pages")
     rows = []
     for index, values in enumerate([data.columns, *data.rows]):
         # Keep the header, each body row, and the final row with its black bottom rule.
-        source = original[0] if index == 0 else original[-1] if index == len(data.rows) else original[index]
+        source = original[0] if index == 0 else original[-1] if index == len(data.rows) else original[min(index, len(original) - 2)]
         row = deepcopy(source)
+        cells = query(row, "./a:tc")
+        for cell in cells[len(widths):]:
+            row.remove(cell)
         for c, (cell, text) in enumerate(zip(query(row, "./a:tc"), values)):
             tx = query(cell, "./a:txBody")[0]
             replace_text(tx, [PrototypeParagraph(text=text)] if text else [])
-            check_text_fit(tx, widths[c], int(row.get("h")), margins=(91440, 91440, 45720, 45720),
-                           name=f"table row {index} column {c}")
+            needed = check_text_fit(tx, widths[c], max_height if flexible else int(row.get("h")),
+                                    margins=(91440, 91440, 45720, 45720), name=f"table row {index} column {c}")
+            if flexible:
+                row.set("h", str(max(int(row.get("h")), needed)))
         rows.append(row)
+    if flexible and sum(int(row.get("h")) for row in rows) > max_height:
+        raise LayoutError("TABLE_OVERFLOW: select a larger composition or split at a meaningful boundary")
     for row in original:
         tbl.remove(row)
     tbl.extend(rows)
     query(shape, "./p:xfrm/a:ext")[0].set("cy", str(sum(int(r.get("h")) for r in rows)))
 
 
-def _figure(root, item, entry, slide, media):
+def _figure(root, item, entry, media):
     """Use canonical frame/label primitives for editable diagrams or insert original images."""
     from .engine import LayoutError
 
     frame = _shape(root, entry["figure"]["frame"])
     label = _shape(root, entry["figure"]["label"])
-    source_shape = next(s for s in slide.shapes if s.name == entry["figure"]["frame"])
-    x, y, w, h = source_shape.left, source_shape.top, source_shape.width, source_shape.height
+    off, size = query(frame, "./p:spPr/a:xfrm/a:off")[0], query(frame, "./p:spPr/a:xfrm/a:ext")[0]
+    x, y, w, h = (int(element.get(key)) for element, key in [(off, "x"), (off, "y"), (size, "cx"), (size, "cy")])
     tree = frame.getparent()
     # Dashed sample frames are authoring guides, not part of the completed evidence.
     tree.remove(frame)
     label.getparent().remove(label)
     if item.image_references:
-        if len(item.image_references) != 1:
-            raise LayoutError("One original image per canonical frame; split the page")
-        ref = item.image_references[0]
-        if ref.source_id not in media:
-            raise LayoutError("Image requires a registered original PNG/JPEG source")
         from PIL import Image
 
-        data = media[ref.source_id].read_bytes()
-        with Image.open(media[ref.source_id]) as image:
-            ratio = min(w / image.width, h / image.height)
-            iw, ih = int(image.width * ratio), int(image.height * ratio)
-            ext = "png" if image.format == "PNG" else "jpeg"
-        name = f"rsa-{sha(data)}.{ext}"
-        pic = xml(f'''<p:pic xmlns:p="{NS['p']}" xmlns:a="{NS['a']}" xmlns:r="{NS['r']}">
-          <p:nvPicPr><p:cNvPr id="900" name="rsa:image"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
-          <p:blipFill><a:blip r:embed="rsaImage"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
-          <p:spPr><a:xfrm><a:off x="{x+(w-iw)//2}" y="{y+(h-ih)//2}"/>
-          <a:ext cx="{iw}" cy="{ih}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>''')
-        tree.append(pic)
-        return name, data
+        count = len(item.image_references)
+        gap = 146304 if count == 2 else 0
+        cell_width = (w - gap) // count
+        result = []
+        for index, ref in enumerate(item.image_references):
+            if ref.source_id not in media:
+                raise LayoutError("Image requires a registered original PNG/JPEG source")
+            data = media[ref.source_id].read_bytes()
+            with Image.open(media[ref.source_id]) as image:
+                ratio = min(cell_width / image.width, h / image.height)
+                iw, ih = int(image.width * ratio), int(image.height * ratio)
+                ext = "png" if image.format == "PNG" else "jpeg"
+            name = f"rsa-{sha(data)}.{ext}"
+            rid = "rsaImage" if index == 0 else f"rsaImage{index + 1}"
+            pic = xml(f'''<p:pic xmlns:p="{NS['p']}" xmlns:a="{NS['a']}" xmlns:r="{NS['r']}">
+              <p:nvPicPr><p:cNvPr id="{900 + index}" name="{'rsa:image' if index == 0 else f'rsa:image:{index}'}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
+              <p:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
+              <p:spPr><a:xfrm><a:off x="{x+index*(cell_width+gap)+(cell_width-iw)//2}" y="{y+(h-ih)//2}"/>
+              <a:ext cx="{iw}" cy="{ih}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>''')
+            tree.append(pic)
+            result.append((rid, name, data))
+        return result
     diagram = item.diagram_spec
     if any(n.emphasis for n in diagram.nodes):
         raise LayoutError("Canonical diagrams do not support custom emphasis")
@@ -422,7 +474,7 @@ def _figure(root, item, entry, slide, media):
         size = query(caption, "./p:spPr/a:xfrm/a:ext")[0]
         check_text_fit(tx, int(size.get("cx")), int(size.get("cy")), fallback=15, name=node.id)
         tree.extend([box, caption])
-    return None
+    return []
 
 
 def _diagram_transform(shape, x, y, w, h):
@@ -447,21 +499,63 @@ def _diagram_text(tx, size):
         rpr.insert(1 if query(rpr, "./a:ln") else 0, fill)
 
 
-def build_slide(archive, entry, item, slide, media):
+def _apply_composition(archive, root, entry, item):
+    """Move only body objects to a small catalog of server-owned arrangements."""
+    from .engine import LayoutError
+
+    if item.composition == "canonical":
+        return entry
+    entry = deepcopy(entry)
+    boxes = {}
+    if item.composition in {"text_visual", "table_visual"}:
+        boxes = {
+            entry["figure"]["frame"]: (4.85, 1.4, 2.25, 2.45),
+            entry["figure"]["label"]: (4.85, 2.2, 2.25, 0.54),
+            "図題": (4.85, 4.02, 2.25, 0.36),
+            "小見出し：特徴": (0.4, 4.45, 6.7, 0.31),
+            "手法の特徴": (0.4, 4.85, 6.7, 0.55),
+            "手法の説明": (0.4, 1.4, 4.2, 2.65),
+        }
+    elif item.composition == "two_images":
+        boxes = {
+            entry["figure"]["frame"]: (0.4, 1.4, 4.4, 2.7),
+            "図題": (0.4, 4.2, 4.4, 0.65),
+        }
+    for name, box in boxes.items():
+        _diagram_transform(_shape(root, name), *(round(value * 914400) for value in box))
+    if item.composition == "table_visual":
+        if item.replacements.get("手法の説明"):
+            raise LayoutError("table_visual reserves 手法の説明 for the table; use 手法の特徴 for explanatory points")
+        table_root = xml(archive.read(f"ppt/slides/slide{PROTOTYPE_IDS.index('results_table') + 1}.xml"))
+        table = deepcopy(query(table_root, "./p:cSld/p:spTree/p:graphicFrame[.//a:tbl]")[0])
+        query(table, "./p:nvGraphicFramePr/p:cNvPr")[0].set("id", "4000")
+        query(table, "./p:nvGraphicFramePr/p:cNvPr")[0].set("name", "rsa:composition-table")
+        transform = query(table, "./p:xfrm")[0]
+        query(transform, "./a:off")[0].attrib.update({"x": str(round(0.4 * 914400)), "y": str(round(1.4 * 914400))})
+        query(transform, "./a:ext")[0].set("cx", str(round(4.2 * 914400)))
+        query(root, "./p:cSld/p:spTree")[0].append(table)
+        entry["table"] = {"name": "rsa:composition-table"}
+    return entry
+
+
+def build_slide(archive, entry, item, slide, media, schema_version="1.2"):
     from .engine import LayoutError
 
     root = xml(archive.read(entry["part"]))
+    entry = _apply_composition(archive, root, entry, item)
     slots = {s["name"]: s for s in entry["slots"]}
     if set(item.replacements) - set(slots):
         raise LayoutError("Unknown replacement slot; use get_template_info prototypes")
     if entry["title_slot"] in item.replacements:
         raise LayoutError("Use title for the canonical title slot")
+    _check_content_targets(entry, item)
     replacements = dict(item.replacements)
     if item.image_references:
-        caption = item.image_references[0].caption
+        caption = "\n".join(ref.caption for ref in item.image_references)
         if "図題" not in replacements:
             replacements["図題"] = [PrototypeParagraph(text=caption)]
-        elif caption not in "".join(p.text or "".join(r.text for r in p.runs) for p in replacements["図題"]):
+        elif any(ref.caption not in "".join(p.text or "".join(r.text for r in p.runs)
+                                           for p in replacements["図題"]) for ref in item.image_references):
             raise LayoutError("Image caption must be included in the canonical figure caption slot")
     replacements[entry["title_slot"]] = [PrototypeParagraph(text=item.title)]
     for name, slot in slots.items():
@@ -478,21 +572,27 @@ def build_slide(archive, entry, item, slide, media):
                     "./p:txStyles/p:titleStyle/a:lvl1pPr/a:defRPr/@sz")
                 fallback = int(values[0]) / 100 if values else 24
             tf = original.text_frame
-            check_text_fit(tx, original.width, original.height, fallback,
+            geometry = query(shape, "./p:spPr/a:xfrm/a:ext")
+            width, height = ((int(geometry[0].get("cx")), int(geometry[0].get("cy"))) if geometry
+                             else (original.width, original.height))
+            check_text_fit(tx, width, height, fallback,
                            (tf.margin_left, tf.margin_right, tf.margin_top, tf.margin_bottom), name)
     if item.table_spec and "table" not in entry:
         raise LayoutError("Select results_table for a native canonical table")
     if "table" in entry:
         if not item.table_spec:
             raise LayoutError("results_table requires table_spec")
-        clone_table(_shape(root, entry["table"]["name"]), item.table_spec)
-    media_item = None
+        shape = _shape(root, entry["table"]["name"])
+        top = int(query(shape, "./p:xfrm/a:off/@y")[0])
+        bottom = round((4.35 if item.composition == "table_visual" else 4.38) * 914400)
+        clone_table(shape, item.table_spec, flexible=schema_version == "1.3", max_height=bottom - top)
+    media_item = []
     if item.diagram_spec or item.image_references:
         if "figure" not in entry:
             raise LayoutError("Select a prototype with a figure frame")
         if entry["figure"]["label"] in item.replacements:
             raise LayoutError("Do not replace the sample label when supplying a figure")
-        media_item = _figure(root, item, entry, slide, media)
+        media_item = _figure(root, item, entry, media)
     for citation in item.citations:
         text = "".join(query(root, ".//a:t/text()"))
         if citation.label not in text:
@@ -539,8 +639,8 @@ def generate_prototypes(template, spec, output, images=None):
     if template.resolve() == output.resolve():
         raise LayoutError("Original template must not be overwritten")
     profile = profile_for(template)
-    if not profile or spec.schema_version not in {"1.1", "1.2"}:
-        raise LayoutError("Canonical template requires SlideSpec 1.1 or 1.2 prototype_id/replacements")
+    if not profile or spec.schema_version not in {"1.1", "1.2", "1.3"}:
+        raise LayoutError("Canonical template requires SlideSpec 1.1 or 1.2 or 1.3 prototype_id/replacements")
     entries = {e["prototype_id"]: e for e in profile["prototypes"]}
     prs = Presentation(template)
     info = provenance(template, spec)
@@ -564,7 +664,7 @@ def generate_prototypes(template, spec, output, images=None):
             if item.prototype_id not in entries:
                 raise LayoutError("Unknown prototype_id")
             entry = entries[item.prototype_id]
-            root, media = build_slide(src, entry, item, prs.slides[entry["source_page"] - 1], images or {})
+            root, media = build_slide(src, entry, item, prs.slides[entry["source_page"] - 1], images or {}, spec.schema_version)
             part = f"ppt/slides/slide{i}.xml"
             src_rels = posixpath.join(posixpath.dirname(entry["part"]), "_rels",
                                       posixpath.basename(entry["part"]) + ".rels")
@@ -572,10 +672,9 @@ def generate_prototypes(template, spec, output, images=None):
             for rel in list(slide_rels):
                 if rel.get("Type").endswith("/notesSlide"):
                     slide_rels.remove(rel)
-            if media:
-                name, data = media
+            for image_rid, name, data in media:
                 parts["ppt/media/" + name] = data
-                E.SubElement(slide_rels, f"{{{NS['rel']}}}Relationship", Id="rsaImage",
+                E.SubElement(slide_rels, f"{{{NS['rel']}}}Relationship", Id=image_rid,
                              Type=NS["r"] + "/image", Target="../media/" + name)
                 ext = name.rsplit(".", 1)[1]
                 if not any(el.get("Extension") == ext for el in types):
@@ -590,6 +689,7 @@ def generate_prototypes(template, spec, output, images=None):
                          ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml")
             manifest["slides"].append({"slide_id": item.slide_id, "prototype_id": item.prototype_id,
                                        "section": item.section, "presentation_part": item.part,
+                                       "composition": item.composition, "paper_section": item.paper_section,
                                        "source_page": entry["source_page"], "part": "/" + part})
         parts["ppt/presentation.xml"] = dump(presentation)
         parts["ppt/_rels/presentation.xml.rels"] = dump(rels)
@@ -641,7 +741,7 @@ def verify_prototypes(template, output, spec, manifest, images=None):
                     issues.append("Fixed template part changed: " + name)
         for slide, item in zip(actual.slides, sorted(spec.slides, key=lambda s: s.slide_order)):
             entry = entries[item.prototype_id]
-            expected, media = build_slide(src, entry, item, prototypes.slides[entry["source_page"] - 1], images or {})
+            expected, media = build_slide(src, entry, item, prototypes.slides[entry["source_page"] - 1], images or {}, spec.schema_version)
             part = str(slide.part.partname).lstrip("/")
             found = xml(dst.read(part))
             if E.tostring(expected, method="c14n") != E.tostring(found, method="c14n"):
@@ -651,9 +751,8 @@ def verify_prototypes(template, output, spec, manifest, images=None):
             for rel in list(expected_rels):
                 if rel.get("Type").endswith("/notesSlide"):
                     expected_rels.remove(rel)
-            if media:
-                name, data = media
-                E.SubElement(expected_rels, f"{{{NS['rel']}}}Relationship", Id="rsaImage",
+            for image_rid, name, data in media:
+                E.SubElement(expected_rels, f"{{{NS['rel']}}}Relationship", Id=image_rid,
                              Type=NS["r"] + "/image", Target="../media/" + name)
                 if "ppt/media/" + name not in dst.namelist() or dst.read("ppt/media/" + name) != data:
                     issues.append("Original image differs")

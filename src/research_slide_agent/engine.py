@@ -120,26 +120,29 @@ def contrast(a, b):
 
 
 def template_info(path: Path):
-    from .prototypes import profile_for
+    from .models import RESEARCH_CONTENT_ROLES
+    from .prototypes import COMPOSITIONS, profile_for
 
     profile = profile_for(path)
     if profile:
         return {"template_id": "lab", "sha256": profile["template_sha256"],
                 "engine": profile["engine"], "style_version": profile["style_version"],
-                "schema_version": "1.2", "prototypes": profile["prototypes"],
-                "supported_schema_versions": ["1.1", "1.2"], "recommended_schema_version": "1.2",
+                "schema_version": "1.3", "prototypes": profile["prototypes"],
+                "supported_schema_versions": ["1.1", "1.2", "1.3"], "recommended_schema_version": "1.3",
+                "compositions": COMPOSITIONS,
+                "required_content_roles": {key: sorted(value) for key, value in RESEARCH_CONTENT_ROLES.items()},
                 "section_independent_of_prototype": True,
                 "visual_prototypes": {
-                    "method": "editable diagram or original image with explanatory text; any section in 1.2",
-                    "results_figure": "wide original image or diagram with short explanation; any section in 1.2",
-                    "overview": "three text groups and a key diagram; also usable for a summary in 1.2",
+                    "method": "editable diagram or original image with explanatory text; any section in 1.2/1.3",
+                    "results_figure": "wide original image or diagram with short explanation; any section in 1.2/1.3",
+                    "overview": "three text groups and a key diagram; also usable for a summary in 1.2/1.3",
                 },
                 "layouts": [], "generation": "clone canonical pages; replace text and framed evidence",
                 "diagram_capabilities": {
                     "native_connectors": True, "branches_and_merges": True,
                     "max_nodes": 12, "max_stages": 6, "max_parallel_nodes": 4,
                     "forward_adjacent_stages_only": True, "custom_emphasis": False,
-                    "fit_policy": "reject overflow; shorten labels or split the explanation",
+                    "fit_policy": "reject overflow; try a suitable composition, simplify repetition, then split the explanation",
                 }}
     prs = Presentation(path)
     layouts = []
@@ -768,7 +771,7 @@ def _generate_once(
 def generate(template: Path, spec: SlideSpec, output: Path, images: dict[str, Path] | None = None):
     from .prototypes import generate_prototypes, profile_for
 
-    if profile_for(template) or spec.schema_version in {"1.1", "1.2"}:
+    if profile_for(template) or spec.schema_version in {"1.1", "1.2", "1.3"}:
         return generate_prototypes(template, spec, output, images)
     if template.resolve() == output.resolve():
         raise LayoutError("Original template must not be overwritten")
@@ -807,7 +810,7 @@ def verify(template, output, spec, manifest, images=None):
     """Hard structural checks. Rendering and heuristic text fit have separate reports."""
     from .prototypes import verify_prototypes
 
-    if spec.schema_version in {"1.1", "1.2"}:
+    if spec.schema_version in {"1.1", "1.2", "1.3"}:
         return verify_prototypes(template, output, spec, manifest, images)
     issues = []
     with zipfile.ZipFile(template) as src, zipfile.ZipFile(output) as dst:

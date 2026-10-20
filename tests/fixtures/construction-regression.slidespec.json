@@ -1,0 +1,241 @@
+{
+  "schema_version": "1.3",
+  "purpose_mode": "general",
+  "presentation_id": "construction-regression",
+  "spec_version": 1,
+  "presentation_metadata": {
+    "title": "建設機械論文：改善版の重要3ページの回帰入力",
+    "audience": "書式確認者",
+    "purpose": "目的、条件別処理、4部位の表の回帰試験。受入済み24枚全体の再生成試験とは区別",
+    "duration_minutes": 10
+  },
+  "slides": [
+    {
+      "prototype_id": "objective",
+      "title": "研究目的とアプローチ",
+      "replacements": {
+        "研究目的": [
+          {
+            "text": "熟練操作員の経験知を操作手順の確認・修正に反映するため、\n編集可能な基本プログラムを実演から生成"
+          }
+        ],
+        "手段": [
+          {
+            "text": "角度指令と待ち時間をScratchブロックへ変換\n操作順序・数値・直列／並列関係を明示"
+          }
+        ],
+        "根拠の記入例": [
+          {
+            "text": "従来との差：記録から模擬実行まで統合 [Ishizawaら '26]"
+          }
+        ]
+      },
+      "slide_id": "construction-1",
+      "slide_order": 1,
+      "section": "objective",
+      "paper_section": "I. Introduction：研究目的と貢献",
+      "content_map": {
+        "purpose": [
+          "研究目的"
+        ],
+        "approach": [
+          "手段"
+        ],
+        "novelty": [
+          "根拠の記入例"
+        ]
+      },
+      "source_references": [
+        {
+          "source_id": "construction-paper",
+          "locator": "pp.1–2 §I"
+        }
+      ],
+      "citations": [
+        {
+          "source": {
+            "source_id": "construction-paper",
+            "locator": "pp.1–2 §I"
+          },
+          "author": "Ishizawaら",
+          "year": 2026,
+          "target_id": "根拠の記入例"
+        }
+      ]
+    },
+    {
+      "prototype_id": "method",
+      "title": "提案手法：ブロック生成",
+      "replacements": {
+        "小見出し：［提案手法の名称］": [
+          {
+            "text": "区間ごとの処理"
+          }
+        ],
+        "小見出し：特徴": [
+          {
+            "text": "生成結果"
+          }
+        ],
+        "手法の特徴": [
+          {
+            "text": "各区間の最終角度と待機時間をブロックへ出力 [Ishizawaら '26]"
+          }
+        ],
+        "図題": [
+          {
+            "text": "並列区間の処理"
+          }
+        ]
+      },
+      "slide_id": "construction-2",
+      "slide_order": 2,
+      "section": "method",
+      "paper_section": "II-D. Operation program generation",
+      "content_map": {
+        "process": [
+          "table"
+        ],
+        "output": [
+          "手法の特徴"
+        ]
+      },
+      "composition": "table_visual",
+      "table_spec": {
+        "columns": [
+          "区間／部位数",
+          "生成するブロック"
+        ],
+        "rows": [
+          [
+            "保持区間",
+            "区間時間Tだけ待機"
+          ],
+          [
+            "1部位",
+            "直列モード\n速度・目標角度\nブロック内で待機"
+          ],
+          [
+            "複数部位",
+            "並列モード\n速度・目標角度\n区間時間Tだけ待機"
+          ]
+        ]
+      },
+      "diagram_spec": {
+        "kind": "flowchart",
+        "direction": "vertical",
+        "nodes": [
+          {
+            "id": "a",
+            "text": "並列で角度設定"
+          },
+          {
+            "id": "b",
+            "text": "時間Tだけ待機"
+          }
+        ],
+        "edges": [
+          {
+            "source": "a",
+            "target": "b"
+          }
+        ]
+      },
+      "source_references": [
+        {
+          "source_id": "construction-paper",
+          "locator": "p.3 §II-D・図4"
+        }
+      ],
+      "citations": [
+        {
+          "source": {
+            "source_id": "construction-paper",
+            "locator": "p.3 §II-D・図4"
+          },
+          "author": "Ishizawaら",
+          "year": 2026,
+          "target_id": "table"
+        },
+        {
+          "source": {
+            "source_id": "construction-paper",
+            "locator": "p.3 §II-D・図4"
+          },
+          "author": "Ishizawaら",
+          "year": 2026,
+          "target_id": "diagram"
+        }
+      ]
+    },
+    {
+      "prototype_id": "results_table",
+      "title": "実験結果：掘削の部位別誤差",
+      "replacements": {
+        "表の結果要点": [
+          {
+            "text": "目標角度指令の比較。実際の掘削精度は未評価 [Ishizawaら '26]"
+          }
+        ]
+      },
+      "slide_id": "construction-3",
+      "slide_order": 3,
+      "section": "results",
+      "paper_section": "IV. Results / Table II",
+      "content_map": {
+        "result": [
+          "table"
+        ],
+        "interpretation": [
+          "表の結果要点"
+        ]
+      },
+      "table_spec": {
+        "columns": [
+          "部位",
+          "RMSE［°］",
+          "SD［°］"
+        ],
+        "rows": [
+          [
+            "上部旋回体",
+            "2.592",
+            "2.571"
+          ],
+          [
+            "ブーム",
+            "2.585",
+            "2.450"
+          ],
+          [
+            "アーム",
+            "3.702",
+            "3.549"
+          ],
+          [
+            "バケット",
+            "5.506",
+            "5.498"
+          ]
+        ]
+      },
+      "source_references": [
+        {
+          "source_id": "construction-paper",
+          "locator": "p.6 表II"
+        }
+      ],
+      "citations": [
+        {
+          "source": {
+            "source_id": "construction-paper",
+            "locator": "p.6 表II"
+          },
+          "author": "Ishizawaら",
+          "year": 2026,
+          "target_id": "table"
+        }
+      ]
+    }
+  ]
+}

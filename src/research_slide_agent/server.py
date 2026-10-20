@@ -205,7 +205,7 @@ def make_mcp(store, settings, auth):
         and apply its workflow; never truncate content to fit slots. No user approval state is stored.
         """
         feedback = None
-        if spec.schema_version == "1.2":
+        if spec.schema_version in {"1.2", "1.3"}:
             from .prototypes import authoring_feedback
 
             feedback = authoring_feedback(settings.template, spec)
