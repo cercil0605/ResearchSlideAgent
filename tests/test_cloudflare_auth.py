@@ -92,11 +92,14 @@ def test_cloudflare_signature_missing_claims_and_service_tokens_rejected(cloudfl
         invalid.append(token(_drop=(required,)))
     invalid.append(token(sub="", email="", common_name="service-token.access"))
     # Access owns the email allow policy; the origin accepts any signed user identity.
-    invalid.append(token(_drop=("email",)))
+    without_email_from_access = token(_drop=("email",))
     with_email_from_unrestricted_access = token(email="another-user@example.org")
     with TestClient(app, base_url=settings.base_url) as client:
         for assertion in invalid:
             assert client.get("/", headers={"Cf-Access-Jwt-Assertion": assertion}).status_code == 401
+        assert client.get("/", headers={
+            "Cf-Access-Jwt-Assertion": without_email_from_access,
+        }).status_code != 401
         assert client.get("/", headers={
             "Cf-Access-Jwt-Assertion": with_email_from_unrestricted_access,
         }).status_code != 401
