@@ -28,6 +28,7 @@ def table_spec(rows=1):
     item = deepcopy(next(s for s in source.slides if s.table_spec))
     item.table_spec.rows = [["A", "10.0", "20.0"]] * rows
     item.slide_order = 1
+    item.content_map = {}
     return SlideSpec.model_validate({**source.model_dump(), "purpose_mode": "general", "slides": [item.model_dump()]})
 
 
@@ -166,11 +167,11 @@ def test_empty_table_cell_remains_editable(tmp_path):
     assert table.cell(1, 1).text == ""
 
 
-def test_canonical_template_refuses_old_common_slot_input(tmp_path):
-    from research_slide_agent.sample import sample_spec
-
-    with pytest.raises(LayoutError, match="requires SlideSpec 1.1"):
-        generate(TEMPLATE, sample_spec(count=1), tmp_path / "old.pptx")
+def test_generation_requires_canonical_profile(tmp_path):
+    template = tmp_path / "unprepared.pptx"
+    template.write_bytes(TEMPLATE.read_bytes())
+    with pytest.raises(LayoutError, match="CANONICAL_TEMPLATE_REQUIRED"):
+        generate(template, table_spec(), tmp_path / "bad.pptx")
 
 
 def test_overflow_fails_without_publishing_or_resizing(tmp_path):
@@ -180,7 +181,7 @@ def test_overflow_fails_without_publishing_or_resizing(tmp_path):
     with pytest.raises(LayoutError, match="TEXT_OVERFLOW"):
         generate(TEMPLATE, spec, output)
     assert not output.exists()
-    spec = table_spec(4)
+    spec = table_spec(12)
     with pytest.raises(LayoutError, match="TABLE_OVERFLOW"):
         generate(TEMPLATE, spec, output)
     spec = table_spec()
@@ -195,8 +196,8 @@ def test_inventory_hash_schema_and_embedded_provenance(tmp_path):
     spec = table_spec()
     profile = template_info(TEMPLATE)
     assert len(profile["prototypes"]) == 11
-    assert profile["schema_version"] == "1.2"
-    assert profile["supported_schema_versions"] == ["1.1", "1.2"]
+    assert profile["schema_version"] == "1.3"
+    assert profile["supported_schema_versions"] == ["1.3"]
     output = tmp_path / "generated.pptx"
     manifest = generate(TEMPLATE, spec, output)
     assert manifest["code_commit"] and manifest["generator_source_sha256"]
@@ -225,11 +226,11 @@ def test_inventory_hash_schema_and_embedded_provenance(tmp_path):
 def test_research_flow_is_variable_length_but_not_arbitrary():
     spec = fixture_spec().model_dump()
     spec["slides"][0]["prototype_id"] = "summary"
-    with pytest.raises(ValidationError, match="skeleton flow"):
+    with pytest.raises(ValidationError, match="Cover sections"):
         SlideSpec.model_validate(spec)
     spec = fixture_spec().model_dump()
     spec["slides"] = spec["slides"][:-1]
-    with pytest.raises(ValidationError, match="needs all sections"):
+    with pytest.raises(ValidationError, match="needs all research sections"):
         SlideSpec.model_validate(spec)
 
 

@@ -80,22 +80,37 @@ get_projectのfiles[].originに元PDFのsource_id/hash、ページ、領域、DP
 
 引用の可視表記は教授指定の ` [著者 '25]`（半角スペース＋半角角括弧＋ASCIIアポストロフィ＋年下2桁）。
 入力と保存データの `year` は4桁のまま保持する。「ら」はauthorに含まれる場合だけ表示し、推測して補わない。
-正本の表は3列固定、本文1～3行。中央揃え、見出し15pt／本文16pt、見本の行高・余白・罫線を複製する。
+表は1～3列。中央揃え、見出し15pt／本文16pt、最低行高・余白・罫線を複製し、改行に必要な行高を確保する。
 最下段は黒罫線を保持する。数値の丸め・並替は行わない。
 
-## SlideSpec 1.2（推奨）と1.1（互換）
+## SlideSpec 1.3（唯一の対応版）
 
-新規制作は`schema_version="1.2"`、`purpose_mode="research"`（または一般向けの`general`）。
-各ページに説明上の役割`section`と`part="main"|"appendix"`を指定し、`prototype_id`とは独立させる。
+1.3は研究導入の節順を検査し、cover以外の本編にpaper_sectionとcontent_mapを要求する。
+content_mapは内容の役割から、空でない本文replacements欄またはtableへの参照。
+get_template_info.required_content_rolesにある役割を節単位で満たす。指標はexperiment/metricで説明する。
+見出し・図題への対応は保存時のauthoring_feedbackと生成時の検査で拒否する。
+content_evidenceに実際の本文・表を返すが、意味的な正しさを自動認定しない。
+
+compositionはcanonical（既定）、text_visual、table_visual、two_images。canonical以外はmethod見本の本文領域だけを配置する。
+table_visualはtable_spec＋原図1点またはdiagram_spec、two_imagesは原図2点。
+表と図の混在はtable_visualだけで許可する。各image_referencesのIDを対象とするcitationsが必要で、two_imagesでも片方の引用だけでは保存できない。
+表は1～3列を本文領域へ配分し、正本の書式・最低行高を保って、改行に必要な行高を確保する。
+4行以上も領域内なら生成可能。超過時は削除・縮小せずTABLE_OVERFLOW。
+各compositionの欄・制約・例は[入力手順](plugins/research-slide-agent/skills/research-slides/references/canonical-skeleton.md)を参照。
+
+全体例はexamples/research-quality.slidespec.json。旧1.0/1.1/1.2は拒否し、旧生成エンジンは削除した。
+旧保存仕様は必要事項を補って1.3として新しいspec_versionで保存する。自動移行・旧digest互換は提供しない。
+
+## ページの入力
+
+schema_version="1.3"、purpose_mode="research"（一般向けはgeneral）。
+各ページはprototype_id、title、replacements、sectionを指定する。partはmain（既定）またはappendix。
 sectionはcover/overview/example/background/related/objective/method/experiment/metric/results/discussion/summary。
-表紙はcover見本専用。研究の本編は表紙・概要で始まり、背景・関連研究・目的・手法・実験・結果・考察を含み、まとめで終わる。
-具体例の先行、実験説明後の指標図、複数実験の反復、まとめ後の補足を許可する。補足の後に本編へ戻る入力は拒否。
-1.1は既存の見本順検査を維持し、section/partの指定は1.2でのみ使用する。1.0の合成テンプレート経路も互換用途で維持。
-全体例は`examples/narrative.slidespec.json`。試験用の内容であり研究事実ではない。
-各ページは`prototype_id`、`title`、`replacements`を指定する。
+表紙はcover見本専用。研究の本編は導入の節順を守り、手法内の具体例、実験後の指標、複数実験と補足を許可する。
+補足の後に本編へ戻る入力は拒否する。
 replacementsは見本の欄名→段落配列。各段落は`prototype_paragraph`と`text`、または`runs`の`text/style_run`。
 改行は継続行となり、別段落は配列を分ける。任意の書式・座標は受け付けない。
-旧key_message/body_blocks/chart_specは1.1/1.2で拒否する。正本には独立したグラフの見本がない。
+layout_id/key_message/body_blocks/chart_specは未対応フィールドとして拒否する。正本には独立したグラフの見本がない。
 表はtable_spec、図は対応するdiagram_specまたは登録済みimage_references。
 `get_template_info.diagram_capabilities`で、接続線・分岐・集約と配置制限を確認できる。
 `diagram_spec.edges`に関係を指定し、ノード座標・線色はサーバーが決める。循環や段を飛ばす接続は拒否する。
@@ -105,7 +120,9 @@ Strictでは`kind`にかかわらず接続関係に沿って段を配置する�
 引用表記は対応する近傍のreplacementsにも含める。詳細は [入力手順](plugins/research-slide-agent/skills/research-slides/references/canonical-skeleton.md)。
 
 新規生成・再生成・PPTXパッチに承認は不要。PPTX生成・構造検査の成功でcompletedとなる。
-1.2のsave_slide_specはauthoring_feedbackとしてページの役割、引継ぎ見出し、図枠寸法と図の不足等の警告も返す。
+save_slide_specとpatch_slideは共通のStore.save_specで保存前にテンプレート対応検査を行う。
+見出しをcontent_mapの本文として指定した場合などは仕様版・内容を一切更新しない。
+両ツールともauthoring_feedbackとしてページの役割、掲載内容、引継ぎ見出し、図枠寸法と図の不足等の警告も返す。
 これは意味・可読性・教授ルールへの自動適合保証ではない。警告の修正には新しい仕様版を保存する。
 
 完成PPTXはget_slide_previewの要求を既存のジョブキューへ入れ、ネットワークから隔離されたworkerでPDF/PNGへ近似描画する。APIはLibreOfficeを起動しない。
@@ -121,9 +138,6 @@ get_slide_previewの準備後の画像メタデータはpages、page_count、nex
 既存DBはそのまま利用でき、旧承認テーブル／列は互換性のため保持する。旧ジョブの出力もPPTXを取得できる。
 `get_generation_report`はコミット・ソースhash・正本SHA・書式版・仕様版／digestと書式適合検査を返す。
 手動パッチには生成レポートがない場合があり、正本適合済みとして報告しない。
-
-schema 1.0の合成／旧テンプレート経路は互換性試験用に保持する。
-新しい正本でlayout_idや共通の要点行を指定する旧仕様は拒否する。
 
 ## HTTP
 

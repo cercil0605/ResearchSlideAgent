@@ -36,12 +36,12 @@ async def main():
             ):
                 p = (await client.call_tool("create_project", {})).structured_content
                 spec = SlideSpec.model_validate({
-                    "schema_version": "1.1", "purpose_mode": "general",
+                    "schema_version": "1.3", "purpose_mode": "general",
                     "presentation_id": p["id"], "spec_version": 1,
                     "presentation_metadata": {"title": "動作確認", "audience": "開発者",
                                               "purpose": "試験用データによる動作確認", "duration_minutes": 5},
                     "slides": [{
-                        "slide_id": f"check{i}", "slide_order": i, "prototype_id": "results_table",
+                        "slide_id": f"check{i}", "slide_order": i, "prototype_id": "results_table", "section": "results",
                         "title": f"試験用データ {i}",
                         "replacements": {"表の結果要点": [{"text": "試験用数値。研究結果ではない"}]},
                         "table_spec": {"columns": ["試験", "仮指標A", "仮指標B"],

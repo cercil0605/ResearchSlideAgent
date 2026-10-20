@@ -97,16 +97,35 @@ async def test_canonical_download_then_on_demand_preview(settings, preview_rende
         async with Client(settings.base_url + "/mcp") as session:
             created = await session.call_tool("create_project", {})
             pid = created.structured_content["id"]
-            raw = json.loads(Path("examples/research-format.slidespec.json").read_text())
+            raw = json.loads(Path("examples/research-quality.slidespec.json").read_text())
             item = next(s for s in raw["slides"] if s.get("table_spec"))
             item["slide_order"] = 1
             item["section"] = "results"
-            raw.update(presentation_id=pid, purpose_mode="general", schema_version="1.2", slides=[item])
+            raw.update(presentation_id=pid, purpose_mode="general", schema_version="1.3", slides=[item])
             spec = SlideSpec.model_validate(raw)
             saved = await session.call_tool("save_slide_spec", {
                 "presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0})
             assert not saved.is_error
             assert saved.structured_content["authoring_feedback"]["pages"][0]["section"] == "results"
+            # The patch route must apply the same template-aware checks, atomically.
+            replacement = spec.slides[0].model_dump()
+            replacement["content_map"]["output"] = ["小見出し：特徴"]
+            SlideSpec.model_validate({**spec.model_dump(), "spec_version": 2, "slides": [replacement]})
+            rejected = await session.call_tool("patch_slide", {
+                "presentation_id": pid, "slide_id": replacement["slide_id"],
+                "replacement": replacement, "expected_version": 1})
+            assert rejected.is_error
+            project = await session.call_tool("get_project", {"presentation_id": pid})
+            assert project.structured_content["version"] == 1
+            assert project.structured_content["spec"] == spec.model_dump()
+            replacement = spec.slides[0].model_dump()
+            replacement["title"] = "検証済みの差し替え"
+            patched = await session.call_tool("patch_slide", {
+                "presentation_id": pid, "slide_id": replacement["slide_id"],
+                "replacement": replacement, "expected_version": 1})
+            assert not patched.is_error
+            assert patched.structured_content["spec_version"] == 2
+            assert patched.structured_content["authoring_feedback"]["pages"][0]["content_evidence"]
             queued = await session.call_tool("enqueue_generation", {"presentation_id": pid})
             jid = queued.structured_content["id"]
             pending = await session.call_tool("get_job", {"job_id": jid})

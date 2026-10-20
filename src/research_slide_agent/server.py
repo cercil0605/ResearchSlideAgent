@@ -204,15 +204,7 @@ def make_mcp(store, settings, auth):
         """Save a specification snapshot with optimistic version checking. First read get_authoring_context
         and apply its workflow; never truncate content to fit slots. No user approval state is stored.
         """
-        feedback = None
-        if spec.schema_version == "1.2":
-            from .prototypes import authoring_feedback
-
-            feedback = authoring_feedback(settings.template, spec)
-        result = store.save_spec(current_owner(ctx), presentation_id, spec, expected_version)
-        if feedback is not None:
-            result["authoring_feedback"] = feedback
-        return result
+        return store.save_spec(current_owner(ctx), presentation_id, spec, expected_version)
 
     @tool(mcp, annotations=write, meta=meta)
     def patch_slide(
