@@ -1,6 +1,6 @@
 name: research-slide-agent
 x-runtime: &runtime
-  image: ghcr.io/cercil0605/researchslideagent:344bb78fe6ca86ca83e296da4fd1f237bebad568
+  image: ghcr.io/cercil0605/researchslideagent:d15e9f38e473808578996cd8e070e806013d5acd
   restart: unless-stopped
   init: true
   user: "10001:10001"
@@ -21,7 +21,6 @@ x-runtime: &runtime
     RSA_AUTH_MODE: ${RSA_AUTH_MODE:-oauth}
     RSA_CF_TEAM_DOMAIN: ${RSA_CF_TEAM_DOMAIN:-}
     RSA_CF_AUDIENCE: ${RSA_CF_AUDIENCE:-}
-    RSA_ALLOWED_EMAILS: ${RSA_ALLOWED_EMAILS:-}
     RSA_BASE_URL: ${RSA_BASE_URL:?Set public HTTPS URL}
     RSA_OAUTH_ISSUER: ${RSA_OAUTH_ISSUER:-}
     RSA_JWKS_URL: ${RSA_JWKS_URL:-}
