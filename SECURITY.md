@@ -2,7 +2,7 @@
 
 ## 信頼境界
 
-完成PPTXの要求時プレビューも、jobの所有者・プロジェクト期限を検査する。画像・参考PDFのURLには既存の署名と本人確認を適用する。
+完成PPTXの要求時プレビューも、jobの所有者・プロジェクト期限を検査する。画像・参考PDFのURLにはPPTXと同じ署名・期限検査を適用し、Cloudflare方式ではAccess認証を要求する。
 公開するファイルは生成済みプレビューのmanifest内にあるものに限定し、任意パス・manifest自体を配信しない。
 APIは描画jobを登録するだけで、LibreOfficeは既存のnetwork_mode:noneのworkerで起動する。
 手編集由来の出力を含め、Officeの重い解析をネットワークと認証設定を持つAPIへ追加しない。
@@ -27,9 +27,10 @@ Cloudflare方式のブラウザは検証したAccess本人へアプリのセッ�
 従来OAuth方式のブラウザはPKCE(S256)、state、nonce、IDトークンのissuer/audience/sub/nonce照合を使う。
 両方式ともSameSite=Lax/HttpOnly/Secure cookie、CSRF token、Origin照合を維持する。資料登録・引用情報更新のブラウザ操作を保護する。
 
-プロジェクト、仕様、入力、ジョブ、成果物全て所有者を照合。一時URLは10分のbearer capability。発行時に所有者を確認し、利用時にもそのownerとproject/job/期限を再照合する。URLを知る人は期限内に利用できるので、共有は慎重にする。
+プロジェクト、仕様、入力、ジョブの操作と成果物URLの発行では、要求者と所有者を照合する。一時URLは10分のbearer capability。利用時にも署名内ownerとproject/jobの所有権・期限を再照合する。成果物ではさらに署名内job・ファイル名と要求パス、jobの完了状態を検査する。
 
-Cloudflare方式ではcap URLにも現在のAccess assertionとowner一致を要求するため、URLだけでは取得・登録できない。
+Cloudflare方式の成果物URL（PPTX・参考PDF・PNG）は、有効なAccess assertionと署名付きURLを持つ利用者に取得を許可する。要求者と作成者のID一致やアカウント紐付けは不要。URLの所持は作成者本人の証明ではなく、有効期限内の対象ファイルの取得権限として扱う。転送先もAccessで許可されていれば取得できる。未認証の要求やURLなしの取得は拒否する。
+アップロードURLとブラウザの資料登録・引用情報更新は引き続きAccess本人とownerの一致を要求する。従来OAuth方式では成果物発行者の許可リスト確認を維持する。
 認証方式／Access組織を変更した際の既存ownerの自動移行は行わない。
 
 ## ファイル

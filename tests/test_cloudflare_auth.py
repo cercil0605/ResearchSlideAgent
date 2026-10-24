@@ -1,5 +1,6 @@
 import time
 from dataclasses import replace
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 import jwt
 import pytest
@@ -8,6 +9,7 @@ from starlette.testclient import TestClient
 
 from research_slide_agent.app import create_app
 from research_slide_agent.auth import AuthError
+from research_slide_agent.previews import preview_image
 from research_slide_agent.sample import sample_spec
 from research_slide_agent.worker import process_one
 
@@ -70,6 +72,61 @@ def test_cloudflare_generation_without_approval(cloudflare):
         })
         download = client.get(f"/artifact/{job['id']}/presentation.pptx?cap={cap}")
         assert download.status_code == 200 and download.content.startswith(b"PK")
+
+
+def test_cloudflare_artifact_links_allow_another_access_user(cloudflare, preview_renderer):
+    app, settings, token = cloudflare
+    store, auth = app.state.store, app.state.auth
+    owner = "cloudflare:alice-id"
+    pid = store.create(owner)["id"]
+    store.save_spec(owner, pid, sample_spec(pid, 1), 0)
+    job_id = store.enqueue(owner, pid)["id"]
+    assert process_one(store, settings)
+    preview_image(store, owner, job_id)
+    assert process_one(store, settings)
+
+    with TestClient(app, base_url=settings.base_url, headers={"Cf-Access-Jwt-Assertion": token()}) as client:
+        links = call(client, "get_preview", job_id=job_id)["structuredContent"]
+        urls = [links["download_url"], links["pdf_url"], links["images"][0]]
+        assert links["expires_in"] == 600
+        client.headers["Cf-Access-Jwt-Assertion"] = token(sub="bob-id", email="bob@example.org")
+        # The recipient needs no app cookie or account link, only Access and the signed URL.
+        assert not client.cookies
+        for url, magic in zip(urls, [b"PK", b"%PDF", b"\x89PNG"], strict=True):
+            response = client.get(url)
+            assert response.status_code == 200 and response.content.startswith(magic)
+            assert response.headers["cache-control"] == "no-store"
+            path = urlsplit(url).path
+            cap = parse_qs(urlsplit(url).query)["cap"][0]
+            claims = auth.unsign("artifact", cap)
+            assert claims["owner"] == owner
+            assert client.get(path).status_code == 401
+            parts = cap.split(".")
+            parts[2] = ("A" if parts[2][0] != "A" else "B") + parts[2][1:]
+            assert client.get(path + "?" + urlencode({"cap": ".".join(parts)})).status_code == 401
+            expired = auth.sign("artifact", claims, ttl=-1)
+            assert client.get(path + "?" + urlencode({"cap": expired})).status_code == 401
+            assert client.get(url.replace(job_id, "another-job")).status_code == 401
+            assert client.get(url.replace(path.rsplit("/", 1)[1], "preview.json")).status_code == 401
+            wrong_owner = auth.sign("artifact", {**claims, "owner": "cloudflare:bob-id"})
+            assert client.get(path + "?" + urlencode({"cap": wrong_owner})).status_code == 400
+
+        # Sharing an artifact does not grant project access or the right to mint more links.
+        assert call(client, "get_project", presentation_id=pid)["isError"]
+        assert call(client, "get_preview", job_id=job_id)["isError"]
+        del client.headers["Cf-Access-Jwt-Assertion"]
+        for url in urls:
+            assert client.get(url).status_code == 401
+        client.headers["Cf-Access-Jwt-Assertion"] = token(sub="bob-id")
+        with store.connect() as con:
+            con.execute("UPDATE jobs SET state='running' WHERE id=?", (job_id,))
+        for url in urls:
+            assert client.get(url).status_code == 400
+        with store.connect() as con:
+            con.execute("UPDATE jobs SET state='completed' WHERE id=?", (job_id,))
+            con.execute("UPDATE projects SET expires=0 WHERE id=?", (pid,))
+        for url in urls:
+            assert client.get(url).status_code == 400
 
 
 @pytest.mark.parametrize("change", [

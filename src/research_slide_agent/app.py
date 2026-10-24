@@ -275,7 +275,10 @@ finally{{button.disabled=false;}}}};"""
         claims = auth.unsign("artifact", request.query_params.get("cap", ""))
         if claims["job"] != job_id or claims["name"] != name:
             raise AuthError("Artifact capability mismatch")
-        auth.check_owner(request, claims["owner"])
+        # Access authenticates the recipient; the signed link grants artifact access.
+        # Keep the legacy OAuth owner's allowlist check for revocation.
+        if not settings.cloudflare:
+            auth.check_owner(request, claims["owner"])
         job = store.job(claims["owner"], job_id)
         if job["state"] != "completed":
             raise StateError("ARTIFACT_NOT_READY")

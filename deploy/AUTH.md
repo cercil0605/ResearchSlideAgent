@@ -57,7 +57,10 @@ Accessがoriginへ渡す `Cf-Access-Jwt-Assertion` のRS256署名、チームiss
 資料登録ブラウザもAccessで本人認証します。アプリの `/login` は別のOAuthへ飛ばず、
 検証した本人へSecure/HttpOnly/SameSite cookieを発行します。資料登録・引用情報更新はこのcookie、CSRF、Origin照合を引き続き要求します。
 各要求で新しいAccess assertionを必要とするため、アプリのcookieだけでは認証を迂回できません。
-署名付きアップロード・ダウンロードURLも同じAccess認証と所有者一致が必要です。
+署名付きアップロードURLはAccess認証と所有者一致が必要です。
+ダウンロードURL（PPTX・参考PDF・PNG）は、Accessで許可された利用者が有効な署名付きURLを持っていれば取得できます。
+MCPとブラウザで別の許可アカウントを使っても取得でき、アプリ側のアカウント紐付けは不要です。
+リンクは10分間有効で、転送先もAccessの許可対象なら取得できます。署名・job・ファイル名・署名内ownerとjobの所有権・完了状態・プロジェクト期限の照合は維持します。
 ChatGPTの埋め込みビューアーでブラウザのAccess cookieが利用できない場合は、外部ブラウザでダウンロードURLを開きます。
 
 ChatGPTの添付は `register_chatgpt_file` でMCPサーバーが取得します。別HTTP PUTの本人認証に依存せず、
@@ -78,7 +81,9 @@ Cloudflareを経由したアクセスにはAccess側の設定が適用されま�
 - MCPと資料登録ブラウザの利用者が一致し、資料登録→仕様保存→生成→PPTX取得ができる。
 - アプリ独自のログイン画面／Keycloakへ遷移しない。
 - AccessのAllowポリシー外ユーザー、別AUD、別チーム、改ざん／期限切れJWT、JWTなし、Service Authを拒否する。
-- cookieや署名付きURLだけではoriginへ直接アクセスできず、別の許可利用者でも他人の成果物を取得できない。
+- cookieや署名付きURLだけではAccess assertionなしにoriginへアクセスできない。
+- 別のAccess許可アカウントでも、有効な成果物URLがあればPPTX・参考PDF・PNGを取得できる。URLなし・改ざん・期限切れ・別job／ファイルは拒否する。
+- 成果物URLの共有だけではプロジェクト操作、URLの新規発行、資料登録の権限を与えない。
 - トークン更新と期限後の再ログイン、Pi再起動、同一ユーザーでの再接続後も所有者が維持される。
 - ChatGPTの実際のOAuth callback、MCP discovery、埋め込みビューアー表示まで確認する。
 

@@ -68,6 +68,10 @@ MCP経由の本人確認・プロジェクト作成→仕様保存→承認な�
 別チーム／別AUD／期限切れ／改ざん／必須claim不足／service tokenを拒否する。メールclaimの有無や値にかかわらず署名済みユーザーassertionを受け入れ、古いcookieやcap URLだけではAccess認証を迂回できないことも確認する。
 旧OAuth・loopback開発認証の既存テストも維持している。
 
+成果物URLの共有は `test_cloudflare_artifact_links_allow_another_access_user` で検証する。
+作成者のMCPが発行したPPTX・参考PDF・PNGのURLを別のAccess利用者がアプリcookieなしで取得できること、署名なし／改ざん／期限切れ／別job・ファイル名／署名内ownerとjobの不一致／Access assertionなし／未完了job／期限切れプロジェクトを拒否することを確認する。別利用者によるプロジェクト操作・URL発行は引き続き拒否する。これはテスト用assertionでの自動検証であり、本番ブラウザでの取得成功の保証ではない。
+2026-10-24に `test_cloudflare_auth.py`・`test_web_auth.py`・`test_mcp.py`・`test_previews.py` を実行し、42 passed（依存ライブラリの非推奨警告1件）。変更したPythonファイルのruffと差分チェックも成功。
+
 以前の整理時は69 passed。実行ログは `artifacts/canonical-review/cleanup-test-results.txt`。
 当時のブラウザ承認から5枚の生成・描画・取得までのsmokeも成功（`cleanup-smoke.json`）。
 

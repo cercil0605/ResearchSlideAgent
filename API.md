@@ -134,7 +134,7 @@ PREVIEW_BUSYは別のジョブが実行中、PREVIEW_RENDER_FAILEDは描画失�
 手編集PPTXの出力等が40頁を超える場合はPREVIEW_PAGE_LIMITで描画を拒否する。PPTXの取得には影響しない。
 get_slide_previewの準備後の画像メタデータはpages、page_count、next_page、pptx_sha256、renderer、fidelityと確認状態を返す。
 画像を返してもvisual_reviewはnot_performed、powerpoint_verifiedはfalse。実際に見る・修正するのは作成側LLM。
-画像・参考PDFは既存と同じ所有者・期限・署名URL検査を適用し、別版のキャッシュを返さない。get_previewは描画を開始しない。
+画像・参考PDFはPPTXと同じ期限・署名URL検査を適用し、署名内の所有者でjobを照合して別版のキャッシュを返さない。Cloudflare方式のURL利用者はAccess認証が必要だが、作成者とのID一致は不要。get_previewは描画を開始しない。
 既存DBはそのまま利用でき、旧承認テーブル／列は互換性のため保持する。旧ジョブの出力もPPTXを取得できる。
 `get_generation_report`はコミット・ソースhash・正本SHA・書式版・仕様版／digestと書式適合検査を返す。
 手動パッチには生成レポートがない場合があり、正本適合済みとして報告しない。
@@ -149,13 +149,13 @@ get_slide_previewの準備後の画像メタデータはpages、page_count、nex
 - `PUT /project/{id}/upload`: cookie/CSRF/Origin、raw bytes、X-Filename(UTF-8 percent encoded)、X-Author/X-Year任意。
 - `PUT /upload/{id}?cap=...`: 期限付きのupload capability。資料本文のみ、引用メタデータはブラウザで確認。
 - `POST /project/{id}/source/{source}/metadata`: browser cookie/CSRF/Origin、JSON `{author,year}`。仕様で参照済みの資料の変更は拒否。
-- `GET /artifact/{job}/{name}?cap=...`: 所有権確認済みの署名URL。期限切れプロジェクトは拒否。
+- `GET /artifact/{job}/{name}?cap=...`: 所有者に発行する10分間の署名URL。署名・job・ファイル名・署名内ownerとjobの所有権・完了状態・プロジェクト期限を検査。Cloudflare方式ではAccessが許可した別の利用者もURLを持っていれば取得可能。
 
 ファイル本文とトークンをログに含めない。proxyにもクエリ文字列・Cookie・Authorizationを記録させない。
 
 Cloudflare方式ではhealth／リソースメタデータ以外の全要求に、有効な `Cf-Access-Jwt-Assertion` が必要。
 MCP用の不透明なOAuthアクセストークンはCloudflare側が検証し、originは署名付きAccess assertionを検証する。
-upload／artifactのcapもAccess本人とのowner一致を要求する。ブラウザ操作は同じ本人のアプリcookieとCSRFも必要。
+uploadのcapはAccess本人とのowner一致を要求する。artifactのcapはAccess認証済みの所持者に取得を許可し、作成者とのowner一致やアプリcookieは要求しない。リンクの転送先も有効期限内かつAccessの許可対象なら取得できる。資料登録・引用情報更新のブラウザ操作は同じ本人のアプリcookieとCSRFも必要。従来OAuth方式ではartifact発行者の許可リスト確認を維持する。
 Cloudflare方式のMCPツールは `oauth2`、`scopes: []` を宣言し、独自の `slides:write` scopeをCloudflareへ要求しない。
 認可サーバーメタデータ `/.well-known/oauth-authorization-server` はCloudflareが公開する。
 
