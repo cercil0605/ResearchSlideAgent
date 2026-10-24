@@ -90,6 +90,14 @@ content_mapは内容の役割から、空でない本文replacements欄または
 get_template_info.required_content_rolesにある役割を節単位で満たす。指標はexperiment/metricで説明する。
 見出し・図題への対応は保存時のauthoring_feedbackと生成時の検査で拒否する。
 content_evidenceに実際の本文・表を返すが、意味的な正しさを自動認定しない。
+ページ情報は可視`title`と`paper_section`を併記する。researchでは`missing_page_roles`（そのページに未指定の節標準役割）と
+`shared_content_targets`（同じ掲載先に対応する複数役割）も返す。節全体の必須役割検査とページの意味的な充足は別である。
+`SHARED_CONTENT_TARGET_REVIEW`、`METHOD_FIGURE_LAYOUT_REVIEW`、`ADJACENT_TABLE_MERGE_REVIEW`は、
+役割の重複対応、手法への大図見本の使用、同じ節・part・paper_section・列見出しで隣接する表の片方が1行の場合の助言。
+保存を拒否せず、翻訳タイトルの一致、本文の正しさ、統合時の収容・可読性を保証しない。
+`section`の順序検査と表示`title`は別で、現実装は構成名の保持を強制しない。
+制作上のタイトル規則は[正本入力手順](plugins/research-slide-agent/skills/research-slides/references/canonical-skeleton.md)を参照。
+`paper_section`は原論文の根拠節であり、表示構成名の指定ではない。
 
 compositionはcanonical（既定）、text_visual、table_visual、two_images。canonical以外はmethod見本の本文領域だけを配置する。
 table_visualはtable_spec＋原図1点またはdiagram_spec、two_imagesは原図2点。

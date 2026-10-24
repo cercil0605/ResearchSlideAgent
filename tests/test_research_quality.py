@@ -111,6 +111,72 @@ def test_quality_example_keeps_four_joint_table_and_mixed_evidence_editable(tmp_
                 assert source.read(name) == target.read(name)
 
 
+def test_feedback_exposes_page_gaps_and_shared_body_without_semantic_approval():
+    raw = quality()
+    objective = page(raw, "objective")
+    objective["content_map"]["approach"] = objective["content_map"]["purpose"]
+    second = deepcopy(objective)
+    second.update(slide_id="objective-detail", content_map={"novelty": objective["content_map"]["novelty"]})
+    raw["slides"].insert(raw["slides"].index(objective) + 1, second)
+    for index, slide in enumerate(raw["slides"], 1):
+        slide["slide_order"] = index
+    feedback = authoring_feedback(TEMPLATE, SlideSpec.model_validate(raw))
+    detail = next(p for p in feedback["pages"] if p["slide_id"] == "objective-detail")
+    assert detail["missing_page_roles"] == ["approach", "purpose"]
+    assert detail["title"] == second["title"] and detail["paper_section"] == second["paper_section"]
+    main = next(p for p in feedback["pages"] if p["slide_id"] == objective["slide_id"])
+    assert main["shared_content_targets"]["研究目的"] == ["purpose", "approach"]
+    assert any(w["code"] == "SHARED_CONTENT_TARGET_REVIEW" for w in feedback["warnings"])
+    assert feedback["content_review"] == feedback["visual_review"] == "not_performed"
+
+
+def test_method_figure_layout_advice_is_research_specific():
+    raw = quality()
+    item = page(raw, "method")
+    item.update(prototype_id="results_figure", composition="canonical",
+                replacements={"結果の要点": [{"text": "入力と処理と出力を説明する本文"}]},
+                content_map={role: ["結果の要点"] for role in ("input", "process", "output")})
+    feedback = authoring_feedback(TEMPLATE, SlideSpec.model_validate(raw))
+    assert any(w["code"] == "METHOD_FIGURE_LAYOUT_REVIEW" and w["slide_id"] == item["slide_id"]
+               for w in feedback["warnings"])
+    raw["purpose_mode"] = "general"
+    general = authoring_feedback(TEMPLATE, SlideSpec.model_validate(raw))
+    assert not any(w["code"] in {"METHOD_FIGURE_LAYOUT_REVIEW", "SHARED_CONTENT_TARGET_REVIEW",
+                                 "ADJACENT_TABLE_MERGE_REVIEW"} for w in general["warnings"])
+
+
+@pytest.mark.parametrize("different", [None, "section", "paper_section", "columns", "part"])
+def test_sparse_adjacent_table_review_respects_context(different):
+    raw = quality()
+    item = deepcopy(next(s for s in raw["slides"] if s.get("prototype_id") == "results_table"))
+    item["table_spec"]["rows"] = item["table_spec"]["rows"][:1]
+    second = deepcopy(item)
+    second["slide_id"] += "-detail"
+    if different == "columns":
+        second["table_spec"]["columns"][0] += "別"
+    elif different:
+        second[different] = {"section": "discussion", "paper_section": "別節", "part": "appendix"}[different]
+    # Use a full research spec; appendices allow independent source sections.
+    item["part"] = "appendix"
+    second["part"] = "main" if different == "part" else "appendix"
+    if different == "part":
+        # A summary table followed by an appendix tests the boundary on adjacent pages.
+        item["part"], second["part"] = "main", "appendix"
+        item["section"] = second["section"] = "summary"
+        item["content_map"] = {role: ["table"] for role in ("purpose", "approach", "result", "future")}
+        raw["slides"][-1] = item
+        raw["slides"].append(second)
+    else:
+        raw["slides"].extend([item, second])
+    item["slide_id"] += "-extra"
+    for index, slide in enumerate(raw["slides"], 1):
+        slide["slide_order"] = index
+    feedback = authoring_feedback(TEMPLATE, SlideSpec.model_validate(raw))
+    warnings = [w for w in feedback["warnings"] if w["code"] == "ADJACENT_TABLE_MERGE_REVIEW"
+                and w["slide_id"] == second["slide_id"]]
+    assert bool(warnings) == (different is None)
+
+
 @pytest.mark.parametrize("composition", ["text_visual", "table_visual", "two_images"])
 def test_original_images_and_captions_survive_composition_and_verification(tmp_path, composition):
     raw = quality()

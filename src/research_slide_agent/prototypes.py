@@ -20,7 +20,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from lxml import etree as E
 from pptx import Presentation
 
-from .models import PrototypeParagraph
+from .models import RESEARCH_CONTENT_ROLES, PrototypeParagraph
 from .rules import authoring_context
 
 NS = {
@@ -89,13 +89,14 @@ def authoring_feedback(template, spec):
     entries = {entry["prototype_id"]: entry for entry in profile["prototypes"]}
     presentation = Presentation(template)
     pages, warnings = [], []
-    for item in sorted(spec.slides, key=lambda s: s.slide_order):
+    ordered = sorted(spec.slides, key=lambda s: s.slide_order)
+    for item in ordered:
         entry = entries.get(item.prototype_id)
         if entry is None:
             raise ValueError("Unknown prototype_id")
         _check_content_targets(entry, item)
         visual = bool(item.diagram_spec or item.table_spec or item.image_references)
-        page = {"slide_id": item.slide_id, "page": item.slide_order, "section": item.section,
+        page = {"slide_id": item.slide_id, "page": item.slide_order, "title": item.title, "section": item.section,
                 "part": item.part, "prototype_id": item.prototype_id, "has_visual": visual,
                 "composition": item.composition, "paper_section": item.paper_section,
                 "content_evidence": {
@@ -108,6 +109,24 @@ def authoring_feedback(template, spec):
                     {"slot": s["name"], "text": " ".join(p["example"] for p in s["paragraphs"])}
                     for s in entry["slots"] if s["kind"] == "heading" and s["name"] not in item.replacements
                 ]}
+        if spec.purpose_mode == "research":
+            expected = RESEARCH_CONTENT_ROLES.get(item.section, set())
+            page["missing_page_roles"] = sorted(expected - item.content_map.keys())
+            targets = {}
+            for role, slots in item.content_map.items():
+                for slot in slots:
+                    targets.setdefault(slot, []).append(role)
+            page["shared_content_targets"] = {
+                slot: roles for slot, roles in targets.items() if len(roles) > 1
+            }
+            if page["shared_content_targets"]:
+                warnings.append({"slide_id": item.slide_id, "code": "SHARED_CONTENT_TARGET_REVIEW",
+                                 "guidance": "Several roles share body content. Check the displayed text for each role; "
+                                             "mapping the same text to input/process/output does not establish completeness."})
+            if item.section in {"method", "example"} and item.prototype_id == "results_figure":
+                warnings.append({"slide_id": item.slide_id, "code": "METHOD_FIGURE_LAYOUT_REVIEW",
+                                 "guidance": "Check that the page explains the mechanism, not only the figure legend. "
+                                             "Consider method/text_visual or two_images before splitting the explanation."})
         if "figure" in entry:
             frame = next(s for s in presentation.slides[entry["source_page"] - 1].shapes
                          if s.name == entry["figure"]["frame"])
@@ -124,6 +143,17 @@ def authoring_feedback(template, spec):
             warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
                              "guidance": "Select results_table for a native table while keeping section unchanged."})
         pages.append(page)
+    if spec.purpose_mode == "research":
+        for previous, item in zip(ordered, ordered[1:]):
+            if (previous.table_spec and item.table_spec
+                    and previous.part == item.part and previous.section == item.section
+                    and previous.paper_section == item.paper_section
+                    and previous.table_spec.columns == item.table_spec.columns
+                    and min(len(previous.table_spec.rows), len(item.table_spec.rows)) == 1):
+                warnings.append({"slide_id": item.slide_id, "code": "ADJACENT_TABLE_MERGE_REVIEW",
+                                 "guidance": f"Compare with {previous.slide_id}: a matching adjacent table has only one row. "
+                                             "Review a combined table and wording that preserves the facts before splitting. "
+                                             "This warning does not establish that the combined table fits."})
     return {"pages": pages, "warnings": warnings, "content_review": "not_performed",
             "visual_review": "not_performed"}
 
@@ -307,7 +337,9 @@ def check_text_fit(container, width, height, fallback=16, margins=(0, 0, 0, 0), 
     if ps:
         required -= _space(ps[-1], "spcAft", _size(ps[-1], fallback))
     if required > available + 0.5:
-        raise LayoutError(f"TEXT_OVERFLOW: {name}; shorten content or duplicate this prototype page")
+        raise LayoutError(f"TEXT_OVERFLOW: {name}; preserve required facts; first review wording, prototype and "
+                          "composition (method/text_visual or two_images for figure-led explanations); "
+                          "split at a meaningful boundary only if the explanation still cannot fit readably")
     return math.ceil(required * 12700) + top + bottom
 
 

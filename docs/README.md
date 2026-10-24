@@ -40,5 +40,6 @@ MCPはその文書を全文配布します。`docs/`へ同じ本文を複製せ�
 - [当初の開発指示](ORIGINAL_REQUIREMENTS.md): 旧GCP案や初期の広い機能要件を含む。
 - [正本テンプレートへの切り替え記録](CANONICAL_TEMPLATE_CHANGE.md): 作業時点の変更・生成物・検証結果を記録。
 - [PowerPoint互換性の調査記録](POWERPOINT_COMPATIBILITY.md): 旧経路の問題と現在の互換性上の制約。
+- [2026-10-24生成物監査](GENERATED_DECK_AUDIT_2026-10-24.md): 添付PPTXと稼働版の同定、前回指摘の反映状況、保存履歴からの原因調査。
 
 現行の仕様や機能を判断するときは、製品仕様、機能一覧、API、コード、テストを参照してください。
