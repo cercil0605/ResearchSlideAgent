@@ -7,6 +7,10 @@ APIと生成ワーカーは同一Piの共有Docker volumeを使い、SQLite WAL�
 
 認可サーバーはGoogleを上流IdPとして連携し、MCP専用audience/scopeのアクセストークンを発行する。APIはissuer/audience/署名/期限/scope/sub許可を検証する。Google IDトークンはMCPで受け付けない。ブラウザは独立したPKCEフローで認可サーバーにログインする。
 
+ローカルモード（`rsa local`）はHTTP・認証を持たず、MCPクライアントが起動したプロセスの標準入出力でMCPを話す。
+同じプロセスのスレッドでworkerのキュー処理を動かし、SQLite・Store・生成エンジンはそのまま使う。所有者は固定の `local-user`。
+資料は許可した入力フォルダからパスで読み、完成物は出力フォルダへ複製してパスを返す。workerのネットワーク隔離はこの方式にはない。
+
 ## モジュール
 
 | モジュール | 責務 |

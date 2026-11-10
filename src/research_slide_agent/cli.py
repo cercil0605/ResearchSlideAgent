@@ -15,6 +15,14 @@ def main():
     sub.add_parser("serve")
     sub.add_parser("worker")
     sub.add_parser("cleanup")
+    home = Path.home() / "ResearchSlides"
+    local = sub.add_parser("local", help="Run as a local MCP server over stdio (no HTTP, no OAuth)")
+    local.add_argument("--input-dir", type=Path, action="append",
+                       help=f"Directory the LLM may read source files from (repeatable). Default: {home}")
+    local.add_argument("--output-dir", type=Path, default=None,
+                       help=f"Where finished PPTX/PDF/PNG are copied. Default: {home / 'outputs'}")
+    local.add_argument("--data-dir", type=Path, default=None,
+                       help="Projects, jobs and SQLite queue. Default: RSA_DATA_DIR or ~/.research-slide-agent")
     args = parser.parse_args()
     if args.command == "demo":
         from .engine import generate, render
@@ -51,6 +59,8 @@ def main():
             log_level="critical",
             access_log=False,
         )
+    elif args.command == "local":
+        run_local(args, home)
     else:
         from .config import Settings
         from .store import Store
@@ -63,6 +73,39 @@ def main():
             print(store.cleanup())
         else:
             run_forever(store, settings)
+
+
+def run_local(args, home):
+    import logging
+    import os
+
+    from .auth import Auth
+    from .config import Settings
+    from .server import make_mcp
+    from .store import Store
+    from .worker import start_background
+
+    # stdout carries the MCP protocol; keep every library logger off it.
+    for namespace in ("mcp", "httpx", "httpcore"):
+        logging.getLogger(namespace).handlers = [logging.NullHandler()]
+        logging.getLogger(namespace).propagate = False
+    template = Path(os.getenv("RSA_TEMPLATE", "templates/lab-template.pptx"))
+    if not template.is_absolute() and not template.exists():
+        # MCP clients launch the server from an arbitrary working directory.
+        template = Path(__file__).resolve().parents[2] / template
+    data_dir = args.data_dir or Path(os.getenv("RSA_DATA_DIR") or Path.home() / ".research-slide-agent")
+    inputs = tuple(args.input_dir or [home])
+    output = args.output_dir or home / "outputs"
+    for directory in (*inputs, output, data_dir):
+        directory.expanduser().mkdir(parents=True, exist_ok=True)
+    settings = Settings(
+        local=True, dev=False, data_dir=data_dir.expanduser(), template=template,
+        input_dirs=inputs, output_dir=output,
+    )
+    settings.validate()
+    store = Store(settings)
+    start_background(store, settings)
+    make_mcp(store, settings, Auth(settings)).run("stdio")
 
 
 if __name__ == "__main__":

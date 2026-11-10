@@ -77,6 +77,20 @@ def test_overflow_refuses_content_change(settings, tmp_path):
         generate(settings.template, spec, tmp_path / "bad.pptx")
 
 
+def test_overflow_reports_every_failing_slide_once(settings, tmp_path):
+    spec = sample_spec(count=5)
+    spec.slides[0].replacements["背景の箇条書き"] = [PrototypeParagraph(text="長い文章" * 70)]
+    spec.slides[2].replacements["図題"] = [PrototypeParagraph(text="長い図題" * 40)]
+    output = tmp_path / "bad.pptx"
+    with pytest.raises(LayoutError) as caught:
+        generate(settings.template, spec, output)
+    message = str(caught.value)
+    assert "page 1 slide_id=s1: TEXT_OVERFLOW: 背景の箇条書き" in message
+    assert "page 3 slide_id=s3: TEXT_OVERFLOW: 図題" in message
+    assert message.count("guidance:") == 1 and len(message) < 2000
+    assert not output.exists()
+
+
 def test_cycles_rejected(settings, tmp_path):
     spec = sample_spec(count=2)
     spec.slides[1].diagram_spec.edges.append(type(spec.slides[1].diagram_spec.edges[0])(source="c", target="a"))

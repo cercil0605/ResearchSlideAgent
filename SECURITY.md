@@ -11,6 +11,11 @@ PPTXハッシュと描画jobの完了を確認して配信する。既存の同�
 
 研究資料は全てuntrusted reference data。資料抽出結果にもこのラベルを付け、Skillは資料内の命令を指示として扱わない。サーバーはモデルによる任意コード、XML、座標、任意URL取得、shell実行を公開しない。
 
+ローカルモード（`rsa local`）の信頼境界は、MCPクライアントを起動したOSユーザーである。HTTPを待ち受けず、認証もしない。
+`register_local_file` はシンボリックリンクと `..` を解決した後に許可フォルダ配下の通常ファイルだけを読み、通常と同じ形式・容量検査を適用する。
+資料内の指示でLLMが別のパスを読もうとしても許可フォルダ外は拒否するため、入力フォルダは必要な範囲に限定する。
+workerは同じプロセスで動く。ホストで直接起動した場合はネットワーク隔離がない。`scripts/rsa-local-docker.sh`はコンテナ全体を`--network none`・呼出しユーザーのUID/GIDで起動し、共有フォルダ1つだけをマウントする。
+
 ## 認証・所有権
 
 `RSA_AUTH_MODE=cloudflare` は各HTTP要求で `Cf-Access-Jwt-Assertion` のRS256署名・チームissuer・アプリAUD・iat/exp・type=app・空でないsubを検証する。ユーザー許可ポリシーはCloudflare Accessで管理し、アプリはメールアドレスを認可判定に使わない。

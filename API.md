@@ -16,6 +16,7 @@ MCPは `/mcp` のStreamable HTTP。公式SDKがinitialize、tools/list、tools/c
 | get_file_transfer_info | 引数なし。許可済み取得先ホスト・転送方法・上限。接続実績や疎通の証明ではない |
 | create_upload | presentation_id。予備経路。10分のPUT URLとbrowser_url。Cloudflare方式はURLに加えてAccess本人認証が必要 |
 | register_chatgpt_file | presentation_id, file:{download_url,file_id,mime_type?,file_name?}, author?, year?。論文PDFを一度登録 |
+| register_local_file | ローカルモードのみ。presentation_id, path（絶対パス）, author?, year?。許可した入力フォルダ配下の資料を一度登録 |
 | set_source_metadata | presentation_id, source_id, author, year。確認済みの著者・年を設定。元PDFの派生画像へ継承 |
 | read_source | presentation_id, source_id, page=1。PDF頁/PPTXスライド/XLSXシートを1始まりで取得 |
 | render_pdf_page | presentation_id, source_id, page=1, dpi=144。元PDFのページをPNGのImageContentと寸法で返す。保存資料は増えない |
@@ -29,6 +30,12 @@ MCPは `/mcp` のStreamable HTTP。公式SDKがinitialize、tools/list、tools/c
 | show_viewer | job_id。状態・ダウンロード用MCP Apps UI（ページ画像なし） |
 | inspect_uploaded_pptx | presentation_id, source_id。slide_number/shape_id/name/sha256 |
 | propose_pptx_patch | presentation_id, source_id, changes。保存したパッチ計画のpatch_id |
+
+ローカルモード（`rsa local`、stdio）では `create_upload`・`register_chatgpt_file`・`show_viewer` とUIリソースを登録しません。
+`get_file_transfer_info` は `method: register_local_file`、`allowed_input_dirs`、`output_dir` を返します。
+`get_profile` は固定の `local-user` です。completed時の `download_url`・`images`・`pdf_url` は出力フォルダへ複製したファイルの `file://` URIで、
+`get_job` は `local_path` も返し、`expires_in` はありません。
+`register_local_file` のエラーは `LOCAL_PATH_NOT_ABSOLUTE`、`LOCAL_FILE_NOT_FOUND`、`LOCAL_PATH_NOT_ALLOWED`（シンボリックリンク・`..` 解決後に許可フォルダ外）、`LOCAL_FILE_NOT_REGULAR` です。
 
 changesの要素:
 
@@ -169,4 +176,5 @@ Cloudflare方式のMCPツールは `oauth2`、`scopes: []` を宣言し、独自
 
 ## エラー
 
-SPEC_VERSION_CONFLICT、TEMPLATE_CHANGED_RESAVE_REQUIRED、PATCH_NOT_FOUND_OR_BASE_CHANGED、USER_JOB_LIMIT、PROJECT_NOT_FOUND_OR_EXPIRED、EDIT_CONFLICT等。HTTPには状態に応じて400/401、MCPにはisErrorを返す。ジョブは失敗状態と短いエラーコードを返す。内容不足をLLM APIで補完する処理はない。
+SPEC_VERSION_CONFLICT、TEMPLATE_CHANGED_RESAVE_REQUIRED、PATCH_NOT_FOUND_OR_BASE_CHANGED、USER_JOB_LIMIT、PROJECT_NOT_FOUND_OR_EXPIRED、EDIT_CONFLICT等。HTTPには状態に応じて400/401、MCPにはisErrorを返す。ジョブは失敗状態と短いエラーコードを返す。
+`LAYOUT_REQUIRES_USER_CHANGE` の `output.guidance` は、収まらない全ページを `page N slide_id=...: TEXT_OVERFLOW: <欄名>` の形で列挙し、共通の対処を一度だけ続ける。1回の生成で全ての修正対象が分かるため、1か所ずつ再生成を繰り返す必要はない。内容不足をLLM APIで補完する処理はない。

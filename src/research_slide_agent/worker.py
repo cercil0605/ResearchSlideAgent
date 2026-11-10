@@ -3,6 +3,7 @@ import json
 import logging
 import signal
 import subprocess
+import threading
 import time
 from logging.handlers import TimedRotatingFileHandler
 
@@ -65,7 +66,7 @@ def process_one(store, settings):
         if job["payload"]["kind"] == "preview":
             code = str(exc).split(":", 1)[0] if str(exc).startswith("PREVIEW_") else "PREVIEW_RENDER_FAILED"
         store.finish(job["id"], job["lease_token"], "failed", error=code,
-                     output={"guidance": str(exc)[:400]})
+                     output={"guidance": str(exc)[:2000]})
     except (OSError, RuntimeError, subprocess.SubprocessError):
         preview = job["payload"]["kind"] == "preview"
         store.finish(job["id"], job["lease_token"], "failed",
@@ -92,8 +93,23 @@ def run_forever(store, settings):
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
+    run_loop(store, settings, lambda: stopping)
+
+
+def start_background(store, settings):
+    """Local mode: run the same queue loop in this process. Signals stay with the MCP stdio main thread."""
+    stopping = threading.Event()
+    thread = threading.Thread(
+        target=run_loop, args=(store, settings, stopping.is_set, stopping.wait),
+        name="rsa-worker", daemon=True,
+    )
+    thread.start()
+    return stopping
+
+
+def run_loop(store, settings, should_stop, sleep=time.sleep):
     directory = store.root / "logs"
-    directory.mkdir(exist_ok=True)
+    directory.mkdir(parents=True, exist_ok=True)
     handler = TimedRotatingFileHandler(
         directory / "worker.log", when="midnight", interval=1, backupCount=6, utc=True, encoding="utf-8"
     )
@@ -102,7 +118,7 @@ def run_forever(store, settings):
     log.setLevel(logging.INFO)
     log.propagate = False
     last_cleanup = 0
-    while not stopping:
+    while not should_stop():
         try:
             if time.time() - last_cleanup >= 3600:
                 store.cleanup()
@@ -112,7 +128,7 @@ def run_forever(store, settings):
                         old_log.unlink()
                 last_cleanup = time.time()
             if not process_one(store, settings):
-                time.sleep(2)
+                sleep(2)
         except Exception:
             log.error(json.dumps({"operation": "worker_or_cleanup", "error_code": "WORKER_CYCLE_FAILED"}))
-            time.sleep(5)
+            sleep(5)

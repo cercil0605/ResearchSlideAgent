@@ -333,11 +333,13 @@ methodは図と説明、results_figureは大きな原図と短い説明、overvi
    ATTACHMENT_HTTP_401/403等は添付取得元の応答であり、MCP認証の失敗と断定しない。新しいfile引数で再試行する。
    `create_upload` は予備経路で、PUT URLだけでは本人認証を代替しない。自動転送不可を確認した場合のみ
    browser_urlの手動登録を案内し、論文PDFだけを登録してもらう。切り出した図の再アップロードを要求しない。
+   ローカルモードでは `get_file_transfer_info` が `register_local_file` を返す。利用者が示したファイルを絶対パスで一度だけ登録する。
+   許可フォルダ外なら、そのフォルダへ移すよう案内する。
 2. `save_slide_spec` にページ全体の仕様を保存する。spec_versionは保存済み版+1、expected_versionは保存済み版。
 3. `enqueue_generation` → `get_job`。新規生成・再生成・PPTXパッチに承認手順は不要。
    短い間隔で無限に確認しない。PPTX生成と構造検査が成功するとcompletedになる。
 4. completed後にF07の画像確認を行い、修正した場合は新しい版を保存・生成して確認する。
-5. 最終版の `get_job.download_url` をPPTXのリンクとして提示する。描画済みなら`get_preview.pdf_url`で参考PDFも取得できる。
+5. 最終版の `get_job.download_url` をPPTXのリンクとして提示する（ローカルモードでは `local_path` の保存先を伝える）。描画済みなら`get_preview.pdf_url`で参考PDFも取得できる。
    実際に確認した範囲と残件を伝える。原論文の図表を理解するページ画像閲覧と、完成画像の確認を区別する。
 
 ## 図表と収まらない場合

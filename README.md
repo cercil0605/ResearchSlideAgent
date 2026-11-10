@@ -71,6 +71,63 @@ RSA_DEV=1 uv run rsa worker
 
 MCP: `http://127.0.0.1:8000/mcp`。開発時のみloopbackから `dev-user` として利用できます。公開URLや `RSA_ENV=production` と開発認証の併用は起動を拒否します。
 
+### ローカルモード（stdio MCP）
+
+公開サーバー・Cloudflare・OAuthなしで、自分のPC上のMCPクライアントから使う方式です。
+`rsa local` はMCP stdioサーバーとして起動し、同じプロセス内でworkerも動かします。クライアントが起動・終了を管理します。
+
+```bash
+uv sync --frozen
+uv run rsa local --input-dir ~/ResearchSlides --output-dir ~/ResearchSlides/outputs
+```
+
+- 資料は `register_local_file` に絶対パスを渡して登録します。読めるのは `--input-dir` 配下だけです（既定 `~/ResearchSlides`、複数指定可）。
+- 完成PPTX・参考PDF・PNGは `--output-dir/<presentation_id>/<job_id>/` へ保存され、`get_job` が `local_path` と `file://` の `download_url` を返します。
+- 状態は `--data-dir`（既定 `~/.research-slide-agent`）に保存し、プロジェクトの7日期限も同じです。
+- PPTX生成だけならPythonで動きます。PDFのページ画像・原図の切り出しにはPoppler、完成画像にはLibreOfficeが必要です（macOSなら `brew install poppler` と `brew install --cask libreoffice`）。
+
+クライアントへの登録例（`/path/to/ResearchSlideAgent` は実際の場所に置き換えます。GUIアプリはPATHを引き継がないことがあるため、`uv` は `which uv` の絶対パスにすると確実です）。
+
+```bash
+# Claude Code
+claude mcp add research-slides -- uv --directory /path/to/ResearchSlideAgent run rsa local
+# Codex CLI
+codex mcp add research-slides -- uv --directory /path/to/ResearchSlideAgent run rsa local
+```
+
+```json
+{
+  "mcpServers": {
+    "research-slides": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/ResearchSlideAgent", "run", "rsa", "local"]
+    }
+  }
+}
+```
+
+JSON形式はClaude Desktop（`claude_desktop_config.json`）、Gemini CLI（`~/.gemini/settings.json`）、Cursor等の `mcpServers` 設定で共通です。
+#### すべてコンテナで動かす（推奨）
+
+Dockerイメージには Python・Poppler・LibreOffice・日本語フォント・正本テンプレートが入っているため、ホストに必要なのはDockerだけです。
+
+```bash
+docker build -t research-slide-agent:local .
+# Claude Code
+claude mcp add research-slides -- /path/to/ResearchSlideAgent/scripts/rsa-local-docker.sh
+# Codex CLI
+codex mcp add research-slides -- /path/to/ResearchSlideAgent/scripts/rsa-local-docker.sh
+```
+
+JSON設定のクライアントでは `"command": "/path/to/ResearchSlideAgent/scripts/rsa-local-docker.sh"` とし、`args` は不要です。
+`scripts/rsa-local-docker.sh` は `~/ResearchSlides`（`RSA_LOCAL_DIR` で変更可）を同じ絶対パスでマウントするため、LLMが渡すパスも返される `local_path` もホストのパスのままです。
+状態は `~/ResearchSlides/.rsa-data`、成果物は `~/ResearchSlides/outputs` に保存されます。
+コンテナは `--network none`・実行ユーザーのUID/GIDで動き、クライアントの終了とともに削除されます（`--rm`）。
+GHCRのイメージを使う場合は `RSA_IMAGE=ghcr.io/cercil0605/researchslideagent:<commit SHA>` を指定します。
+
+ローカルモードでは `register_chatgpt_file`・`create_upload`・`show_viewer`（MCP Apps UI）を公開しません。
+制作ルールは同じ `get_authoring_context` から取得します。結果の品質は接続先モデルの長文読解・画像入力・JSON作成能力に依存します。
+
 ### MCP Inspector
 
 ```bash
