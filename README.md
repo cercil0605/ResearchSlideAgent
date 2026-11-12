@@ -8,6 +8,45 @@ Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDK�
 正しいフォントと表を保つ最終PDFはPowerPointから書き出してください。
 [原因・修正内容・見た目を保つ運用](docs/POWERPOINT_COMPATIBILITY.md)。
 
+## 自分のPCですぐ使う（ローカルモード）
+
+サーバー公開・Cloudflare・ログインなしで、手元のClaude Code・Claude Desktop・Codex CLI・Gemini CLIなどから使えます。必要なのはDockerだけです（3ステップ、約5分）。
+
+```bash
+# 1. 取得してイメージを作る（初回のみ）
+git clone https://github.com/cercil0605/ResearchSlideAgent.git
+cd ResearchSlideAgent
+docker build -t research-slide-agent:local .
+
+# 2. 使うクライアントに登録する（下表から1つ）。パスは絶対パスにする
+S="$PWD/scripts/rsa-local-docker.sh"
+claude mcp add research-slides -- "$S"       # Claude Code
+codex mcp add research-slides -- "$S"        # Codex CLI
+
+# 3. 論文PDFを置く。生成物は ~/ResearchSlides/outputs に保存される
+mkdir -p ~/ResearchSlides && cp 論文.pdf ~/ResearchSlides/
+```
+
+クライアントを再起動し、次のように頼みます。
+
+> research-slides を使って、`~/ResearchSlides/論文.pdf` から10分の研究室発表スライドを作って。
+
+LLMが論文を `register_local_file` で登録し、構成を作って生成・画像確認・修正まで進めます。完成したPPTXのパスは `get_job` の `local_path` で返ります。
+
+| クライアント | 登録方法 |
+|---|---|
+| Claude Code | `claude mcp add research-slides -- "$S"` |
+| Codex CLI | `codex mcp add research-slides -- "$S"` |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` の `mcpServers` に `{"research-slides": {"command": "<scriptの絶対パス>"}}` を追加して再起動 |
+| Gemini CLI | `~/.gemini/settings.json` の `mcpServers` に同じ形で追加（`gemini mcp add` も利用可。本リポジトリでは未検証） |
+| Cursor等 | 各アプリのMCP設定（stdio / command）に同じ内容を追加 |
+| ChatGPT（Web・アプリ） | **不可**。ChatGPTのクラウドから手元のstdioは呼べません。[ChatGPTとPlugin](#chatgptとplugin)のリモート構成を使います |
+
+- 制作ルールはサーバーが `get_authoring_context` で配るため、Skillやプラグインのインストールは不要です。
+- 「プラグイン」として配るものはなく、上のMCP登録が接続のすべてです。結果の品質は接続先モデルの長文読解・画像入力・JSON作成能力に依存します。
+- 動作確認済みはCodex CLIです。Claude Codeは接続・生成まで確認しましたが、利用上限により完走を確認できていません。Claude Desktop・Gemini CLIは未検証です（[TESTING.md](TESTING.md)）。
+- Dockerを使わない場合・フォルダ変更などの詳細は[ローカルモード（stdio MCP）](#ローカルモードstdio-mcp)を参照してください。
+
 ## フォルダとGit管理
 
 | 場所 | 用途・扱い |
