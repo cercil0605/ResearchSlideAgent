@@ -659,6 +659,15 @@ def _custom_properties(value):
     return dump(root)
 
 
+def layout_summary(problems):
+    """One message naming every failing page; full guidance once, then each page's code and target."""
+    first = problems[0][2]
+    pages = "; ".join(f"page {page} slide_id={slide_id}: {message.split(';', 1)[0]}"
+                      for page, slide_id, message in problems)
+    guidance = first.split(";", 1)[1].strip() if ";" in first else ""
+    return f"{pages}" + (f" | guidance: {guidance}" if guidance else "")
+
+
 def generate_prototypes(template, spec, output, images=None):
     from .engine import LayoutError
 
@@ -686,11 +695,17 @@ def generate_prototypes(template, spec, output, images=None):
         for el in list(types):
             if el.get("PartName", "").startswith(("/ppt/slides/", "/ppt/notesSlides/")):
                 types.remove(el)
+        problems = []
         for i, item in enumerate(sorted(spec.slides, key=lambda s: s.slide_order), 1):
             if item.prototype_id not in entries:
                 raise LayoutError("Unknown prototype_id")
             entry = entries[item.prototype_id]
-            root, media = build_slide(src, entry, item, prs.slides[entry["source_page"] - 1], images or {})
+            try:
+                root, media = build_slide(src, entry, item, prs.slides[entry["source_page"] - 1], images or {})
+            except LayoutError as exc:
+                # Keep checking the other slides so one generation reports every page to revise.
+                problems.append((i, item.slide_id, str(exc)))
+                continue
             part = f"ppt/slides/slide{i}.xml"
             src_rels = posixpath.join(posixpath.dirname(entry["part"]), "_rels",
                                       posixpath.basename(entry["part"]) + ".rels")
@@ -717,6 +732,8 @@ def generate_prototypes(template, spec, output, images=None):
                                        "section": item.section, "presentation_part": item.part,
                                        "composition": item.composition, "paper_section": item.paper_section,
                                        "source_page": entry["source_page"], "part": "/" + part})
+        if problems:
+            raise LayoutError(layout_summary(problems))
         parts["ppt/presentation.xml"] = dump(presentation)
         parts["ppt/_rels/presentation.xml.rels"] = dump(rels)
         parts["docProps/custom.xml"] = _custom_properties(info)

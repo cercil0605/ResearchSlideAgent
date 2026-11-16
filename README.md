@@ -8,6 +8,45 @@ Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDK�
 正しいフォントと表を保つ最終PDFはPowerPointから書き出してください。
 [原因・修正内容・見た目を保つ運用](docs/POWERPOINT_COMPATIBILITY.md)。
 
+## 自分のPCですぐ使う（ローカルモード）
+
+サーバー公開・Cloudflare・ログインなしで、手元のClaude Code・Claude Desktop・Codex CLI・Gemini CLIなどから使えます。必要なのはDockerだけです（3ステップ、約5分）。
+
+```bash
+# 1. 取得してイメージを作る（初回のみ）
+git clone https://github.com/cercil0605/ResearchSlideAgent.git
+cd ResearchSlideAgent
+docker build -t research-slide-agent:local .
+
+# 2. 使うクライアントに登録する（下表から1つ）。パスは絶対パスにする
+S="$PWD/scripts/rsa-local-docker.sh"
+claude mcp add research-slides -- "$S"       # Claude Code
+codex mcp add research-slides -- "$S"        # Codex CLI
+
+# 3. 論文PDFを置く。生成物は ~/ResearchSlides/outputs に保存される
+mkdir -p ~/ResearchSlides && cp 論文.pdf ~/ResearchSlides/
+```
+
+クライアントを再起動し、次のように頼みます。
+
+> research-slides を使って、`~/ResearchSlides/論文.pdf` から10分の研究室発表スライドを作って。
+
+LLMが論文を `register_local_file` で登録し、構成を作って生成・画像確認・修正まで進めます。完成したPPTXのパスは `get_job` の `local_path` で返ります。
+
+| クライアント | 登録方法 |
+|---|---|
+| Claude Code | `claude mcp add research-slides -- "$S"` |
+| Codex CLI | `codex mcp add research-slides -- "$S"` |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` の `mcpServers` に `{"research-slides": {"command": "<scriptの絶対パス>"}}` を追加して再起動 |
+| Gemini CLI | `~/.gemini/settings.json` の `mcpServers` に同じ形で追加（`gemini mcp add` も利用可。本リポジトリでは未検証） |
+| Cursor等 | 各アプリのMCP設定（stdio / command）に同じ内容を追加 |
+| ChatGPT（Web・アプリ） | **不可**。ChatGPTのクラウドから手元のstdioは呼べません。[ChatGPTとPlugin](#chatgptとplugin)のリモート構成を使います |
+
+- 制作ルールはサーバーが `get_authoring_context` で配るため、Skillやプラグインのインストールは不要です。
+- 「プラグイン」として配るものはなく、上のMCP登録が接続のすべてです。結果の品質は接続先モデルの長文読解・画像入力・JSON作成能力に依存します。
+- 動作確認済みはCodex CLIです。Claude Codeは接続・生成まで確認しましたが、利用上限により完走を確認できていません。Claude Desktop・Gemini CLIは未検証です（[TESTING.md](TESTING.md)）。
+- Dockerを使わない場合・フォルダ変更などの詳細は[ローカルモード（stdio MCP）](#ローカルモードstdio-mcp)を参照してください。
+
 ## フォルダとGit管理
 
 | 場所 | 用途・扱い |
@@ -70,6 +109,63 @@ RSA_DEV=1 uv run rsa worker
 ```
 
 MCP: `http://127.0.0.1:8000/mcp`。開発時のみloopbackから `dev-user` として利用できます。公開URLや `RSA_ENV=production` と開発認証の併用は起動を拒否します。
+
+### ローカルモード（stdio MCP）
+
+公開サーバー・Cloudflare・OAuthなしで、自分のPC上のMCPクライアントから使う方式です。
+`rsa local` はMCP stdioサーバーとして起動し、同じプロセス内でworkerも動かします。クライアントが起動・終了を管理します。
+
+```bash
+uv sync --frozen
+uv run rsa local --input-dir ~/ResearchSlides --output-dir ~/ResearchSlides/outputs
+```
+
+- 資料は `register_local_file` に絶対パスを渡して登録します。読めるのは `--input-dir` 配下だけです（既定 `~/ResearchSlides`、複数指定可）。
+- 完成PPTX・参考PDF・PNGは `--output-dir/<presentation_id>/<job_id>/` へ保存され、`get_job` が `local_path` と `file://` の `download_url` を返します。
+- 状態は `--data-dir`（既定 `~/.research-slide-agent`）に保存し、プロジェクトの7日期限も同じです。
+- PPTX生成だけならPythonで動きます。PDFのページ画像・原図の切り出しにはPoppler、完成画像にはLibreOfficeが必要です（macOSなら `brew install poppler` と `brew install --cask libreoffice`）。
+
+クライアントへの登録例（`/path/to/ResearchSlideAgent` は実際の場所に置き換えます。GUIアプリはPATHを引き継がないことがあるため、`uv` は `which uv` の絶対パスにすると確実です）。
+
+```bash
+# Claude Code
+claude mcp add research-slides -- uv --directory /path/to/ResearchSlideAgent run rsa local
+# Codex CLI
+codex mcp add research-slides -- uv --directory /path/to/ResearchSlideAgent run rsa local
+```
+
+```json
+{
+  "mcpServers": {
+    "research-slides": {
+      "command": "uv",
+      "args": ["--directory", "/path/to/ResearchSlideAgent", "run", "rsa", "local"]
+    }
+  }
+}
+```
+
+JSON形式はClaude Desktop（`claude_desktop_config.json`）、Gemini CLI（`~/.gemini/settings.json`）、Cursor等の `mcpServers` 設定で共通です。
+#### すべてコンテナで動かす（推奨）
+
+Dockerイメージには Python・Poppler・LibreOffice・日本語フォント・正本テンプレートが入っているため、ホストに必要なのはDockerだけです。
+
+```bash
+docker build -t research-slide-agent:local .
+# Claude Code
+claude mcp add research-slides -- /path/to/ResearchSlideAgent/scripts/rsa-local-docker.sh
+# Codex CLI
+codex mcp add research-slides -- /path/to/ResearchSlideAgent/scripts/rsa-local-docker.sh
+```
+
+JSON設定のクライアントでは `"command": "/path/to/ResearchSlideAgent/scripts/rsa-local-docker.sh"` とし、`args` は不要です。
+`scripts/rsa-local-docker.sh` は `~/ResearchSlides`（`RSA_LOCAL_DIR` で変更可）を同じ絶対パスでマウントするため、LLMが渡すパスも返される `local_path` もホストのパスのままです。
+状態は `~/ResearchSlides/.rsa-data`、成果物は `~/ResearchSlides/outputs` に保存されます。
+コンテナは `--network none`・実行ユーザーのUID/GIDで動き、クライアントの終了とともに削除されます（`--rm`）。
+GHCRのイメージを使う場合は `RSA_IMAGE=ghcr.io/cercil0605/researchslideagent:<commit SHA>` を指定します。
+
+ローカルモードでは `register_chatgpt_file`・`create_upload`・`show_viewer`（MCP Apps UI）を公開しません。
+制作ルールは同じ `get_authoring_context` から取得します。結果の品質は接続先モデルの長文読解・画像入力・JSON作成能力に依存します。
 
 ### MCP Inspector
 

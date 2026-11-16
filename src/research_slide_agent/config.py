@@ -28,16 +28,27 @@ class Settings:
     session_key: str = field(default_factory=lambda: os.getenv("RSA_SESSION_KEY", ""))
     worker_limit: int = field(default_factory=lambda: int(os.getenv("RSA_WORKER_LIMIT", "1")))
     lease_seconds: int = 1800
+    # Local mode: one user on their own machine over MCP stdio. No HTTP listener and no OAuth;
+    # the client process that launches the server is the only caller.
+    local: bool = False
+    input_dirs: tuple[Path, ...] = ()
+    output_dir: Path | None = None
 
     @property
     def cloudflare(self):
-        return not self.dev and self.auth_mode == "cloudflare"
+        return not self.dev and not self.local and self.auth_mode == "cloudflare"
 
     @property
     def oauth_scopes(self):
         return [] if self.cloudflare else ["slides:write"]
 
     def validate(self):
+        if self.local:
+            if not self.input_dirs or self.output_dir is None:
+                raise ValueError("Local mode requires at least one input directory and an output directory")
+            if not 1 <= self.worker_limit <= 2:
+                raise ValueError("Worker limit must be 1 or 2")
+            return
         url = urlparse(self.base_url)
         if self.auth_mode not in {"oauth", "cloudflare"}:
             raise ValueError("RSA_AUTH_MODE must be oauth or cloudflare")

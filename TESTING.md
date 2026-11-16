@@ -100,6 +100,8 @@ MCP経由の本人確認・プロジェクト作成→仕様保存→承認な�
 - MCPの実loopback HTTPでcompleted時のdownload_urlからPPTXを取得。未完了時にはリンクを返さず、期限切れは拒否。
 - 旧承認・review行のあるDBを再利用。再アップロードによるパッチ元変更、形状SHA不一致、正本変更の拒否。
 - 登録した資料画像をPPTXへ挿入し、元画像バイトを保持。
+- ローカルモード：in-processのMCPで許可フォルダ外・シンボリックリンク・`..`・相対パスの拒否、生成と出力フォルダへの保存。`rsa local` を実際にstdioで起動し、同一プロセスのworkerでcompletedになること（`tests/test_local.py`）。
+- 実クライアントでの確認（2026-11-10、`scripts/rsa-local-docker.sh`でDockerコンテナのみ使用、論文はCVPR 2016のHe et al. "Deep Residual Learning for Image Recognition"）：Codex CLI（gpt-5.6-sol）は資料登録→原図切り出し→仕様保存→生成→完成画像確認→修正まで完走し、10枚のPPTXを作成した。Claude Codeは同じ手順で生成まで進んだが、利用上限に達して完成前に停止した。両方とも生成時のはみ出しが1件ずつ・slide_idなしで返り、再生成を繰り返した（Codexは16回）。この結果を受けて全ページを一度に返すよう変更した。Claude Desktop・Gemini CLI・PowerPoint実機での確認は未実施。
 - PluginとSlideSpec JSON Schemaの一致。一般向けデモ・40枚生成・部分編集も同じ正本と1.3で検証。
 
 旧42枚専用の抽出コードは削除済み。その抽出処理だけを対象としていた1試験と、原本がないとスキップする1試験も削除した。
