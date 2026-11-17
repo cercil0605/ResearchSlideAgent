@@ -55,7 +55,7 @@ MCPは要求時にLibreOfficeで参考画像を返し、作成側LLMが画像を
 ## 自分のPCで使う（ローカルモード）
 
 ChatGPTの代わりに、Claude Desktop・Claude Code・Codex CLI・Gemini CLIなど、ローカルのMCPサーバーを起動できるクライアントから使えます。
-論文PDFを入力フォルダ（既定 `~/ResearchSlides`）へ置き、ファイル名かパスを伝えます。LLMが `register_local_file` で登録し、以降の流れは上と同じです。
+論文PDFは `~/ResearchSlides`・`~/Downloads`・`~/Documents`・`~/Desktop` のどれかにあれば、置き場所を指定せずフルパスかファイル名を伝えるだけで登録できます（Docker起動時。`RSA_INPUT_DIRS` で変更）。LLMが `register_local_file` で登録し、以降の流れは上と同じです。
 完成したPPTXは出力フォルダへ保存され、その場所が返されます。設定方法は[README](../README.md)を参照してください。
 
 ## 利用者とシステムの役割
