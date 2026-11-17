@@ -8,6 +8,7 @@
 |---|---|
 | Claude Code | `make register AGENT=claude` |
 | Codex CLI・ChatGPTデスクトップ（Codex／Workモード） | `make register AGENT=codex` |
+| Antigravity CLI（agy） | `make register AGENT=agy`（内部で `agy mcp add research-slides <script>`） |
 | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` の `mcpServers` に `{"research-slides": {"command": "<scriptの絶対パス>"}}` を追加して再起動 |
 | Gemini CLI | `~/.gemini/settings.json` の `mcpServers` に同じ形で追加（`gemini mcp add` も利用可。本リポジトリでは未検証） |
 | Cursor等 | 各アプリのMCP設定（stdio / command）に同じ内容を追加 |
