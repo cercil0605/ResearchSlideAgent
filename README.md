@@ -1,56 +1,52 @@
 # Research Slide Agent
 
-論文PDFから、研究室の正本テンプレートに沿った**編集可能なPPTX**を作るMCPサーバーです。追加のLLM APIは使いません。構成と文章は接続したAIエージェント（Claude Code・Codex CLI・Gemini CLI〔Antigravity / agy〕）が作り、サーバーが配置・生成・検査を行います。
+論文 PDF から、研究室のテンプレートどおりの **編集できる PowerPoint** を作る MCP サーバーです。
 
-## 使い始める（ローカルモード）
+```mermaid
+flowchart LR
+    U[あなた] -->|論文と依頼| L[AIエージェント<br/>Claude Code / Codex / agy]
+    L <-->|MCP| S[このサーバー]
+    S --> P[PPTX]
+```
 
-サーバー公開・ログイン不要で、手元のDockerだけで動きます（約5分）。
+- **考えるのは AI エージェント**（論文を読み、構成と文章を作る）。
+- **このサーバーは考えません**。資料の保存、PPTX の生成、検査だけをします。
+
+## 使い始める
+
+Docker だけで動きます。
 
 ```bash
 git clone https://github.com/cercil0605/ResearchSlideAgent.git
 cd ResearchSlideAgent
-make setup      # claude / codex / agy を選択 → イメージ作成 → 登録 → 状態確認
-                # 選んだCLIが未インストールならビルド前に中止。非対話は make setup AGENT=claude
+make setup        # claude / codex / agy を選ぶ → ビルド → 登録
 ```
 
-エージェントを再起動し、論文のパスを伝えて頼みます。
+エージェントを再起動して、こう頼みます。
 
 > research-slides を使って、`~/Downloads/論文.pdf` から10分の研究室発表スライドを作って。
 
-完成したPPTXは `~/ResearchSlides/outputs` に保存されます。論文は `~/Downloads`・`~/Documents`・`~/Desktop`・`~/ResearchSlides` のどこにあっても読めます。
+完成した PPTX は `~/ResearchSlides/outputs` に入ります。
 
-| やりたいこと | コマンド |
+| こんなとき | コマンド |
 |---|---|
-| コードを更新した | `make update`（再登録は不要。エージェントを再起動） |
-| 動かない | `make doctor`（Docker・イメージ・スクリプトを確認） |
-| 登録前に動作確認 | `make smoke` |
-| 別のエージェントにも登録 | `make register AGENT=agy`（`claude`・`codex` も可。省略すると選択） |
-| 登録を外す | `make unregister AGENT=codex` |
+| コードを更新した | `make update` |
+| 動かない | `make doctor` |
+| 別のエージェントに登録 | `make register AGENT=codex` |
 
-`make` だけで一覧を表示します。
+## 仕組みを知る
 
-**対応クライアント**: Claude Code（CLI）・Codex CLI・Gemini CLI（Antigravity CLI / `agy`）。`make setup` で選んで登録できます。
+上から順に読むと、全体が分かります。
 
-| クライアント | 状態 |
+| 知りたいこと | ページ |
 |---|---|
-| Codex CLI | 動作確認済み |
-| Gemini CLI（Antigravity CLI / `agy`） | 登録まで確認（`agy mcp list` に表示）。生成は未確認 |
-| Claude Code | 接続・生成まで確認。利用上限のため完走は未確認 |
-| ChatGPTデスクトップ | Codex／Workモードのみ見込み。通常チャットではローカルMCPが公開されない既知の不具合あり（[openai/codex#38162](https://github.com/openai/codex/issues/38162)）。実機未確認 |
-| ChatGPT Web・Claude Desktopなど | Webは不可。他は未検証。登録方法は [docs/LOCAL.md](docs/LOCAL.md) |
-
-制作ルールはサーバーが配るため、Skillやプラグインのインストールは不要です。出来栄えは接続先モデルの能力に依存します。
-
-## 詳しい文書
-
-| 知りたいこと | 文書 |
-|---|---|
-| 仕組みを図で理解する | [docs/GUIDE.md](docs/GUIDE.md) |
-| 他クライアントへの登録、Pythonで直接実行、開発・検証 | [docs/LOCAL.md](docs/LOCAL.md) |
-| 公開サーバー（ChatGPT・Raspberry Pi・Portainer・環境変数） | [docs/REMOTE.md](docs/REMOTE.md) |
-| 何ができるか・制約 | [docs/CAPABILITIES.md](docs/CAPABILITIES.md) |
-| 利用の流れ | [docs/USER_USE_CASES.md](docs/USER_USE_CASES.md) |
-| 全文書の案内 | [docs/README.md](docs/README.md) |
-| API・設計・セキュリティ・試験 | [API.md](API.md) / [ARCHITECTURE.md](ARCHITECTURE.md) / [SECURITY.md](SECURITY.md) / [TESTING.md](TESTING.md) |
-
-**未実施の受入試験**: Cloudflare Access／外部OAuth、リモートChatGPT内UI、Microsoft PowerPointでの確認（[TESTING.md](TESTING.md)）。PowerPointの互換性は [docs/POWERPOINT_COMPATIBILITY.md](docs/POWERPOINT_COMPATIBILITY.md)。
+| どう呼ばれて、どう処理されるか | [01 処理の流れ](docs/01-flow.md) |
+| AI は何を呼び、何を受け取るか | [02 AI との約束](docs/02-llm-contract.md) |
+| 各入口をどのコードが実装しているか | [03 実装の地図](docs/03-implementation.md) |
+| リモートの認証はなぜ・いつ必要か | [04 認証](docs/04-auth.md) |
+| テンプレートどおりの見た目をどう作るか | [05 デザイン](docs/05-design.md) |
+| 内容をどう作り、どう確かめるか | [06 内容](docs/06-content.md) |
+| 何が保存され、いつ消えるか | [07 データと状態](docs/07-state.md) |
+| 導入・設定・リモート構築 | [08 運用](docs/08-operate.md) |
+| エラーが出た | [09 トラブル対応](docs/09-troubleshoot.md) |
+| どこまで確かめたか | [検証状況](docs/verified.md) |

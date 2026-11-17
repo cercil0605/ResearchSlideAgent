@@ -2,13 +2,23 @@
 
 ## Keep documentation in sync
 
-When changing user-visible behavior, supported inputs, limits, generated output, API or schema contracts, authentication, deployment, or verification claims, check the documentation map in [`docs/README.md`](docs/README.md) and update the affected documents in the same change.
+Human-facing docs are `README.md` and `docs/` (one question per page, diagrams first, plain Japanese).
+When a change affects what a page says, update that page in the same change.
 
-- Update [`docs/CAPABILITIES.md`](docs/CAPABILITIES.md) when a capability or limit changes.
-- Update [`docs/USER_USE_CASES.md`](docs/USER_USE_CASES.md) when a user workflow changes.
-- Update [`API.md`](API.md), `schemas/`, or examples when a tool or data contract changes.
-- Update `ARCHITECTURE.md`, `SECURITY.md`, `TESTING.md`, and `deploy/` guides when their respective implementation or operational behavior changes.
-- Keep authoring rules in the Plugin Skill's `references/`; do not create a second editable copy in `docs/`.
-- Treat documents marked as historical in `docs/README.md` as evidence of past decisions, not current requirements. Do not silently promote an old statement to current behavior.
+| If you change | Update |
+|---|---|
+| Tool names, inputs, outputs, local/remote availability | `docs/02-llm-contract.md`, `docs/03-implementation.md` |
+| Call flow, jobs, previews, patching | `docs/01-flow.md` |
+| Authentication, signed links, attachment hosts | `docs/04-auth.md` |
+| Template, prototypes, slot handling, layout checks | `docs/05-design.md` |
+| Authoring rules delivery, input limits, save-time feedback | `docs/06-content.md` |
+| Database, job states, retries, retention | `docs/07-state.md` |
+| Setup, Makefile, env vars, deployment, update | `docs/08-operate.md` |
+| Error codes | `docs/09-troubleshoot.md` |
+| What has been tested or confirmed | `docs/verified.md` |
 
-If a code change does not require a documentation change, state the reason in the change summary. Do not leave user-facing documentation inconsistent with the code or tests.
+- Write only what the code shows. Cite the file (and function) when it helps the reader find it.
+- Keep authoring rules for the LLM in `plugins/research-slide-agent/skills/research-slides/references/`. The server loads them (`rules.py`); do not copy them into `docs/`.
+- Machine contracts live in `schemas/` and `examples/`.
+
+If a code change needs no documentation change, say why in the change summary.
