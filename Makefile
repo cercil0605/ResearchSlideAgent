@@ -15,7 +15,7 @@ help: ## この一覧を表示
 	@echo ""
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-18s %s\n", $$1, $$2}'
 
-setup: ## 初回セットアップ。claude/codexを選び、なければ中止（AGENT=claude|codex で指定可）
+setup: ## 初回セットアップ。claude/codex/agyを選び、なければ中止（AGENT=claude|codex|agy で指定可）
 	@agent=$$("$(AGENTCTL)" pick "$(AGENT)") || exit 1; \
 	$(MAKE) build && "$(AGENTCTL)" add "$$agent" && $(MAKE) doctor
 
@@ -27,10 +27,10 @@ update: ## 最新コードを取り込んで再ビルド。クライアントの
 	$(MAKE) build
 	@echo "完了: ChatGPT/Codex/Claudeを再起動（または新しいチャット）で新版が使われます"
 
-register: ## claude/codexへ登録のみ行う（AGENT=claude|codex。省略時は選択）
+register: ## claude/codex/agyへ登録のみ行う（AGENT=claude|codex|agy。省略時は選択）
 	@"$(AGENTCTL)" add "$(AGENT)"
 
-unregister: ## 登録を外す（AGENT=claude|codex。省略時は選択）
+unregister: ## 登録を外す（AGENT=claude|codex|agy。省略時は選択）
 	@"$(AGENTCTL)" remove "$(AGENT)"
 
 doctor: ## Docker起動・イメージ・スクリプトの状態を確認

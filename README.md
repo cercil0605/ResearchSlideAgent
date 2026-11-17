@@ -9,7 +9,7 @@
 ```bash
 git clone https://github.com/cercil0605/ResearchSlideAgent.git
 cd ResearchSlideAgent
-make setup      # claude / codex を選択 → イメージ作成 → 登録 → 状態確認
+make setup      # claude / codex / agy を選択 → イメージ作成 → 登録 → 状態確認
                 # 選んだCLIが未インストールならビルド前に中止。非対話は make setup AGENT=claude
 ```
 
@@ -24,7 +24,7 @@ make setup      # claude / codex を選択 → イメージ作成 → 登録 →
 | コードを更新した | `make update`（再登録は不要。エージェントを再起動） |
 | 動かない | `make doctor`（Docker・イメージ・スクリプトを確認） |
 | 登録前に動作確認 | `make smoke` |
-| 別のエージェントにも登録 | `make register AGENT=codex`（または `claude`） |
+| 別のエージェントにも登録 | `make register AGENT=agy`（`claude`・`codex` も可。省略すると選択） |
 | 登録を外す | `make unregister AGENT=codex` |
 
 `make` だけで一覧を表示します。
@@ -34,6 +34,7 @@ make setup      # claude / codex を選択 → イメージ作成 → 登録 →
 | クライアント | 状態 |
 |---|---|
 | Codex CLI | 動作確認済み |
+| Antigravity CLI（agy） | 登録（`agy mcp list` で確認）のみ。生成は未確認 |
 | Claude Code | 接続・生成まで確認。利用上限のため完走は未確認 |
 | ChatGPTデスクトップ | Codex／Workモードのみ見込み。通常チャットではローカルMCPが公開されない既知の不具合あり（[openai/codex#38162](https://github.com/openai/codex/issues/38162)）。実機未確認 |
 | ChatGPT Web・Claude Desktop・Gemini CLIなど | Webは不可。他は未検証。登録方法は [docs/LOCAL.md](docs/LOCAL.md) |

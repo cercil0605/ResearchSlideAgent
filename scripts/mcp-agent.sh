@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Register / unregister the local MCP server with an agent CLI (claude or codex).
+# Register / unregister the local MCP server with an agent CLI (claude, codex or agy).
 #   mcp-agent.sh pick   [agent]   choose the agent (asks if omitted); aborts if its CLI is missing; prints the name
 #   mcp-agent.sh add    [agent]   register scripts/rsa-local-docker.sh
 #   mcp-agent.sh remove [agent]   unregister
@@ -13,14 +13,14 @@ die() { echo "中止: $*" >&2; exit 1; }
 
 choose() {
   if [ -z "$agent" ]; then
-    [ -t 0 ] || die "対話できません。AGENT=claude か AGENT=codex を指定してください"
+    [ -t 0 ] || die "対話できません。AGENT=claude|codex|agy を指定してください"
     PS3="番号を入力: "
     echo "登録するエージェントを選んでください:" >&2
-    select agent in claude codex; do break; done
+    select agent in claude codex agy; do break; done
   fi
   case "$agent" in
-    claude|codex) ;;
-    *) die "エージェントは claude か codex を指定してください（指定値: '${agent}'）" ;;
+    claude|codex|agy) ;;
+    *) die "エージェントは claude / codex / agy のどれかを指定してください（指定値: '${agent}'）" ;;
   esac
   command -v "$agent" >/dev/null 2>&1 || die "$agent コマンドが見つかりません。インストール後にやり直してください"
 }
@@ -32,6 +32,8 @@ case "$cmd" in
     "$agent" mcp remove "$name" >/dev/null 2>&1 || true   # 再実行しても重複しない
     if [ "$agent" = claude ]; then
       claude mcp add --scope user "$name" -- "$server"      # どのフォルダからでも使えるようuserスコープ
+    elif [ "$agent" = agy ]; then
+      agy mcp add "$name" "$server"
     else
       codex mcp add "$name" -- "$server"
     fi
