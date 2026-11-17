@@ -12,7 +12,7 @@ description: このリポジトリの手本PDFと教授の明示ガイドライ�
 
 ## 調査
 
-- `docs/TEMPLATE_AND_CONTENT_RULES.md`、既存の明示ルールとPDF由来のルールを読む。
+- `docs/05-design.md`、`references/canonical-skeleton.md`、既存の明示ルールとPDF由来のルールを読む。
 - 入力一覧・SHA-256を既存記録と比較し、追加・変更・削除を特定する。文字資料は全文を読み、見出し・行番号・更新日を記録する。
 - PDFはページ単位で本文を抽出し、図や配置に依存する判断では該当ページを画像で確認する。
   `pdftotext` / `pdftoppm` 等を使い、一時生成物は `/tmp` または `artifacts/` に置く。
