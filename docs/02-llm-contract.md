@@ -2,26 +2,7 @@
 
 AI エージェントが呼ぶ「入口（ツール）」と、返ってくるもの、その後に期待される動きです。
 
-## 呼ぶ順番
-
-```mermaid
-flowchart TD
-    A[get_authoring_context<br/>ルール4文書を全部読む] --> B[get_template_info<br/>見本ページの一覧]
-    B --> C[create_project]
-    C --> D[論文を登録]
-    D --> E[read_source / render_pdf_page<br/>読む・見る]
-    E --> F[crop_pdf_region<br/>図を切り抜く]
-    F --> G[save_slide_spec<br/>設計書を保存]
-    G -->|指摘あり| G
-    G --> H[enqueue_generation]
-    H --> I[get_job]
-    I -->|failed| G
-    I -->|completed| J[get_slide_preview<br/>完成画像を見る]
-    J -->|直す| G
-    J -->|OK| K[あなたに渡す]
-```
-
-サーバーは接続時に「最初にルールを全部読む」「保存前に自己点検」「完成画像を見て直す」と AI に伝えます（`rules.py` の `SERVER_INSTRUCTIONS`）。
+全ツールの辞書です。呼ぶ順番と、1論文での具体例は [01 処理の流れ](01-flow.md) を見てください。
 
 ## 入口ごとの約束
 

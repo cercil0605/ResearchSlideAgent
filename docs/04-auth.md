@@ -37,7 +37,7 @@ sequenceDiagram
     end
 ```
 
-- サーバーは、Cloudflare が付ける署名つきの本人証明（`Cf-Access-Jwt-Assertion`）を**毎回**検証します（`auth.py` `cloudflare_owner()`）。
+- サーバーは、Cloudflare が付ける署名つきの本人証明（`Cf-Access-Jwt-Assertion`）を**毎回**検証します（`auth.py` の `cloudflare_owner()`）。
 - 持ち主 ID は `cloudflare:<Cloudflareの利用者ID>` になります。
 - 誰を許可するかは、Cloudflare 側のポリシーで決めます。サーバーは許可リストを持ちません。
 - 検証しないで通すのは、`/health` と、認証方法を案内する `/.well-known/oauth-protected-resource` だけです。
@@ -61,12 +61,12 @@ flowchart LR
 | 場面 | いつ | 何を確認 | 有効期間 |
 |---|---|---|---|
 | ツール呼び出し | 毎回 | Cloudflare の本人証明 | 毎回検証 |
-| PPTX・画像のダウンロード | URL を開いたとき | URL の署名（`auth.py` `sign()`） | 10分 |
+| PPTX・画像のダウンロード | URL を開いたとき | URL の署名（`auth.py` の `sign()`） | 10分 |
 | 手動アップロード用 URL（`create_upload`） | アップロードのとき | URL の署名 ＋ 本人が持ち主か | 10分 |
 | ブラウザの登録画面 | 操作のたび | クッキー ＋ CSRF の合言葉 | 30分 |
 | ChatGPT の添付の取り込み | 取り込みのとき | 取り込み先が許可したホストか（既定 `*.oaiusercontent.com`）、HTTPS か、公開 IP か | — |
 
-**注意**：Cloudflare 方式では、ダウンロード URL は**持ち主専用ではありません**。Cloudflare にログインできる人なら、URL を持っていれば開けます（`app.py` `artifact()`）。URL は10分で失効します。
+**注意**：Cloudflare 方式では、ダウンロード URL は**持ち主専用ではありません**。Cloudflare にログインできる人なら、URL を持っていれば開けます（`app.py` の `artifact()`）。URL は10分で失効します。
 
 ## もう1つの方式（OAuth）
 
@@ -78,7 +78,7 @@ flowchart LR
 
 ## 開発用
 
-`RSA_DEV=1` のときは、同じ PC（ループバック）からの接続だけを `dev-user` として通します。公開 URL と一緒には起動できません（`config.py` `validate()`）。
+`RSA_DEV=1` のときは、同じ PC（ループバック）からの接続だけを `dev-user` として通します。公開 URL と一緒には起動できません（`config.py` の `validate()`）。
 
 ## なぜこうしたか
 

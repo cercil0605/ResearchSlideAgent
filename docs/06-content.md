@@ -78,7 +78,7 @@ flowchart TD
 | PDF | 暗号化なし、500ページまで |
 | Office | マクロ、外部リンク、埋め込みバイナリは拒否 |
 
-（`files.py`、`store.py` `register()`）
+（`files.py`、`store.py` の `register()`）
 
 ## 設計書を保存したときの検査
 

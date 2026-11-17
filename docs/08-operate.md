@@ -78,7 +78,7 @@ flowchart LR
 | `RSA_IMAGE` | 使うイメージ |
 | `RSA_OAUTH_ISSUER` `RSA_JWKS_URL` `RSA_OAUTH_AUDIENCE` `RSA_WEB_CLIENT_ID` `RSA_ALLOWED_SUBS` | `oauth` 方式のときだけ（`.env.oauth.example`） |
 
-設定が足りない・おかしいときは、起動時にエラーで止まります（`config.py` `validate()`）。
+設定が足りない・おかしいときは、起動時にエラーで止まります（`config.py` の `validate()`）。
 
 ### 更新
 

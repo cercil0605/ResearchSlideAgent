@@ -72,7 +72,7 @@ flowchart TD
     H -->|不一致| X
 ```
 
-（`prototypes.py` `generate_prototypes()` と `verify_prototypes()`）
+（`prototypes.py` の `generate_prototypes()` と `verify_prototypes()`）
 
 ## 何を守っているか
 

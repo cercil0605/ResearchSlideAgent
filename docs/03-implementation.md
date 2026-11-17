@@ -28,23 +28,23 @@ flowchart TD
 
 | 入口 | 主な実装 |
 |---|---|
-| `get_authoring_context` | `rules.py` `authoring_context()` |
-| `get_template_info` | `engine.py` `template_info()` |
-| `create_project` / `get_project` | `store.py` `create()` / `project()` |
-| `register_local_file` | `server.py` `read_local_file()` → `store.py` `register()` → `files.py` `validate_file()` |
-| `register_chatgpt_file` | `server.py` `download_attachment()` → `store.py` `register()` |
-| `create_upload` | `auth.py` `sign()`、受け口は `app.py` `upload()` |
-| `set_source_metadata` | `store.py` `source_metadata()` |
-| `read_source` | `files.py` `extract()` |
-| `render_pdf_page` / `crop_pdf_region` | `pdf_assets.py` `render_page()` |
-| `save_slide_spec` | `models.py` の型チェック → `store.py` `save_spec()` → `prototypes.py` `authoring_feedback()` |
-| `patch_slide` | `server.py` 内で1枚差し替え → `store.py` `save_spec()` |
-| `enqueue_generation` / `retry_job` | `store.py` `enqueue()` / `retry()` |
-| ジョブの実行 | `worker.py` `process_one()` → `engine.py` `generate()` → `prototypes.py` `generate_prototypes()` |
-| `get_job` / `get_preview` | `server.py` `links()` |
-| `get_slide_preview` | `previews.py` → worker が `engine.py` `render()` |
+| `get_authoring_context` | `rules.py` の `authoring_context()` |
+| `get_template_info` | `engine.py` の `template_info()` |
+| `create_project` / `get_project` | `store.py` の `create()` / `project()` |
+| `register_local_file` | `server.py` の `read_local_file()` → `store.py` の `register()` → `files.py` の `validate_file()` |
+| `register_chatgpt_file` | `server.py` の `download_attachment()` → `store.py` の `register()` |
+| `create_upload` | `auth.py` の `sign()`、受け口は `app.py` の `upload()` |
+| `set_source_metadata` | `store.py` の `source_metadata()` |
+| `read_source` | `files.py` の `extract()` |
+| `render_pdf_page` / `crop_pdf_region` | `pdf_assets.py` の `render_page()` |
+| `save_slide_spec` | `models.py` の型チェック → `store.py` の `save_spec()` → `prototypes.py` の `authoring_feedback()` |
+| `patch_slide` | `server.py` 内で1枚差し替え → `store.py` の `save_spec()` |
+| `enqueue_generation` / `retry_job` | `store.py` の `enqueue()` / `retry()` |
+| ジョブの実行 | `worker.py` の `process_one()` → `engine.py` の `generate()` → `prototypes.py` の `generate_prototypes()` |
+| `get_job` / `get_preview` | `server.py` の `links()` |
+| `get_slide_preview` | `previews.py` → worker が `engine.py` の `render()` |
 | `get_generation_report` | 生成時に書いた `*.manifest.json` を返す |
-| `inspect_uploaded_pptx` / `propose_pptx_patch` | `engine.py` `inspect_pptx()` / `store.py` `patch_plan()`、実行は `engine.py` `patch_text()` |
+| `inspect_uploaded_pptx` / `propose_pptx_patch` | `engine.py` の `inspect_pptx()` / `store.py` の `patch_plan()`、実行は `engine.py` の `patch_text()` |
 
 ## local と remote の違い
 
