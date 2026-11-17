@@ -1,6 +1,6 @@
 # Research Slide Agent
 
-論文PDFから、研究室の正本テンプレートに沿った**編集可能なPPTX**を作るMCPサーバーです。追加のLLM APIは使いません。構成と文章は接続したAIエージェント（Claude Code・Codexなど）が作り、サーバーが配置・生成・検査を行います。
+論文PDFから、研究室の正本テンプレートに沿った**編集可能なPPTX**を作るMCPサーバーです。追加のLLM APIは使いません。構成と文章は接続したAIエージェント（Claude Code・Codex CLI・Gemini CLI〔Antigravity / agy〕）が作り、サーバーが配置・生成・検査を行います。
 
 ## 使い始める（ローカルモード）
 
@@ -29,15 +29,15 @@ make setup      # claude / codex / agy を選択 → イメージ作成 → 登�
 
 `make` だけで一覧を表示します。
 
-**使えるクライアント**
+**対応クライアント**: Claude Code（CLI）・Codex CLI・Gemini CLI（Antigravity CLI / `agy`）。`make setup` で選んで登録できます。
 
 | クライアント | 状態 |
 |---|---|
 | Codex CLI | 動作確認済み |
-| Antigravity CLI（agy） | 登録（`agy mcp list` で確認）のみ。生成は未確認 |
+| Gemini CLI（Antigravity CLI / `agy`） | 登録まで確認（`agy mcp list` に表示）。生成は未確認 |
 | Claude Code | 接続・生成まで確認。利用上限のため完走は未確認 |
 | ChatGPTデスクトップ | Codex／Workモードのみ見込み。通常チャットではローカルMCPが公開されない既知の不具合あり（[openai/codex#38162](https://github.com/openai/codex/issues/38162)）。実機未確認 |
-| ChatGPT Web・Claude Desktop・Gemini CLIなど | Webは不可。他は未検証。登録方法は [docs/LOCAL.md](docs/LOCAL.md) |
+| ChatGPT Web・Claude Desktopなど | Webは不可。他は未検証。登録方法は [docs/LOCAL.md](docs/LOCAL.md) |
 
 制作ルールはサーバーが配るため、Skillやプラグインのインストールは不要です。出来栄えは接続先モデルの能力に依存します。
 
