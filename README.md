@@ -45,6 +45,7 @@ make setup      # claude / codex / agy を選択 → イメージ作成 → 登�
 
 | 知りたいこと | 文書 |
 |---|---|
+| 仕組みを図で理解する | [docs/GUIDE.md](docs/GUIDE.md) |
 | 他クライアントへの登録、Pythonで直接実行、開発・検証 | [docs/LOCAL.md](docs/LOCAL.md) |
 | 公開サーバー（ChatGPT・Raspberry Pi・Portainer・環境変数） | [docs/REMOTE.md](docs/REMOTE.md) |
 | 何ができるか・制約 | [docs/CAPABILITIES.md](docs/CAPABILITIES.md) |
