@@ -13,30 +13,35 @@ Macで修復を求められたPPTXの不正XMLを修正し、Microsoft公式SDK�
 サーバー公開・Cloudflare・ログインなしで、手元のClaude Code・Claude Desktop・Codex CLI・Gemini CLIなどから使えます。必要なのはDockerだけです（3ステップ、約5分）。
 
 ```bash
-# 1. 取得してイメージを作る（初回のみ）
 git clone https://github.com/cercil0605/ResearchSlideAgent.git
 cd ResearchSlideAgent
-docker build -t research-slide-agent:local .
-
-# 2. 使うクライアントに登録する（下表から1つ）。パスは絶対パスにする
-S="$PWD/scripts/rsa-local-docker.sh"
-claude mcp add research-slides -- "$S"       # Claude Code
-codex mcp add research-slides -- "$S"        # Codex CLI
-
-# 3. 論文PDFを置く。生成物は ~/ResearchSlides/outputs に保存される
-mkdir -p ~/ResearchSlides && cp 論文.pdf ~/ResearchSlides/
+make setup      # claude / codex を選択 → イメージ作成 → 登録 → 状態確認（初回のみ）
+                # 選んだCLIが未インストールなら、ビルド前に中止します
+                # 非対話なら make setup AGENT=claude のように指定
 ```
+
+| 場面 | コマンド |
+|---|---|
+| コードを更新したとき | `make update`（git pull + 再ビルド。再登録は不要。クライアントを再起動） |
+| 別のエージェントにも登録 | `make register AGENT=claude`（または `codex`。省略すると選択） |
+| 登録前の動作確認 | `make smoke` |
+| うまく動かないとき | `make doctor`（Docker・イメージ・スクリプトの状態を確認） |
+| 登録を外す | `make unregister AGENT=claude`（または `codex`） |
+
+`make` だけで一覧を表示します。Claude Codeは `--scope user` で登録するため、どのフォルダからでも使えます。Codexへの登録は `~/.codex/config.toml` に入り、ChatGPTデスクトップでも共有されます。ただしChatGPTの通常チャットではローカルMCPのツールが公開されない既知の不具合があり（openai/codex#38162）、Codexモード・Workモード、またはCodex CLIで使ってください。実機での確認はCodex CLIのみです。
+
+論文は `~/Downloads`・`~/Documents`・`~/Desktop`・`~/ResearchSlides` のどこにあっても、フルパスを伝えるだけで読めます。生成物は `~/ResearchSlides/outputs` に保存されます。
 
 クライアントを再起動し、次のように頼みます。
 
-> research-slides を使って、`~/ResearchSlides/論文.pdf` から10分の研究室発表スライドを作って。
+> research-slides を使って、`~/Downloads/論文.pdf` から10分の研究室発表スライドを作って。
 
 LLMが論文を `register_local_file` で登録し、構成を作って生成・画像確認・修正まで進めます。完成したPPTXのパスは `get_job` の `local_path` で返ります。
 
 | クライアント | 登録方法 |
 |---|---|
-| Claude Code | `claude mcp add research-slides -- "$S"` |
-| Codex CLI | `codex mcp add research-slides -- "$S"` |
+| Claude Code | `make register AGENT=claude` |
+| Codex CLI・ChatGPTデスクトップ（Codex／Workモード） | `make register AGENT=codex` |
 | Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` の `mcpServers` に `{"research-slides": {"command": "<scriptの絶対パス>"}}` を追加して再起動 |
 | Gemini CLI | `~/.gemini/settings.json` の `mcpServers` に同じ形で追加（`gemini mcp add` も利用可。本リポジトリでは未検証） |
 | Cursor等 | 各アプリのMCP設定（stdio / command）に同じ内容を追加 |
@@ -159,7 +164,7 @@ codex mcp add research-slides -- /path/to/ResearchSlideAgent/scripts/rsa-local-d
 ```
 
 JSON設定のクライアントでは `"command": "/path/to/ResearchSlideAgent/scripts/rsa-local-docker.sh"` とし、`args` は不要です。
-`scripts/rsa-local-docker.sh` は `~/ResearchSlides`（`RSA_LOCAL_DIR` で変更可）を同じ絶対パスでマウントするため、LLMが渡すパスも返される `local_path` もホストのパスのままです。
+`scripts/rsa-local-docker.sh` は `~/ResearchSlides`（`RSA_LOCAL_DIR` で変更可）を読み書き可、`~/Downloads`・`~/Documents`・`~/Desktop`（`RSA_INPUT_DIRS` にコロン区切りで指定して変更可）を読み取り専用で、いずれも同じ絶対パスでマウントします。論文は専用フォルダへ移さなくても、これらの下にあればパスを渡すだけで登録できます。パスが同じなので、LLMが渡すパスも返される `local_path` もホストのパスのままです。
 状態は `~/ResearchSlides/.rsa-data`、成果物は `~/ResearchSlides/outputs` に保存されます。
 コンテナは `--network none`・実行ユーザーのUID/GIDで動き、クライアントの終了とともに削除されます（`--rm`）。
 GHCRのイメージを使う場合は `RSA_IMAGE=ghcr.io/cercil0605/researchslideagent:<commit SHA>` を指定します。

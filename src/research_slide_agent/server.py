@@ -173,7 +173,7 @@ def read_local_file(path: str, roots):
         raise StateError("LOCAL_FILE_NOT_FOUND") from exc
     if not any(resolved.is_relative_to(root) for root in roots):
         raise StateError("LOCAL_PATH_NOT_ALLOWED: file must be under an allowed input directory "
-                         "(see get_file_transfer_info); ask the user to move it there or restart with --input-dir")
+                         "(see get_file_transfer_info); ask the user for the file's absolute path (the folders listed there are readable without moving files)")
     if not resolved.is_file():
         raise StateError("LOCAL_FILE_NOT_REGULAR")
     if resolved.stat().st_size > MAX_FILE:
