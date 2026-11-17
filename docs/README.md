@@ -5,7 +5,9 @@ Research Slide Agentの文書を、読む目的ごとに案内します。
 ## まず読む
 
 - [はじめての人向けの全体像](OVERVIEW.md): 何をする仕組みか、どこで動くかを図で短く説明。
-- [README](../README.md): 製品概要、開発環境、接続と導入の入口。
+- [README](../README.md): 製品概要とローカルモードの最短導入。
+- [ローカルモードと開発（詳細）](LOCAL.md): 他クライアントへの登録、Python直接実行、開発・検証、フォルダ構成。
+- [リモート構成](REMOTE.md): ChatGPT・Raspberry Pi・Portainer・環境変数。
 - [製品仕様](PRODUCT_SPEC.md): 誰が何に使い、生成処理が何をするか。
 - [機能と制約](CAPABILITIES.md): 現在できること、条件、未対応の範囲。
 - [利用シーン](USER_USE_CASES.md): 作成・更新・手編集PPTXの再編集の流れ。

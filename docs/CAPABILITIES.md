@@ -66,3 +66,17 @@ Cloudflare方式の成果物（PPTX・参考PDF・PNG）は、Accessで許可さ
 - 入力資料・抽出: [`files.py`](../src/research_slide_agent/files.py)、[`pdf_assets.py`](../src/research_slide_agent/pdf_assets.py)、[`test_inputs.py`](../tests/test_inputs.py)、[`test_pdf_assets.py`](../tests/test_pdf_assets.py)
 - 部分修正・ジョブ・保持: [`store.py`](../src/research_slide_agent/store.py)、[`worker.py`](../src/research_slide_agent/worker.py)、[`test_state.py`](../tests/test_state.py)
 - MCPツールとHTTP契約: [`server.py`](../src/research_slide_agent/server.py)、[API](../API.md)、[`test_mcp.py`](../tests/test_mcp.py)
+
+## 詳細な制約（READMEから移動）
+
+- 1ジョブの技術上限は40枚（推奨枚数ではない）。必要な説明が超える場合は省略せず制約を明示する。アップロード資料10件＋派生画像80件、各20 MiB、両者合計100 MiB。ユーザー同時ジョブ1、研究室実行上限2。
+- PDF/PPTX/PNG/JPEG/UTF-8 CSV/XLSX。資料抽出は1回24,000文字まで。画像PDFのOCRは未対応。
+- SlideSpec 1.3のネイティブ表、ノードと接続線の説明図、元画像と複合配置に対応します。グラフの直接生成は未対応です。
+- 部分修正は、明示フォントを持つ単純なトップレベルのテキスト図形のみ。複数ラン・グループ・SmartArt・表/グラフの部分更新は停止する。
+- 再生成は正本の見本ページを複製します。手動編集を維持したいときは再アップロードと部分修正を使います。
+- 文字幅検査は保守的な推定。図形接続・領域・重なり・引用・元データ・保存した本文の構造検査を行いますが、図の意味や描画品質を完全自動判定しません。
+- 仕様・部分修正はバージョンとハッシュに紐付く。`approved=true` はスキーマ違反。
+- プロジェクト作成から7日で拒否・削除。共有テンプレートは対象外。
+- GCP版は今回のPi優先方針により未実装。[移行時の要件](../deploy/GCP.md)。このSQLite版をそのままCloud Runに配置してはいけません。
+
+設計: [ARCHITECTURE.md](../ARCHITECTURE.md) / API: [API.md](../API.md) / セキュリティ: [SECURITY.md](../SECURITY.md) / 判断記録: [ADR](adr/) / 検証: [TESTING.md](../TESTING.md)。
