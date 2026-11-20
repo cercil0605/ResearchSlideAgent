@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import math
 import re
@@ -26,7 +27,11 @@ NS = {
 
 
 class LayoutError(ValueError):
-    pass
+    """A spec that cannot be laid out readably. ``problems`` carries every measured overflow."""
+
+    def __init__(self, message, problems=None):
+        super().__init__(message)
+        self.problems = list(problems or [])
 
 
 @dataclass(frozen=True)
@@ -39,14 +44,25 @@ class Box:
 
 def template_info(path: Path):
     from .models import RESEARCH_CONTENT_ROLES
-    from .prototypes import COMPOSITIONS, profile_for
+    from .prototypes import COMPOSITIONS, capacity_catalog, profile_for
 
     profile = profile_for(path)
     if not profile:
         raise LayoutError("CANONICAL_TEMPLATE_REQUIRED: prepare the template profile")
+    capacity = capacity_catalog(path)
+    prototypes = copy.deepcopy(profile["prototypes"])
+    for entry in prototypes:
+        if "table" in entry:
+            # The profile counts the template's sample rows; report the rows that actually fit.
+            entry["table"]["max_body_rows"] = capacity[entry["prototype_id"]]["canonical"]["table"]["max_body_rows"]
     return {"template_id": "lab", "sha256": profile["template_sha256"],
             "engine": profile["engine"], "style_version": profile["style_version"],
-            "schema_version": "1.3", "prototypes": profile["prototypes"],
+            "schema_version": "1.3", "prototypes": prototypes,
+            "slot_capacity": capacity,
+            "slot_capacity_note": ("Approximate room per prototype and composition: lines and full-width "
+                                   "characters per line at the slot's font size; half-width letters count "
+                                   "about half. save_slide_spec checks the actual text and returns "
+                                   "fit_problems for every slot that would not fit."),
             "supported_schema_versions": ["1.3"], "recommended_schema_version": "1.3",
             "compositions": COMPOSITIONS,
             "required_content_roles": {key: sorted(value) for key, value in RESEARCH_CONTENT_ROLES.items()},

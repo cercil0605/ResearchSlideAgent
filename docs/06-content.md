@@ -90,7 +90,8 @@ flowchart TD
     B -->|いいえ| E2[SPEC_VERSION_CONFLICT]
     B -->|はい| C{引用・画像は<br/>登録済みの資料?}
     C -->|いいえ| E3[拒否]
-    C -->|はい| D[保存して指摘を返す]
+    C -->|はい| F[生成と同じ計算で<br/>配置を試す]
+    F --> D[保存して指摘を返す]
 ```
 
 返す指摘の例：
@@ -102,8 +103,11 @@ flowchart TD
 | `SHARED_CONTENT_TARGET_REVIEW` | 複数の役割（入力・処理など）が同じ本文枠を指している |
 | `METHOD_FIGURE_LAYOUT_REVIEW` | 手法のページが図の説明だけになっていないか |
 | `ADJACENT_TABLE_MERGE_REVIEW` | 隣のページの表とまとめられそう |
+| `LAYOUT_WILL_FAIL` | このまま生成すると配置の検査で失敗する。`pages[].fit_problems` の各項目を直す |
 
 ほかに、見出し枠に見本の文字が残っているページ（`inherited_headings`）と、研究発表で各ページに必要な役割のうち足りないもの（`missing_page_roles`）も返します。
+
+`pages[].fit_problems` は文字枠の必要行数と入る行数、表の行数上限や必要高さ、図の配置の問題を返します。登録済みの原図を使うページも検査します（`store.py` の `save_spec()` → `prototypes.py` の `authoring_feedback()` / `build_slide()`）。はみ出しがあっても保存はできます。必要な事実を残したまま文や配置を見直し、指摘を解消してから生成します。この検査は実際の描画や内容の評価ではありません。
 
 ## なぜこうしたか
 

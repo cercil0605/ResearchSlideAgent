@@ -183,7 +183,7 @@ def read_local_file(path: str, roots):
 
 def export_local(store, settings, job, name, cached):
     """Copy a completed artifact to <output_dir>/<project>/<job>/ and return the saved path."""
-    output = json.loads(job["output"])
+    output = job["output"]
     if name == "presentation.pptx":
         source = store.root / output["pptx"]
     elif cached and name in {cached[1]["pdf"], *cached[1]["images"]}:
@@ -226,7 +226,9 @@ def make_mcp(store, settings, auth):
 
     @tool(mcp, annotations=read, meta=meta)
     def get_template_info(*, ctx: Context) -> dict[str, Any]:
-        """Inspect template layouts and styles after reading get_authoring_context. This is not the authoring rules."""
+        """Inspect layouts, styles and slot_capacity per composition after reading get_authoring_context.
+        Capacity is approximate; wrapped table cells reduce max_body_rows. This is not the authoring rules.
+        """
         return template_info(settings.template)
 
     @tool(mcp, annotations=read, meta={**meta, "openai/profile": True})
@@ -252,6 +254,7 @@ def make_mcp(store, settings, auth):
     ) -> dict[str, Any]:
         """Save a specification snapshot with optimistic version checking. First read get_authoring_context
         and apply its workflow; never truncate content to fit slots. No user approval state is stored.
+        Read authoring_feedback.pages[].fit_problems and revise every reported slot before generation.
         """
         return store.save_spec(owner_of(ctx), presentation_id, spec, expected_version)
 
@@ -388,7 +391,9 @@ def make_mcp(store, settings, auth):
 
     @tool(mcp, annotations=read, meta=meta)
     def get_job(job_id: str, *, ctx: Context) -> dict[str, Any]:
-        """Get job state, attempts and errors. completed includes an expiring PowerPoint download_url."""
+        """Get job state, attempts and errors. output is an object or null; failed layout jobs include
+        output.problems with page/slot details and output.guidance. completed includes PowerPoint download_url.
+        """
         return links(job_id, ctx=ctx)["job"]
 
     @tool(mcp, annotations=write, meta=meta)
@@ -414,9 +419,11 @@ def make_mcp(store, settings, auth):
     def links(job_id, *, ctx: Context):
         owner = owner_of(ctx)
         job = store.job(owner, job_id)
+        # Stored as JSON text; clients receive the object (problems, guidance) without a second decode.
+        job = {**job, "output": json.loads(job["output"]) if job["output"] else None}
         result = {"job": job, "images": [], "download_url": None}
         if job["state"] == "completed":
-            if "pptx" not in json.loads(job["output"]):
+            if "pptx" not in job["output"]:
                 return result  # Rendering jobs have a source_job_id, not another presentation.
             def link(name):
                 if settings.local:

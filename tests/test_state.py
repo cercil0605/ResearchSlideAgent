@@ -231,6 +231,24 @@ def test_structure_check_failure_does_not_complete(store, settings, monkeypatch)
     assert failed["state"] == "failed" and failed["error"] == "LAYOUT_REQUIRES_USER_CHANGE"
 
 
+def test_worker_keeps_every_structured_layout_problem(store, settings, monkeypatch):
+    from research_slide_agent.engine import LayoutError
+
+    p, _ = saved_project(store)
+    job = store.enqueue("alice", p["id"])
+    problems = [{"page": i // 6 + 1, "target": f"slot-{i}", "code": "TEXT_OVERFLOW"}
+                for i in range(240)]
+
+    def overflow(*args):
+        raise LayoutError("TEXT_OVERFLOW: revise the listed slots", problems)
+
+    monkeypatch.setattr("research_slide_agent.worker.generate", overflow)
+    assert process_one(store, settings)
+    failed = store.job("alice", job["id"])
+    assert failed["state"] == "failed"
+    assert json.loads(failed["output"])["problems"] == problems
+
+
 def test_template_change_after_enqueue_fails(store, settings):
     p, _ = saved_project(store)
     job = store.enqueue("alice", p["id"])
