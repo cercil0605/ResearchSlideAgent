@@ -73,3 +73,18 @@ flowchart LR
 - ChatGPT デスクトップ（Codex / Work モード）、Claude Desktop、Gemini CLI での生成
 - 別の論文・別のモデルでの品質や再現性
 - `make build` / `make update` の通し実行
+
+## LLM に渡す量（2026-11-20）
+
+`scripts/measure_llm_payload.py` で、ツールを実際に呼んだときの返事の長さを測りました。トークン数は「全角1文字=1、それ以外4文字=1」の概算です。
+
+| 返事 | 変更前 | `get_template_info` 軽量化後 |
+|---|---|---|
+| ツール定義（remote 23個、毎回） | 24,065字（約6.0k） | 同じ |
+| `get_authoring_context` | 35,959字（約27.0k） | 同じ |
+| `get_template_info` | 85,666字（約23.0k） | 24,969字（約7.3k） |
+| `save_slide_spec` の返事（合成8枚） | 4,844字（約1.3k） | 同じ |
+
+`pytest -q` は、`pdftoppm` が無い macOS で PDF 描画の11件を除き合格しました（変更前も同じ11件が失敗）。
+
+容量の目安（`slot_capacity`）を加えた統合版では、`get_template_info` は 41,453字（約11.7k）でした（2026-11-20、コンテナ内で `pytest -q` 250件合格）。容量の表のぶん約16,500字増えています。AI が作るスライドの品質や、弱いモデルでの成功率が変わるかは、まだ測っていません。
