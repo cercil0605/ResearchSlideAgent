@@ -78,3 +78,4 @@ local は `cli.py` の `run_local()` が、入口と worker を1つのプロセ�
 ## なぜこうしたか
 
 - local と remote で中身（保存・生成・検査）を共通にし、違いを「入口と出口」だけにしています。片方だけ直して食い違うのを防ぐためです。
+- AI に見せるデータと、生成に使うデータを分けています。`get_template_info` は `llm_view.py` の `template_info()` が `engine.py` の結果から書式 XML・位置・部品名を外して返し、生成は対応表の全データを使い続けます。返す量は `scripts/measure_llm_payload.py` で測れます。

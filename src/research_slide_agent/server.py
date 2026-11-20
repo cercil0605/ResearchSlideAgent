@@ -21,8 +21,9 @@ from mcp_types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 from starlette.concurrency import run_in_threadpool
 
 from .auth import current_owner
-from .engine import inspect_pptx, template_info
+from .engine import inspect_pptx
 from .files import MAX_FILE, extract
+from .llm_view import template_info  # compact catalog; generation reads the full profile
 from .models import Model, SlideSpec
 from .pdf_assets import PdfRegion, render_page
 from .previews import preview_files, preview_image
