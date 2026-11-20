@@ -59,7 +59,7 @@ async def main():
                 assert await asyncio.to_thread(process_one, app.state.store, settings)
                 completed = (await client.call_tool("get_job", {"job_id": job["id"]})).structured_content
                 assert completed["state"] == "completed", completed
-                output = json.loads(completed["output"])
+                output = completed["output"]
                 assert "preview" not in output
                 response = await browser.get(completed["download_url"])
                 assert response.status_code == 200 and response.content.startswith(b"PK")

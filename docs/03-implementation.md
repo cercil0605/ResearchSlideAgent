@@ -29,7 +29,7 @@ flowchart TD
 | 入口 | 主な実装 |
 |---|---|
 | `get_authoring_context` | `rules.py` の `authoring_context()` |
-| `get_template_info` | `engine.py` の `template_info()` |
+| `get_template_info` | `engine.py` の `template_info()` → `prototypes.py` の `capacity_catalog()`（配置ごとの容量、表の行数） |
 | `create_project` / `get_project` | `store.py` の `create()` / `project()` |
 | `register_local_file` | `server.py` の `read_local_file()` → `store.py` の `register()` → `files.py` の `validate_file()` |
 | `register_chatgpt_file` | `server.py` の `download_attachment()` → `store.py` の `register()` |
@@ -41,7 +41,7 @@ flowchart TD
 | `patch_slide` | `server.py` 内で1枚差し替え → `store.py` の `save_spec()` |
 | `enqueue_generation` / `retry_job` | `store.py` の `enqueue()` / `retry()` |
 | ジョブの実行 | `worker.py` の `process_one()` → `engine.py` の `generate()` → `prototypes.py` の `generate_prototypes()` |
-| `get_job` / `get_preview` | `server.py` の `links()` |
+| `get_job` / `get_preview` | `server.py` の `links()`（保存されたJSON文字列を `output` オブジェクトに戻す） |
 | `get_slide_preview` | `previews.py` → worker が `engine.py` の `render()` |
 | `get_generation_report` | 生成時に書いた `*.manifest.json` を返す |
 | `inspect_uploaded_pptx` / `propose_pptx_patch` | `engine.py` の `inspect_pptx()` / `store.py` の `patch_plan()`、実行は `engine.py` の `patch_text()` |
@@ -72,6 +72,8 @@ flowchart TB
 | 共通 | 保存、生成、検査、テンプレート、ルール | 同左 |
 
 local は `cli.py` の `run_local()` が、入口と worker を1つのプロセスで起動します。
+
+保存時の `authoring_feedback()` は登録済み画像のパスも受け取り、生成と同じ `build_slide()` で配置を試します。枠・表・図の検査失敗は `engine.py` の `LayoutError.problems` に集めます。生成時は `generate_prototypes()` がページ番号を付け、`worker.py` の `process_one()` が `output.problems` に保存します。データベース内の `output` は従来どおりJSON文字列です。
 
 ## なぜこうしたか
 

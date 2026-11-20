@@ -30,9 +30,10 @@ flowchart TD
 | `SOURCE_ALREADY_REFERENCED` | 使用中の資料の著者・年は変えられない | 正しい資料を登録し直して設計書を直す |
 | `TEMPLATE_CHANGED_RESAVE_REQUIRED` | 正本が更新された | 設計書を保存し直す |
 | **生成** | | |
-| `LAYOUT_REQUIRES_USER_CHANGE` | 収まらないなど。中身の問題 | `guidance` に全ページ分の理由。設計書を直して保存し直す |
+| `LAYOUT_REQUIRES_USER_CHANGE` | 収まらないなど、配置の問題 | `output.problems` の全ページ・枠の指摘を直して保存し直す。`output.guidance` は短い説明 |
 | `TEXT_OVERFLOW` / `TABLE_OVERFLOW` | 文字・表が枠に入らない | 文を短くする、ページを分ける、配置を変える |
 | `TABLE_COLUMNS` | 表が4列以上 | 3列以下にする |
+| `DIAGRAM_LABEL_OVERLAP` | 矢印のラベル同士が候補位置でも重なる | 条件を箱の中へ移すか、意味の区切りで図を分ける |
 | `USER_JOB_LIMIT` | 自分のジョブがまだ動いている | 終わるまで待つ |
 | `RETRY_LIMIT_OR_NOT_FAILED` | 3回試した、または失敗していない | 設計書を直して新しく生成 |
 | `IO_FAILURE` | 一時的な読み書きの失敗 | 自動で再挑戦される。続くなら `retry_job` |
@@ -48,3 +49,19 @@ flowchart TD
 | 起動時に止まる | 環境変数が足りない | エラー文の変数を `.env` に設定。[08](08-operate.md) |
 
 コードの全リストは `src/research_slide_agent/` 内を `grep` すると見つかります。
+
+## はみ出しの量を読むには
+
+保存時は `authoring_feedback.pages[].fit_problems`、生成失敗時は `get_job.output.problems` を見ます。
+
+| 項目 | 読み方 |
+|---|---|
+| `page` / `slide_id` | 生成失敗時のページ番号と設計書のID |
+| `target` | 直す枠名、`table`、図の箱や矢印のID |
+| `lines_needed` / `lines_available` | 現在の文章に必要な行数と、同じ段落数で入る行数の概算 |
+| `paragraphs` / `box_inches` | 段落数、文字枠の幅・高さ（インチ） |
+| `rows` / `max_body_rows` | 本文行数と、見本の最小行高で入る上限 |
+| `height_needed_inches` / `height_available_inches` | 折り返し後の表の必要高さと使える高さ |
+| `wrapped_rows` | 見本の本文行高より高くなった行（本文の先頭が1） |
+
+原因によって返る項目は異なります。`guidance` は2,000文字までで、詳しい一覧は `problems` に入ります。`output` は文字列ではなくJSONオブジェクトなので、もう一度JSONとして読み直す必要はありません。

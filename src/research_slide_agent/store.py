@@ -169,7 +169,9 @@ class Store:
                         raise StateError("Image source is unavailable")
             from .prototypes import authoring_feedback
 
-            feedback = authoring_feedback(self.settings.template, spec)
+            images = {sid: self.root / row["path"] for sid, row in sources.items()
+                      if row["kind"] in {"png", "jpg", "jpeg"}}
+            feedback = authoring_feedback(self.settings.template, spec, images)
             body = spec.model_dump_json()
             con.execute(
                 "UPDATE projects SET version=?, spec=? WHERE id=?", (spec.spec_version, body, project)
