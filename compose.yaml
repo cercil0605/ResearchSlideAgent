@@ -1,6 +1,6 @@
 name: research-slide-agent
 x-runtime: &runtime
-  image: ghcr.io/cercil0605/researchslideagent:86270b33c042f662874ea60d62f0e980a0c23b04
+  image: ghcr.io/cercil0605/researchslideagent:a7d62fec30c55b8ed759bbd009e0d11ffc110446
   restart: unless-stopped
   init: true
   user: "10001:10001"
