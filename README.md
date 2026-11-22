@@ -50,6 +50,7 @@ make setup        # claude / codex / agy を選ぶ → ビルド → 登録
 | 導入・設定・リモート構築 | [08 運用](docs/08-operate.md) |
 | エラーが出た | [09 トラブル対応](docs/09-troubleshoot.md) |
 | どこまで確かめたか | [検証状況](docs/verified.md) |
+| 図と内容の品質、往復の多さをどう直すか | [改善方針](docs/improvement-plan.md) |
 
 ## 名前の見分け方
 
