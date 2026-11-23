@@ -71,17 +71,25 @@ def compact_feedback(feedback: dict, changed: set[str] | None = None, detail: bo
             pages.append({"slide_id": page["slide_id"], "page": page["page"], "title": page["title"], **issues})
     rest = {k: v for k, v in feedback.items() if k not in {"pages", "warnings"}}
     if not detail:
-        # The same guidance repeats for every page with the same code; send it once per code.
-        guidance = {w["code"]: w["guidance"] for w in warnings if "guidance" in w}
-        warnings = [{k: v for k, v in w.items() if k != "guidance"} for w in warnings]
-        rest["guidance"] = guidance
+        # Identical guidance repeats for every page with the same code; send it once per code. A code whose
+        # guidance differs between pages (it names another slide, or a different remedy) keeps it per warning.
+        texts = {}
+        for warning in warnings:
+            texts.setdefault(warning["code"], set()).add(warning.get("guidance"))
+        shared = {code: next(iter(found)) for code, found in texts.items() if len(found) == 1 and None not in found}
+        warnings = [{k: v for k, v in w.items() if not (k == "guidance" and w["code"] in shared)} for w in warnings]
+        rest["guidance"] = shared
     return {**rest, "pages": pages, "warnings": warnings, "pages_checked": len(considered),
             "pages_without_issues": len(considered) - len({p["slide_id"] for p in pages} | warned)
             if not detail else None}
 
 
 def merge_slides(current: dict | None, slides: list[dict], remove_ids: list[str], expected_version: int):
-    """Apply slide replacements, insertions and removals to the saved spec; renumber the order."""
+    """Apply slide replacements, insertions and removals to the saved spec.
+
+    A patched slide's slide_order is its final position (moved or inserted there); the unchanged slides
+    keep their relative order around it, and the order is renumbered from 1.
+    """
     from .models import Slide, SlideSpec
     from .store import StateError
 
@@ -96,11 +104,21 @@ def merge_slides(current: dict | None, slides: list[dict], remove_ids: list[str]
     existing = {s["slide_id"] for s in current["slides"]}
     if set(remove_ids) - existing:
         raise StateError(f"SLIDE_NOT_FOUND: {sorted(set(remove_ids) - existing)}")
-    keep = [s for s in current["slides"] if s["slide_id"] not in set(ids) | set(remove_ids)]
-    # A patched slide takes its slide_order; unchanged slides at that position move after it.
-    ordered = sorted([(s["slide_order"], 0, i, s) for i, s in enumerate(patched)]
-                     + [(s["slide_order"], 1, i, s) for i, s in enumerate(keep)], key=lambda e: e[:3])
-    merged = [{**entry[3], "slide_order": n} for n, entry in enumerate(ordered, 1)]
+    keep = sorted((s for s in current["slides"] if s["slide_id"] not in set(ids) | set(remove_ids)),
+                  key=lambda s: s["slide_order"])
+    total = len(keep) + len(patched)
+    # Each patched slide's slide_order is its final position; unchanged slides fill the rest in order.
+    positions = {}
+    for slide in sorted(patched, key=lambda s: s["slide_order"]):
+        position = min(max(slide["slide_order"], 1), total)
+        while position in positions:
+            position += 1
+        if position > total:
+            position = max(p for p in range(1, total + 1) if p not in positions)
+        positions[position] = slide
+    unchanged = iter(keep)
+    merged = [{**(positions[n] if n in positions else next(unchanged)), "slide_order": n}
+              for n in range(1, total + 1)]
     spec = SlideSpec.model_validate({**current, "spec_version": expected_version + 1, "slides": merged})
     return spec, set(ids)
 

@@ -271,7 +271,7 @@ def make_mcp(store, settings, auth):
         remove_slide_ids: list[str] | None = None, detail: bool = False, *, ctx: Context
     ) -> dict[str, Any]:
         """Change only some slides of the saved spec in one call: slides replaces a slide with the same
-        slide_id or inserts a new one at its slide_order (later slides shift); remove_slide_ids deletes.
+        slide_id or inserts a new one; its slide_order is the final position. remove_slide_ids deletes.
         Order is renumbered from 1. Feedback covers the changed slides. Creates a new immutable version.
         """
         spec, changed = merge_slides(store.project(owner_of(ctx), presentation_id)["spec"], slides or [],

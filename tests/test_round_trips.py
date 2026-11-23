@@ -144,3 +144,26 @@ async def test_patch_slides_tool_returns_feedback_for_changed_slides(local):
     assert data["authoring_feedback"]["pages_checked"] == 1
     assert store.project("local-user", project["id"])["spec"]["slides"][2]["title"] == "直したページ"
     assert asyncio.iscoroutinefunction(mcp.call_tool)
+
+
+def test_patched_slides_land_at_their_requested_positions(store):
+    project, spec = saved_project(store, count=5)
+    current = spec.model_dump(mode="json")
+    ids = [s["slide_id"] for s in current["slides"]]
+    moved = {**current["slides"][1], "slide_order": 4}
+    merged, _ = merge_slides(current, [moved], [], 1)
+    assert [s.slide_id for s in merged.slides] == [ids[0], ids[2], ids[3], ids[1], ids[4]]
+    new = [{**current["slides"][3], "slide_id": f"new{n}", "slide_order": n} for n in (2, 3)]
+    merged, _ = merge_slides(current, new, [], 1)
+    assert [s.slide_id for s in merged.slides][:4] == [ids[0], "new2", "new3", ids[1]]
+
+
+def test_guidance_that_differs_between_pages_stays_with_each_warning():
+    feedback = {"pages": [{"slide_id": i, "page": n, "title": i} for n, i in enumerate("abc", 1)],
+                "warnings": [{"slide_id": "b", "code": "ADJACENT_TABLE_MERGE_REVIEW", "guidance": "Compare with a"},
+                             {"slide_id": "c", "code": "ADJACENT_TABLE_MERGE_REVIEW", "guidance": "Compare with b"},
+                             {"slide_id": "a", "code": "TRIVIAL_DIAGRAM", "guidance": "same"},
+                             {"slide_id": "c", "code": "TRIVIAL_DIAGRAM", "guidance": "same"}]}
+    compact = compact_feedback(feedback)
+    assert compact["guidance"] == {"TRIVIAL_DIAGRAM": "same"}
+    assert [w.get("guidance") for w in compact["warnings"]] == ["Compare with a", "Compare with b", None, None]
