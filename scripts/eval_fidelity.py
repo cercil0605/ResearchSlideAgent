@@ -193,7 +193,9 @@ def _contains_value(deck: str, value: str) -> bool:
 
 
 def answer_key_check(texts: list[str], key: dict, figures: set | None) -> dict:
-    deck = re.sub(r"\s+", "", normalize("\n".join(texts)))
+    # Drop spaces inside a line ("17 秒", "3. 17") but keep line, text-box and slide breaks, so that
+    # separate values ("3.17" and a page number "2" below it) are never joined into "3.172".
+    deck = "\n".join(re.sub(r"[ \t\u3000]+", "", line) for line in normalize("\n\n".join(texts)).splitlines())
     rows = []
     for item in key["numbers"]:
         hit = any(_contains_value(deck, a) for a in item["accept"])

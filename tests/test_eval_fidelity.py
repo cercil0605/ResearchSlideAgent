@@ -45,3 +45,9 @@ def test_mentions_are_not_evidence_that_a_figure_is_shown():
     texts = ["See Fig. 1 and Table 1"]
     result = eval_fidelity.answer_key_check(texts, key, eval_fidelity.shown_figures(texts, None, None))
     assert result["must_figures_shown"] is None and result["figures"][0]["shown"] is None
+
+
+def test_values_on_separate_lines_or_slides_are_not_joined():
+    key = {"numbers": [{"id": "N1", "must_include": True, "statement": "FID", "accept": ["3.17"]}]}
+    assert eval_fidelity.answer_key_check(["FID = 3.17\n2"], key, None)["numbers_found"] == 1
+    assert eval_fidelity.answer_key_check(["FID = 3.17", "2 枚目"], key, None)["numbers_found"] == 1
