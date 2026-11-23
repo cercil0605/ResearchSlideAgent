@@ -167,11 +167,15 @@ class Store:
                         "jpeg",
                     }:
                         raise StateError("Image source is unavailable")
+            from .figures import number_captions
             from .prototypes import authoring_feedback
 
+            numbered = number_captions(spec, sources)
             images = {sid: self.root / row["path"] for sid, row in sources.items()
                       if row["kind"] in {"png", "jpg", "jpeg"}}
             feedback = authoring_feedback(self.settings.template, spec, images)
+            if numbered:
+                feedback["figure_numbers_added"] = numbered
             body = spec.model_dump_json()
             con.execute(
                 "UPDATE projects SET version=?, spec=? WHERE id=?", (spec.spec_version, body, project)

@@ -98,12 +98,17 @@ flowchart TD
 
 | コード | 意味 |
 |---|---|
-| `MISSING_EXPLANATORY_VISUAL` | 表紙以外に図がない |
+| `EMPTY_FIGURE_FRAME` | 図枠のある見本（method・overview・results_figure）を図なしで使った。空の枠が残るので、文字だけの見本にするか、情報を足す図を入れる |
+| `TRIVIAL_DIAGRAM` | 分岐もラベルもない3つ以下の箱の図。本文の繰り返しなので、消すか原図にする |
 | `VISUAL_LAYOUT_UNSUPPORTED` | 選んだ見本に図や表の枠がない |
 | `SHARED_CONTENT_TARGET_REVIEW` | 複数の役割（入力・処理など）が同じ本文枠を指している |
 | `METHOD_FIGURE_LAYOUT_REVIEW` | 手法のページが図の説明だけになっていないか |
 | `ADJACENT_TABLE_MERGE_REVIEW` | 隣のページの表とまとめられそう |
 | `LAYOUT_WILL_FAIL` | このまま生成すると配置の検査で失敗する。`pages[].fit_problems` の各項目を直す |
+
+図のないページは、それだけでは指摘しません（教授ルール G11 を2026-11に緩めた。`prototypes.py` の `authoring_feedback()`）。
+
+PDF から切り抜いた図（`crop_pdf_region`）の図題には、論文の図・表番号が必要です。図題になく、その図の引用 locator（例 `p.5 Fig.7(a)`）にあれば、保存時に図題の先頭へ付けて `authoring_feedback.figure_numbers_added` で知らせます。どちらにもなければ `FIGURE_NUMBER_REQUIRED` で保存できません（`figures.py` の `number_captions()`）。利用者が渡した写真には求めません。
 
 ほかに、見出し枠に見本の文字が残っているページ（`inherited_headings`）と、研究発表で各ページに必要な役割のうち足りないもの（`missing_page_roles`）も返します。
 

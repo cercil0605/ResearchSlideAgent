@@ -81,13 +81,13 @@ def test_wide_visual_can_explain_methods(tmp_path):
     assert info["content_review"] == info["visual_review"] == "not_performed"
 
 
-def test_feedback_exposes_inherited_headings_and_missing_visuals():
+def test_feedback_exposes_inherited_headings_and_accepts_text_pages():
     raw = json.loads(Path("examples/research-format.slidespec.json").read_text())
     info = authoring_feedback(TEMPLATE, SlideSpec.model_validate(raw))
     experiment = next(p for p in info["pages"] if p["section"] == "experiment")
     assert "評価指標" in {h["text"] for h in experiment["inherited_headings"]}
-    assert any(w["slide_id"] == experiment["slide_id"] and w["code"] == "MISSING_EXPLANATORY_VISUAL"
-               for w in info["warnings"])
+    assert not experiment["has_visual"]
+    assert not any(w["slide_id"] == experiment["slide_id"] for w in info["warnings"])
 
 
 def test_feedback_flags_table_on_a_non_table_prototype():
