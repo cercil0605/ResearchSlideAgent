@@ -133,3 +133,27 @@ def test_text_pages_need_no_visual_but_empty_figure_frames_are_flagged():
     assert "MISSING_EXPLANATORY_VISUAL" not in {w["code"] for w in info["warnings"]}
     flagged = {w["slide_id"] for w in info["warnings"] if w["code"] == "EMPTY_FIGURE_FRAME"}
     assert flagged == {overview["slide_id"]}
+
+
+def test_long_caption_is_rejected_instead_of_saved_invalid(store):
+    pid, spec = figure_spec(store, caption="長" * 199)
+    with pytest.raises(StateError, match="longer than 200"):
+        store.save_spec("alice", pid, spec, 0)
+
+
+def test_two_images_with_the_same_caption_get_their_own_numbers(store):
+    from research_slide_agent.figures import number_captions
+
+    pid, spec = figure_spec(store)
+    slide = spec.slides[0]
+    second = slide.image_references[0].model_copy(update={"id": "fig2"})
+    citation = slide.citations[0].model_copy(update={
+        "target_id": "fig2", "source": slide.citations[0].source.model_copy(update={"locator": "p.5 Fig.8"})})
+    slide.image_references.append(second)
+    slide.citations.append(citation)
+    slide.replacements["図題"][0].text = "単関節例 / 単関節例 [Ishizawaら '26]"
+    with store.connect() as con:
+        sources = {r["id"]: dict(r) for r in con.execute("SELECT * FROM files")}
+    number_captions(spec, sources)
+    assert [i.caption for i in slide.image_references] == ["Fig.7(a) 単関節例", "Fig.8 単関節例"]
+    assert slide.replacements["図題"][0].text == "Fig.7(a) 単関節例 / Fig.8 単関節例 [Ishizawaら '26]"
