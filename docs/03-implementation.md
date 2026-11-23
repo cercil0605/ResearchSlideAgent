@@ -35,9 +35,10 @@ flowchart TD
 | `register_chatgpt_file` | `server.py` の `download_attachment()` → `store.py` の `register()` |
 | `create_upload` | `auth.py` の `sign()`、受け口は `app.py` の `upload()` |
 | `set_source_metadata` | `store.py` の `source_metadata()` |
+| `read_paper` | `paper.py` の `read_paper()`（本文の分割、節、図・表の一覧） |
 | `read_source` | `files.py` の `extract()` |
-| `render_pdf_page` / `crop_pdf_region` | `pdf_assets.py` の `render_page()` |
-| `save_slide_spec` | `models.py` の型チェック → `store.py` の `save_spec()`（`figures.py` の `number_captions()` が切り抜き図の図題へ図番号を付ける。なければ `FIGURE_NUMBER_REQUIRED`）→ `prototypes.py` の `authoring_feedback()` |
+| `render_pdf_page` / `crop_pdf_region` | `pdf_assets.py` の `render_page()`。`figure=` のときは `paper.py` の `find_figure()` で範囲を決める |
+| `save_slide_spec` | `models.py` の型チェック → `store.py` の `save_spec()`（`figures.py` の `number_captions()` が切り抜き図の図題へ図番号を付ける。番号は切り抜きの記録、引用 locator の順に探し、なければ `FIGURE_NUMBER_REQUIRED`）→ `prototypes.py` の `authoring_feedback()` |
 | `patch_slide` | `server.py` 内で1枚差し替え → `store.py` の `save_spec()` |
 | `enqueue_generation` / `retry_job` | `store.py` の `enqueue()` / `retry()` |
 | ジョブの実行 | `worker.py` の `process_one()` → `engine.py` の `generate()` → `prototypes.py` の `generate_prototypes()` |

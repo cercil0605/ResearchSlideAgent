@@ -55,9 +55,9 @@ flowchart LR
 ```mermaid
 flowchart TD
     P[論文PDF] -->|検査して登録| S1[source_id]
-    S1 -->|read_source| T[本文<br/>1回24,000字まで]
-    S1 -->|render_pdf_page| I[ページ画像]
-    I -->|crop_pdf_region| F[切り抜いた図<br/>新しいsource_id]
+    S1 -->|read_paper| T[全ページの本文<br/>1〜3回]
+    S1 -->|read_paper| L[図・表の一覧<br/>番号・ページ・範囲]
+    L -->|crop_pdf_region figure=| F[切り抜いた図<br/>新しいsource_id]
     T --> SP[設計書]
     F --> SP
     S1 -->|著者・年| C[引用]
@@ -66,7 +66,9 @@ flowchart TD
 
 - 切り抜いた図は、元の PDF の著者・年を**自動で引き継ぎます**。図ごとに入力は不要です。
 - 設計書の引用は、登録した資料の著者・年と**一致しないと保存できません**（`SOURCE_METADATA_MISMATCH`）。
-- 本文が長いときは途中で切られ、`truncated: true` が返ります。
+- 本文は切り詰めずに全部返します。1回の返事は約2万トークンまでで、超える論文は part に分かれます（`paper.py` の `PART_TOKENS`）。Claude Code の MCP 出力上限（約2.5万トークン）に収めるためです。
+- 図の範囲は、図題の位置と周りの本文行から推定します（`paper.py` の `_inventory_page()`）。2段組みは論文全体で判定し、ページの上下に繰り返し出る柱は区切りとして扱います。表は表として作り直すため、範囲は返しません。
+- 文字で書かれたアルゴリズムなど、範囲が決められない図は `region: null` です。そのときは `render_pdf_page` で見て範囲を指定します。
 
 ## 受け付ける資料
 
@@ -108,7 +110,7 @@ flowchart TD
 
 図のないページは、それだけでは指摘しません（教授ルール G11 を2026-11に緩めた。`prototypes.py` の `authoring_feedback()`）。
 
-PDF から切り抜いた図（`crop_pdf_region`）の図題には、論文の図・表番号が必要です。図題になく、その図の引用 locator（例 `p.5 Fig.7(a)`）にあれば、保存時に図題の先頭へ付けて `authoring_feedback.figure_numbers_added` で知らせます。どちらにもなければ `FIGURE_NUMBER_REQUIRED` で保存できません（`figures.py` の `number_captions()`）。利用者が渡した写真には求めません。
+PDF から切り抜いた図（`crop_pdf_region`）の図題には、論文の図・表番号が必要です。図題になく、`crop_pdf_region(figure=…)` で切り抜いた図ならその番号を、そうでなければその図の引用 locator（例 `p.5 Fig.7(a)`）の番号を使い、保存時に図題の先頭へ付けて `authoring_feedback.figure_numbers_added` で知らせます。どちらにもなければ `FIGURE_NUMBER_REQUIRED` で保存できません（`figures.py` の `number_captions()`）。利用者が渡した写真には求めません。
 
 ほかに、見出し枠に見本の文字が残っているページ（`inherited_headings`）と、研究発表で各ページに必要な役割のうち足りないもの（`missing_page_roles`）も返します。
 

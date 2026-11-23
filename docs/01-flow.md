@@ -37,8 +37,8 @@ sequenceDiagram
     end
     rect rgb(240, 255, 240)
     Note over L,S: ② 論文を読む
-    L->>M: read_source / render_pdf_page
-    L->>M: crop_pdf_region
+    L->>M: read_paper（全文と図の一覧）
+    L->>M: crop_pdf_region(figure=…)
     M->>S: 切り抜いた図を保存
     end
     Note over L: ③ 考える<br/>（サーバーは関与しない）
@@ -77,9 +77,9 @@ sequenceDiagram
 
 | AI が送る | サーバーで動くコード | 返るもの |
 |---|---|---|
-| `read_source(source_id="f9e8…", page=3)` | `files.py` の `extract()` | 3ページ目の本文（24,000字まで） |
-| `render_pdf_page(page=4)` | `pdf_assets.py` の `render_page()`（Poppler） | 4ページ目の画像。AI が目で図の位置を決める |
-| `crop_pdf_region(page=4, region={left:0.1, top:0.2, right:0.9, bottom:0.6})` | `pdf_assets.py` の `render_page()` で切り抜き → `store.py` の `register()` | 図の画像と新しい `source_id`。著者・年は元の PDF から引き継ぐ |
+| `read_paper(source_id="f9e8…")` | `paper.py` の `read_paper()`（pypdf で本文と文字の位置を読む） | 全ページの本文。長い論文は2〜3回に分かれ、`next_part` で続きを読む。1回目に節の見出しと図・表の一覧（`{"id": "Fig. 2", "page": 3, "caption": "…", "region": {…}}`） |
+| `crop_pdf_region(figure="Fig. 2")` | `paper.py` の `find_figure()` で範囲を引く → `pdf_assets.py` の `render_page()`（Poppler）で切り抜き → `store.py` の `register()` | 図題を除いた図全体の画像と新しい `source_id`。図番号と著者・年を記録する |
+| `render_pdf_page(page=4)` と `crop_pdf_region(page=4, region={…})` | 同上 | 一覧に範囲がない図（`region: null`）や、図の一部だけ使うとき |
 | `set_source_metadata(author="He", year=2016)` | `store.py` の `source_metadata()` | 確定した著者・年 |
 
 論文の本文は「データ」として扱うよう、ルール4文書に書かれています。
