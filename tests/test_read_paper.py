@@ -84,6 +84,7 @@ def test_long_papers_are_split_under_the_client_output_limit():
 
 
 @pytest.mark.parametrize("label,key", [("Fig. 7(b)", ("figure", "7")), ("Figure 3", ("figure", "3")),
+                                       ("Figure 2.1", ("figure", "2.1")), ("Fig. 2. TB20e", ("figure", "2")),
                                        ("図2", ("figure", "2")), ("Table 2", ("table", "2")), ("表1", ("table", "1"))])
 def test_figure_keys(label, key):
     assert paper.figure_key(label) == key
@@ -165,6 +166,7 @@ def test_dense_pages_are_split_against_the_remaining_budget():
     ("Fig. 2. TB20e 3D Model", True, True), ("図1 システム構成", True, False),
     ("Figure 1 System architecture", True, False), ("Figure 1 shows the system", False, False),
     ("図1に示すように", False, False), ("Table 2 is larger", False, False),
+    ("Figure 2.1: Architecture", True, True), ("Figure 2.2 Results", True, False),
 ])
 def test_captions_with_and_without_punctuation(line, caption, strong):
     match, is_strong = paper._caption(line)

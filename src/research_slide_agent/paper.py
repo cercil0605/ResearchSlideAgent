@@ -16,11 +16,11 @@ import statistics
 from .files import InputError
 
 PART_TOKENS = 20_000  # stays under common MCP client output limits (Claude Code: about 25k tokens)
-CAPTION = re.compile(r"^\s*(Fig(?:ure)?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+)\s*[.:：]")
+CAPTION = re.compile(r"^\s*(Fig(?:ure)?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+(?:\.\d+)*)\s*[.:：](?!\d)")
 # Captions without punctuation ("図1 システム構成", "Figure 1 System architecture"). Lines that start
 # a sentence about the figure ("Figure 1 shows", "図1に示す") are body text, not captions.
 LOOSE_CAPTION = re.compile(
-    r"^\s*(Fig(?:ure)?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+)[\s\u3000]+"
+    r"^\s*(Fig(?:ure)?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+(?:\.\d+)*)[\s\u3000]+"
     r"(?!(?:shows?|illustrates?|presents?|depicts?|gives?|lists?|plots?|summari[sz]es?|compares?|reports?|"
     r"is|are|was|were|and|in|of|to|from|demonstrates?)\b)(?![はにでのをがとへもやから])\S")
 
@@ -45,7 +45,7 @@ def estimate_tokens(text: str) -> int:
 
 def figure_key(text: str) -> tuple[str, str] | None:
     """('figure', '7') for 'Fig. 7(b)', 'Figure 7', '図7'; ('table', '2') for 'Table 2', '表2'."""
-    match = re.search(r"(Fig(?:ure)?s?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+)", text or "")
+    match = re.search(r"(Fig(?:ure)?s?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+(?:\.\d+)*)", text or "")
     if not match:
         return None
     kind = "table" if match.group(1).lower().startswith("table") or match.group(1) == "表" else "figure"
