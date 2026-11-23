@@ -53,6 +53,7 @@ def figure_spec(store, *, crop=True, caption="単関節例", locator="p.5 Fig.7(
 @pytest.mark.parametrize("text,number", [
     ("Fig. 7(b) 並列区間", "Fig. 7(b)"), ("p.5 Fig.7(a)", "Fig.7(a)"), ("Figure 3: samples", "Figure 3"),
     ("Table 2の抜粋", "Table 2"), ("図2左", "図2"), ("表 1", "表 1"), ("単関節例", None), ("説明図", None),
+    ("Figure 2.1: Architecture", "Figure 2.1"), ("Fig. 2. TB20e", "Fig. 2"),
 ])
 def test_figure_number_detection(text, number):
     assert figure_number(text) == number
@@ -157,3 +158,20 @@ def test_two_images_with_the_same_caption_get_their_own_numbers(store):
     number_captions(spec, sources)
     assert [i.caption for i in slide.image_references] == ["Fig.7(a) 単関節例", "Fig.8 単関節例"]
     assert slide.replacements["図題"][0].text == "Fig.7(a) 単関節例 / Fig.8 単関節例 [Ishizawaら '26]"
+
+
+def test_photo_before_a_crop_keeps_its_own_caption(store):
+    from research_slide_agent.figures import number_captions
+
+    pid, spec = figure_spec(store)
+    slide = spec.slides[0]
+    photo = store.register("alice", pid, "photo.png", png(), author="Ishizawaら", year=2026)
+    first = slide.image_references[0].model_copy(update={"id": "photo", "source_id": photo["source_id"]})
+    slide.image_references.insert(0, first)
+    slide.citations.append(slide.citations[0].model_copy(update={"target_id": "photo"}))
+    slide.replacements["図題"][0].text = "単関節例 / 単関節例 [Ishizawaら '26]"
+    with store.connect() as con:
+        sources = {r["id"]: dict(r) for r in con.execute("SELECT * FROM files")}
+    number_captions(spec, sources)
+    assert [i.caption for i in slide.image_references] == ["単関節例", "Fig.7(a) 単関節例"]
+    assert slide.replacements["図題"][0].text == "単関節例 / Fig.7(a) 単関節例 [Ishizawaら '26]"

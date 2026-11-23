@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 import re
 
-# "Fig. 7(b)", "Figure 3", "Table 2", "図3", "表 1", optionally "Fig. 7(a)–(c)".
+# "Fig. 7(b)", "Figure 3", "Figure 2.1", "Table 2", "図3", "表 1", optionally "Fig. 7(a)–(c)".
 FIGURE_NUMBER = re.compile(
-    r"(?:Fig(?:ure)?s?\.?|Table|Algorithm|図|表)\s*[A-Z]?\d+[a-z]?(?:\s*\([a-z](?:\s*[-–,]\s*[a-z])?\))?",
+    r"(?:Fig(?:ure)?s?\.?|Table|Algorithm|図|表)\s*[A-Z]?\d+(?:\.\d+)*[a-z]?(?:\s*\([a-z](?:\s*[-–,]\s*[a-z])?\))?",
     re.IGNORECASE,
 )
 
@@ -62,6 +62,8 @@ def number_captions(spec, sources) -> list[dict]:
         for image in slide.image_references:
             origin = sources.get(image.source_id, {}).get("origin")
             if not origin or json.loads(origin).get("operation") != "pdf_crop_v1":
+                if text:
+                    text.find(image.caption)  # an uploaded photo's caption still occupies its place
                 continue
             if figure_number(image.caption):
                 if text:
