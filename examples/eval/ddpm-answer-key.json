@@ -1,0 +1,60 @@
+{
+  "status": "draft_pending_owner_review",
+  "paper": {
+    "title": "Denoising Diffusion Probabilistic Models",
+    "authors": "Jonathan Ho, Ajay Jain, Pieter Abbeel",
+    "venue": "NeurIPS 2020",
+    "version": "arXiv:2006.11239v2",
+    "pdf_sha256": "aee5e07a802e8dfd2a386374c94fd61d1d056cb7e1e0fec4f28e8120ff5d8505",
+    "pages": 25
+  },
+  "scoring": {
+    "numbers": "Each item is found when any accepted string appears in the slide text (after removing spaces inside numbers). must_include items count toward coverage; a number shown with a different value or condition is an error, checked by hand.",
+    "claims": "Checked by a person or an LLM judge against the locator: present and correct / present but wrong or ambiguous / absent.",
+    "figures": "Present when the deck shows the figure or table (original crop, or a native table with its rows)."
+  },
+  "numbers": [
+    {"id": "N01", "must_include": true, "statement": "Unconditional CIFAR10 FID (train-set reference)", "accept": ["3.17"], "locator": "p.1 Abstract; p.5 Table 1"},
+    {"id": "N02", "must_include": true, "statement": "Unconditional CIFAR10 Inception Score", "accept": ["9.46"], "locator": "p.1 Abstract; p.5 Table 1"},
+    {"id": "N03", "must_include": false, "statement": "FID against the CIFAR10 test set", "accept": ["5.24"], "locator": "p.5 §4.1"},
+    {"id": "N04", "must_include": true, "statement": "NLL upper bound of the Lsimple model, test (train)", "accept": ["3.75"], "locator": "p.5 Table 1"},
+    {"id": "N05", "must_include": true, "statement": "Number of diffusion steps T", "accept": ["1000", "1,000", "1000段", "1000ステップ"], "locator": "p.5 §4"},
+    {"id": "N06", "must_include": false, "statement": "Linear beta schedule from 1e-4 to 0.02", "accept": ["0.02"], "locator": "p.5 §4; p.14 Appendix B"},
+    {"id": "N07", "must_include": true, "statement": "Table 2: epsilon prediction + Lsimple FID", "accept": ["3.17"], "locator": "p.5 Table 2"},
+    {"id": "N08", "must_include": true, "statement": "Table 2: mu-tilde prediction + true bound L, fixed isotropic variance FID", "accept": ["13.22"], "locator": "p.5 Table 2"},
+    {"id": "N09", "must_include": true, "statement": "Table 2: epsilon prediction + true bound L, fixed isotropic variance FID", "accept": ["13.51"], "locator": "p.5 Table 2"},
+    {"id": "N10", "must_include": false, "statement": "Table 2: mu-tilde prediction + L, learned diagonal variance FID", "accept": ["23.69"], "locator": "p.5 Table 2"},
+    {"id": "N11", "must_include": true, "statement": "LSUN Church 256x256 FID", "accept": ["7.89"], "locator": "p.6 Fig. 3; p.13 Table 3"},
+    {"id": "N12", "must_include": true, "statement": "LSUN Bedroom 256x256 FID, large model (small model 6.36)", "accept": ["4.90", "4.9"], "locator": "p.6 Fig. 4; p.13 Table 3"},
+    {"id": "N13", "must_include": false, "statement": "LSUN Cat 256x256 FID", "accept": ["19.75"], "locator": "p.13 Table 3"},
+    {"id": "N14", "must_include": false, "statement": "Lossy compression: rate 1.78 bits/dim, distortion 1.97 bits/dim (RMSE 0.95 on 0-255)", "accept": ["1.78", "1.97"], "locator": "p.6 §4.3"},
+    {"id": "N15", "must_include": false, "statement": "Train-test codelength gap at most 0.03 bits/dim", "accept": ["0.03"], "locator": "p.6 §4.3"},
+    {"id": "N16", "must_include": false, "statement": "CIFAR10 model size", "accept": ["35.7"], "locator": "p.14 Appendix B"},
+    {"id": "N17", "must_include": false, "statement": "CIFAR10 training: batch 128, 800k steps", "accept": ["800k", "80万", "800,000"], "locator": "p.14 Appendix B"},
+    {"id": "N18", "must_include": false, "statement": "Sampling cost: 256 CIFAR10 images in 17 s; 128 images at 256x256 in 300 s (TPU v3-8)", "accept": ["17秒", "17 s", "17 seconds", "300秒", "300 s"], "locator": "p.14 Appendix B"}
+  ],
+  "claims": [
+    {"id": "C01", "must_include": true, "statement": "The forward process gradually adds Gaussian noise with a fixed schedule; x_t can be sampled from x_0 in closed form (Eq. 4).", "locator": "pp.2-3 §2, Eq. 4"},
+    {"id": "C02", "must_include": true, "statement": "The network predicts the added noise epsilon; training minimizes ||epsilon - epsilon_theta(x_t, t)||^2 with t uniform in 1..T (Algorithm 1, Eq. 14).", "locator": "p.4 §3.2-3.4, Algorithm 1"},
+    {"id": "C03", "must_include": true, "statement": "Sampling starts from standard normal noise and iterates t = T..1, adding noise except at the last step (Algorithm 2).", "locator": "p.4 Algorithm 2"},
+    {"id": "C04", "must_include": true, "statement": "Epsilon prediction makes the model resemble denoising score matching over noise levels, with sampling resembling Langevin dynamics.", "locator": "p.4 §3.2; p.1 Abstract"},
+    {"id": "C05", "must_include": true, "statement": "Lsimple drops the time-dependent weights of the bound; this de-emphasizes small-t terms and gave better sample quality (not better likelihood).", "locator": "p.5 §3.4; p.6 §4.1-4.2"},
+    {"id": "C06", "must_include": true, "statement": "Ablation: mu-tilde prediction works only with the true bound; learning reverse variances is unstable; epsilon prediction with Lsimple is best.", "locator": "p.5 Table 2; p.6 §4.2"},
+    {"id": "C07", "must_include": true, "statement": "Log likelihoods (codelengths) are not competitive with other likelihood-based models despite high sample quality.", "locator": "p.6 §4.3"},
+    {"id": "C08", "must_include": false, "statement": "Most of the lossless codelength describes imperceptible distortions; the model is an excellent lossy compressor (progressive coding).", "locator": "p.6 §4.3"},
+    {"id": "C09", "must_include": false, "statement": "Sampling is progressive decoding, a generalization of autoregressive decoding; large-scale features appear first, details last (Fig. 6).", "locator": "pp.6-7 §4.3, Fig. 6"},
+    {"id": "C10", "must_include": false, "statement": "Image data scaled linearly to [-1, 1]; the reverse process ends with a discrete decoder.", "locator": "p.4 §3.3"},
+    {"id": "C11", "must_include": true, "statement": "The CIFAR10 FID 3.17 is unconditional and measured against the training set.", "locator": "p.5 §4.1"},
+    {"id": "C12", "must_include": false, "statement": "The network is a U-Net based on PixelCNN++ with group normalization; time enters via sinusoidal position embeddings.", "locator": "p.5 §4; p.14 Appendix B"},
+    {"id": "C13", "must_include": false, "statement": "Limitations / broader impact: slow sampling (1000 network evaluations), possible misuse for fake images, dataset bias.", "locator": "p.9 Broader Impact; p.14 Appendix B"}
+  ],
+  "figures": [
+    {"id": "F01", "must_include": true, "figure": "Fig. 1", "what": "Generated CelebA-HQ and CIFAR10 samples", "locator": "p.1"},
+    {"id": "F02", "must_include": true, "figure": "Fig. 2", "what": "Directed graphical model of the forward and reverse processes", "locator": "p.2"},
+    {"id": "F03", "must_include": true, "figure": "Table 1", "what": "CIFAR10 IS / FID / NLL comparison", "locator": "p.5"},
+    {"id": "F04", "must_include": true, "figure": "Table 2", "what": "Parameterization and objective ablation", "locator": "p.5"},
+    {"id": "F05", "must_include": false, "figure": "Fig. 6", "what": "Progressive generation from x_T to x_0", "locator": "p.7"},
+    {"id": "F06", "must_include": false, "figure": "Fig. 5", "what": "Rate-distortion over reverse steps", "locator": "p.7"},
+    {"id": "F07", "must_include": false, "figure": "Table 3", "what": "LSUN FID comparison", "locator": "p.13"}
+  ]
+}
