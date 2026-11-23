@@ -28,8 +28,8 @@ flowchart TD
 
 | 入口 | 主な実装 |
 |---|---|
-| `get_authoring_context` | `rules.py` の `authoring_context()` |
-| `get_template_info` | `engine.py` の `template_info()` → `prototypes.py` の `capacity_catalog()`（配置ごとの容量、表の行数） |
+| `get_authoring_context` | `rules.py` の `authoring_context()` を `round_trips.py` の `authoring_context_part()` が part に分ける |
+| `get_template_info` | `llm_view.py` の `template_info()` → `engine.py` の `template_info()` → `prototypes.py` の `capacity_catalog()`（配置ごとの容量、表の行数） |
 | `create_project` / `get_project` | `store.py` の `create()` / `project()` |
 | `register_local_file` | `server.py` の `read_local_file()` → `store.py` の `register()` → `files.py` の `validate_file()` |
 | `register_chatgpt_file` | `server.py` の `download_attachment()` → `store.py` の `register()` |
@@ -38,9 +38,9 @@ flowchart TD
 | `read_paper` | `paper.py` の `read_paper()`（本文の分割、節、図・表の一覧） |
 | `read_source` | `files.py` の `extract()` |
 | `render_pdf_page` / `crop_pdf_region` | `pdf_assets.py` の `render_page()`。`figure=` のときは `paper.py` の `find_figure()` で範囲を決める |
-| `save_slide_spec` | `models.py` の型チェック → `store.py` の `save_spec()`（`figures.py` の `number_captions()` が切り抜き図の図題へ図番号を付ける。番号は切り抜きの記録、引用 locator の順に探し、なければ `FIGURE_NUMBER_REQUIRED`）→ `prototypes.py` の `authoring_feedback()` |
-| `patch_slide` | `server.py` 内で1枚差し替え → `store.py` の `save_spec()` |
-| `enqueue_generation` / `retry_job` | `store.py` の `enqueue()` / `retry()` |
+| `save_slide_spec` | `models.py` の型チェック → `store.py` の `save_spec()`（`figures.py` の `number_captions()` が切り抜き図の図題へ図番号を付ける。番号は切り抜きの記録、引用 locator の順に探し、なければ `FIGURE_NUMBER_REQUIRED`）→ `prototypes.py` の `authoring_feedback()` → `round_trips.py` の `compact_feedback()` で確認が必要なページだけにする |
+| `patch_slides` | `round_trips.py` の `merge_slides()` で差し替え・追加・削除 → `store.py` の `save_spec()`。指摘は `compact_feedback()` で変えたページだけ |
+| `enqueue_generation` / `retry_job` | `store.py` の `enqueue()` / `retry()`。`wait` のときは `round_trips.py` の `wait_for()` で完成を待ち、`server.py` の `overview_sheets()` で一覧画像を作る |
 | ジョブの実行 | `worker.py` の `process_one()` → `engine.py` の `generate()` → `prototypes.py` の `generate_prototypes()` |
 | `get_job` / `get_preview` | `server.py` の `links()`（保存されたJSON文字列を `output` オブジェクトに戻す） |
 | `get_slide_preview` | `previews.py` → worker が `engine.py` の `render()` |

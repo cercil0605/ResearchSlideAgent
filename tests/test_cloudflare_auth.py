@@ -64,7 +64,7 @@ def test_cloudflare_generation_without_approval(cloudflare):
         spec = sample_spec(pid, 1)
         saved = call(client, "save_slide_spec", presentation_id=pid, spec=spec.model_dump(), expected_version=0)
         assert not saved.get("isError")
-        job = call(client, "enqueue_generation", presentation_id=pid)["structuredContent"]
+        job = call(client, "enqueue_generation", presentation_id=pid, wait=False)["structuredContent"]
         assert process_one(app.state.store, settings)
         assert call(client, "get_job", job_id=job["id"])["structuredContent"]["state"] == "completed"
         cap = app.state.auth.sign("artifact", {

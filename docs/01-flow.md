@@ -52,14 +52,12 @@ sequenceDiagram
     W->>S: ジョブを受け取る
     W->>W: PPTX生成と検査
     W->>S: 結果を書く
-    L->>M: get_job
+    M-->>L: 完成まで待って、PPTX と全ページの一覧画像
     end
     rect rgb(250, 240, 255)
     Note over L,W: ⑤ 見て直す
-    L->>M: get_slide_preview
-    M->>S: 画像化ジョブ（初回だけ）
-    W->>W: LibreOfficeで画像化
-    L->>M: 直した設計書を保存して再生成
+    L->>M: get_slide_preview(page)（気になるページだけ）
+    L->>M: patch_slides（変えたページだけ）して再生成
     end
     L-->>U: PPTXの場所
 ```
@@ -142,8 +140,8 @@ flowchart LR
 
 | AI が送る | 返るもの |
 |---|---|
-| `enqueue_generation()` | `{"id": "job1", "state": "queued"}` |
-| `get_job("job1")` | `completed` と PPTX の場所、または `failed` と `output.guidance`・`output.problems`（ページ・枠ごとの理由と量） |
+| `enqueue_generation()` | 完成まで待ち（`round_trips.py` の `wait_for()`）、`completed` なら PPTX の場所と全ページの一覧画像（6枚ずつ。画像化ジョブも続けて待つ）。`failed` なら `output.guidance`・`output.problems`（ページ・枠ごとの理由と量） |
+| `get_job("job1")` | 待ち時間を超えたときだけ使う（完了・失敗時の返事の形は同じ） |
 
 失敗したら、AI は該当ページの文を短くするか、ページを分けて、③からやり直します。
 
@@ -151,8 +149,9 @@ flowchart LR
 
 | AI が送る | サーバーで動くコード | 返るもの |
 |---|---|---|
-| `get_slide_preview("job1", overview=true)` | `previews.py` の `preview_image()`。画像がなければ画像化ジョブを積み、worker が `engine.py` の `render()`（LibreOffice）で作る | 初回は「準備中」。次から1〜6枚目の画像 |
-| `get_slide_preview("job1", page=7)` | 同上 | 7枚目の画像 |
+| （一覧は `enqueue_generation` の返事に入っている） | `previews.py` の `preview_image()`。worker が `engine.py` の `render()`（LibreOffice）で作った画像を6枚ずつまとめる | 全ページの一覧画像 |
+| `get_slide_preview("job1", page=7)` | 同上 | 7枚目の画像。一覧で判断できないページだけ |
+| `patch_slides(slides=[7枚目])` | `round_trips.py` の `merge_slides()` → `store.py` の `save_spec()` | 新しい版と、7枚目への指摘だけ |
 
 AI は画像を見て、読めない文字や説明不足を探し（手順 F07）、直すなら③へ戻ります。終わったら `get_job` の `local_path` をあなたに伝えます（`server.py` の `export_local()` が出力フォルダへコピー済み）。
 

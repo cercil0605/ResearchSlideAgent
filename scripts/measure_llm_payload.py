@@ -54,9 +54,15 @@ async def measure() -> list[dict]:
         store = Store(settings)
         mcp = make_mcp(store, settings, None)
 
-        for name in ("get_authoring_context", "get_template_info"):
-            text = text_of(await mcp.call_tool(name, {}))
-            rows.append({"step": name, "chars": len(text), "tokens": estimate_tokens(text)})
+        part, number = 1, 1
+        while part:
+            text = text_of(await mcp.call_tool("get_authoring_context", {"part": number}))
+            rows.append({"step": f"get_authoring_context part {number}", "chars": len(text),
+                         "tokens": estimate_tokens(text)})
+            part = json.loads(text).get("next_part")
+            number = part or number
+        text = text_of(await mcp.call_tool("get_template_info", {}))
+        rows.append({"step": "get_template_info", "chars": len(text), "tokens": estimate_tokens(text)})
 
         project = json.loads(text_of(await mcp.call_tool("create_project", {})))
         spec = sample_spec(project["id"], 8)
@@ -64,6 +70,13 @@ async def measure() -> list[dict]:
             "presentation_id": project["id"], "spec": spec.model_dump(mode="json"), "expected_version": 0}))
         rows.append({"step": "save_slide_spec response (8 slides)", "chars": len(text),
                      "tokens": estimate_tokens(text)})
+        slide = spec.slides[2].model_dump(mode="json")
+        slide["title"] = slide["title"] + "（改訂）"
+        request = {"presentation_id": project["id"], "expected_version": 1, "slides": [slide]}
+        rows.append({"step": "patch_slides request (1 of 8 slides)", "chars": len(json.dumps(request, ensure_ascii=False)),
+                     "tokens": estimate_tokens(json.dumps(request, ensure_ascii=False))})
+        text = text_of(await mcp.call_tool("patch_slides", request))
+        rows.append({"step": "patch_slides response", "chars": len(text), "tokens": estimate_tokens(text)})
     return rows
 
 
