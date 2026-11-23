@@ -25,7 +25,23 @@ def test_answer_key_check_counts_numbers_and_figures():
         "figures": [{"id": "F1", "must_include": True, "figure": "Table 1"},
                     {"id": "F2", "must_include": False, "figure": "Fig. 2"}]}
     texts = ["FIDは 3. 17（Table 1 より）", "図2　生成の流れ"]
-    result = eval_fidelity.answer_key_check(texts, key, eval_fidelity.shown_figures(texts, None, None))
+    result = eval_fidelity.answer_key_check(texts, key, {("table", "1")})
     assert (result["must_numbers_found"], result["numbers_found"]) == (1, 1)
-    assert [f["shown"] for f in result["figures"]] == [True, True]
+    assert [f["shown"] for f in result["figures"]] == [True, False]
     assert result["claims_to_judge"][0]["id"] == "C1"
+
+
+def test_values_match_whole_numbers_only():
+    key = {"numbers": [{"id": "N1", "must_include": True, "statement": "FID", "accept": ["3.17"]},
+                       {"id": "N2", "must_include": True, "statement": "T", "accept": ["1000"]}]}
+    wrong = eval_fidelity.answer_key_check(["FID = 13.17、T = 10000、3.175"], key, None)
+    assert wrong["numbers_found"] == 0
+    right = eval_fidelity.answer_key_check(["FIDは3.17。T=1000段"], key, None)
+    assert right["numbers_found"] == 2
+
+
+def test_mentions_are_not_evidence_that_a_figure_is_shown():
+    key = {"numbers": [], "figures": [{"id": "F1", "must_include": True, "figure": "Fig. 1"}]}
+    texts = ["See Fig. 1 and Table 1"]
+    result = eval_fidelity.answer_key_check(texts, key, eval_fidelity.shown_figures(texts, None, None))
+    assert result["must_figures_shown"] is None and result["figures"][0]["shown"] is None

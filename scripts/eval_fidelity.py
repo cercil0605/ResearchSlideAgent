@@ -161,8 +161,11 @@ def _figure_key(text):
             match.group(2))
 
 
-def shown_figures(texts: list[str], db: Path | None, project: str | None) -> set:
-    """Figures/tables the deck shows: image captions and table/image citations, else caption-like text."""
+def shown_figures(texts: list[str], db: Path | None, project: str | None) -> set | None:
+    """Figures/tables the deck shows, from image captions and table/image citations in the saved spec.
+
+    Without the spec there is no structural evidence (a slide may only mention "Fig. 2"), so None.
+    """
     found = set()
     if db and project:
         con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
@@ -178,28 +181,35 @@ def shown_figures(texts: list[str], db: Path | None, project: str | None) -> set
                 for match in re.finditer(r"(Fig(?:ure)?s?\.?|Table|図|表)\s*[A-Z]?\d+", note, re.I):
                     found.add(_figure_key(match.group(0)))
         return found
-    for text in texts:
-        for match in re.finditer(r"(Fig(?:ure)?s?\.?|Table|図|表)\s*[A-Z]?\d+", normalize(text), re.I):
-            found.add(_figure_key(match.group(0)))
-    return found
+    return None
 
 
-def answer_key_check(texts: list[str], key: dict, figures: set) -> dict:
+def _contains_value(deck: str, value: str) -> bool:
+    """value appears as a whole number: '3.17' does not match inside '13.17', '1000' not inside '10000'."""
+    value = re.sub(r"\s+", "", normalize(value))
+    head = r"(?<![\d.])" if value[:1].isdigit() else ""
+    tail = r"(?!\d|\.\d)" if value[-1:].isdigit() else ""
+    return re.search(head + re.escape(value) + tail, deck) is not None
+
+
+def answer_key_check(texts: list[str], key: dict, figures: set | None) -> dict:
     deck = re.sub(r"\s+", "", normalize("\n".join(texts)))
     rows = []
     for item in key["numbers"]:
-        hit = any(re.sub(r"\s+", "", normalize(a)) in deck for a in item["accept"])
+        hit = any(_contains_value(deck, a) for a in item["accept"])
         rows.append({"id": item["id"], "must_include": item["must_include"], "found": hit,
                      "statement": item["statement"]})
     must = [r for r in rows if r["must_include"]]
     figure_rows = [{"id": f["id"], "figure": f["figure"], "must_include": f["must_include"],
-                    "shown": _figure_key(f["figure"]) in figures} for f in key.get("figures", [])]
+                    "shown": None if figures is None else _figure_key(f["figure"]) in figures}
+                   for f in key.get("figures", [])]
     must_figures = [f for f in figure_rows if f["must_include"]]
     return {
         "status": key.get("status"),
         "numbers_found": sum(r["found"] for r in rows), "numbers_total": len(rows),
         "must_numbers_found": sum(r["found"] for r in must), "must_numbers_total": len(must),
-        "must_figures_shown": sum(f["shown"] for f in must_figures), "must_figures_total": len(must_figures),
+        "must_figures_shown": None if figures is None else sum(f["shown"] for f in must_figures),
+        "must_figures_total": len(must_figures),
         "missing_numbers": [r for r in rows if not r["found"]],
         "figures": figure_rows,
         "claims_to_judge": [{"id": c["id"], "must_include": c["must_include"], "statement": c["statement"],
@@ -241,8 +251,10 @@ def main() -> None:
               f"must-include figures/tables {a['must_figures_shown']}/{a['must_figures_total']}")
         for row in a["missing_numbers"]:
             print(f"  missing {row['id']}{' (must)' if row['must_include'] else ''}: {row['statement']}")
+        if a["must_figures_shown"] is None:
+            print("  figures/tables: unavailable without --db and --project (mentions are not evidence)")
         for row in a["figures"]:
-            if not row["shown"]:
+            if row["shown"] is False:
                 print(f"  not shown {row['id']} {row['figure']}{' (must)' if row['must_include'] else ''}")
         print(f"  claims to judge by hand: {len(a['claims_to_judge'])}")
 
