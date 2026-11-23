@@ -17,6 +17,21 @@ from .files import InputError
 
 PART_TOKENS = 20_000  # stays under common MCP client output limits (Claude Code: about 25k tokens)
 CAPTION = re.compile(r"^\s*(Fig(?:ure)?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+)\s*[.:：]")
+# Captions without punctuation ("図1 システム構成", "Figure 1 System architecture"). Lines that start
+# a sentence about the figure ("Figure 1 shows", "図1に示す") are body text, not captions.
+LOOSE_CAPTION = re.compile(
+    r"^\s*(Fig(?:ure)?\.?|FIGURE|Table|TABLE|図|表)\s*([A-Z]?\d+)[\s\u3000]+"
+    r"(?!(?:shows?|illustrates?|presents?|depicts?|gives?|lists?|plots?|summari[sz]es?|compares?|reports?|"
+    r"is|are|was|were|and|in|of|to|from|demonstrates?)\b)(?![はにでのをがとへもやから])\S")
+
+
+def _caption(text):
+    """(match, strong) for a caption line; strong captions carry punctuation after the number."""
+    match = CAPTION.match(text)
+    if match:
+        return match, True
+    match = LOOSE_CAPTION.match(text)
+    return (match, False) if match else (None, False)
 HEADING = re.compile(
     r"^\s*(?:(?:\d+(?:\.\d+){0,2}\.?|[IVX]{1,5}\.|[A-H]\.)\s+\S.{1,70}|Abstract|References|Acknowledg(?:e)?ments?"
     r"|Appendix(?:\s+\S.{0,60})?|Broader Impact|Conclusions?)\s*$")
@@ -101,7 +116,7 @@ def _caption_text(lines, start, size):
         gap = last_y - line[2]
         if gap <= 0 or abs(line[0] - x0) > size * 12:
             continue  # the other column, or a fragment on the same baseline
-        if gap > size * 1.6 or CAPTION.match(line[4]):
+        if gap > size * 1.6 or _caption(line[4])[0]:
             break
         parts.append(line[4].strip())
         last_y = line[2]
@@ -138,11 +153,12 @@ def _inventory_page(page, number, lines, layout, repeated=frozenset()):
     if not lines:
         return []
     body, is_body, left, right, middle, two_column = layout
-    captions = [i for i, line in enumerate(lines) if CAPTION.match(line[4])]
+    captions = [i for i, line in enumerate(lines) if _caption(line[4])[0]]
     found = []
     for index in captions:
         x0, x1, y, size, text = lines[index]
-        key = figure_key(CAPTION.match(text).group(0))
+        match, strong = _caption(text)
+        key = figure_key(match.group(0))
         caption, caption_bottom = _caption_text(lines, index, size)
         if rotated:
             region = None
@@ -185,7 +201,7 @@ def _inventory_page(page, number, lines, layout, repeated=frozenset()):
         if key[0] == "table":
             region = None  # tables belong in table_spec as native tables, not as cropped images
         found.append({"id": figure_label(*key), "kind": key[0], "page": number, "caption": caption,
-                      "region": region})
+                      "region": region, "_strong": strong})
     return found
 
 
@@ -217,11 +233,15 @@ def _parse(data: bytes):
         except Exception:  # noqa: BLE001 - inventory is best effort; text still returns
             entries = []
         for entry in entries:
-            figures.setdefault(entry["id"], entry)  # first caption wins; later matches are mentions
+            prior = figures.get(entry["id"])
+            # The first punctuated caption wins; an unpunctuated line only fills a gap.
+            if prior is None or (entry["_strong"] and not prior["_strong"]):
+                figures[entry["id"]] = entry
         for line in texts[-1].splitlines():
-            if HEADING.match(line) and len(sections) < 80 and not CAPTION.match(line):
+            if HEADING.match(line) and len(sections) < 80 and not _caption(line)[0]:
                 sections.append({"title": line.strip()[:80], "page": number})
-    ordered = sorted(figures.values(), key=lambda f: (f["page"], f["kind"], f["id"]))
+    ordered = sorted(({k: v for k, v in f.items() if k != "_strong"} for f in figures.values()),
+                     key=lambda f: (f["page"], f["kind"], f["id"]))
     return texts, ordered, sections
 
 
@@ -241,22 +261,42 @@ def find_figure(data: bytes, label: str):
                      "and an explicit page/region")
 
 
+def _fit(text, budget):
+    """Longest prefix of text whose estimated tokens stay within budget (at least one character)."""
+    used = 0.0
+    for index, char in enumerate(text):
+        used += 1 if ord(char) > 0x2E80 else 0.25
+        if used > budget:
+            return max(index, 1)
+    return len(text)
+
+
 def _parts(texts, reserved=0):
-    """Pack page texts into parts; part 1 also carries the sections and figures (reserved tokens)."""
-    parts, current, used = [], [], reserved
+    """Pack page texts into parts under PART_TOKENS; part 1 also carries sections and figures (reserved).
+
+    Pages are split against the remaining budget, so a long or CJK-dense page never makes a part
+    larger than the limit.
+    """
+    overhead = 15  # page number and JSON keys per piece
+    envelope = 300  # part, parts, total_pages, trust and other fields around the pages
+    parts, current, used = [], [], reserved + envelope
     for number, text in enumerate(texts, 1):
-        pieces = [text] if estimate_tokens(text) <= PART_TOKENS else [
-            text[i:i + PART_TOKENS * 3] for i in range(0, len(text), PART_TOKENS * 3)]
-        for piece in pieces:
-            cost = estimate_tokens(piece) + 10
-            if current and used + cost > PART_TOKENS:
+        rest = text
+        while True:
+            room = PART_TOKENS - used - overhead
+            if room < 200 and (current or used > envelope):
                 parts.append(current)
-                current, used = [], 0
-            current.append({"page": number, "text": piece})
-            used += cost
-    if current:
+                current, used = [], envelope
+                continue
+            cut = _fit(rest, room)
+            current.append({"page": number, "text": rest[:cut]})
+            used += estimate_tokens(rest[:cut]) + overhead
+            rest = rest[cut:]
+            if not rest:
+                break
+    if current or not parts:
         parts.append(current)
-    return parts or [[]]
+    return parts
 
 
 def read_paper(data: bytes, part: int = 1) -> dict:

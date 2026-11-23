@@ -151,3 +151,21 @@ async def test_tools_read_crop_by_number_and_number_the_caption(settings, tmp_pa
     assert added and added[0]["caption"] == "Fig. 1 全体構成"
 
 LOCAL_OWNER = "local-user"
+
+
+def test_dense_pages_are_split_against_the_remaining_budget():
+    parts = paper._parts(["漢" * 30000, "a" * 1000], reserved=5000)
+    assert len(parts) >= 2
+    for part in parts:
+        assert paper.estimate_tokens(json.dumps(part, ensure_ascii=False)) <= paper.PART_TOKENS
+    assert "".join(p["text"] for part in parts for p in part if p["page"] == 1) == "漢" * 30000
+
+
+@pytest.mark.parametrize("line,caption,strong", [
+    ("Fig. 2. TB20e 3D Model", True, True), ("図1 システム構成", True, False),
+    ("Figure 1 System architecture", True, False), ("Figure 1 shows the system", False, False),
+    ("図1に示すように", False, False), ("Table 2 is larger", False, False),
+])
+def test_captions_with_and_without_punctuation(line, caption, strong):
+    match, is_strong = paper._caption(line)
+    assert bool(match) is caption and is_strong is strong
