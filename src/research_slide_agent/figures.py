@@ -49,8 +49,8 @@ class _CaptionText:
 def number_captions(spec, sources) -> list[dict]:
     """Require a paper figure/table number on every image cropped from a PDF.
 
-    The number may come from the caption itself or from the citation locator for that image
-    (e.g. "p.5 Fig.7(a)"); in the latter case the caption is prefixed in place. Uploaded photos
+    The number may come from the caption itself, from crop_pdf_region(figure=...), or from the
+    citation locator for that image (e.g. "p.5 Fig.7(a)"); in the latter case the caption is prefixed in place. Uploaded photos
     that are not PDF crops are left alone. Returns what was added, for save feedback.
     """
     from .store import StateError
@@ -61,7 +61,8 @@ def number_captions(spec, sources) -> list[dict]:
         text = _CaptionText(explicit) if explicit else None
         for image in slide.image_references:
             origin = sources.get(image.source_id, {}).get("origin")
-            if not origin or json.loads(origin).get("operation") != "pdf_crop_v1":
+            origin = json.loads(origin) if isinstance(origin, str) else origin
+            if not origin or origin.get("operation") != "pdf_crop_v1":
                 if text:
                     text.find(image.caption)  # an uploaded photo's caption still occupies its place
                 continue
@@ -70,7 +71,8 @@ def number_captions(spec, sources) -> list[dict]:
                     text.find(image.caption)  # keep the walk in step with already-numbered captions
                 continue
             locators = [c.source.locator for c in slide.citations if c.target_id == image.id]
-            number = next((n for n in map(figure_number, locators) if n), None)
+            # crop_pdf_region(figure=...) records the figure it cropped; that is the most reliable source.
+            number = origin.get("figure") or next((n for n in map(figure_number, locators) if n), None)
             if not number:
                 raise StateError(
                     f"FIGURE_NUMBER_REQUIRED: slide {slide.slide_id} image {image.id}: put the paper's figure "

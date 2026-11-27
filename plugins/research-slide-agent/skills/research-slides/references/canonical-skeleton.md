@@ -167,7 +167,7 @@ F07に従い、見た目に加えて題材の説明充足・反復・細分化�
 画像はjob内のPPTXのハッシュと対応し、次版には新しいjobを使う。参考PDFは描画後のget_preview.pdf_url。
 元画像と完成画像を混同しない。サーバーは画像を描画するだけで意味のレビューは行わない。
 PowerPoint実機の表示保証とは別。実際に画像を見ていなければ確認済みと主張しない。
-原論文は `render_pdf_page` で閲覧し、`crop_pdf_region` で選択領域をPNG登録できる。
+原論文は `read_paper` で全文と図・表の一覧を読み、`crop_pdf_region(figure="Fig. 3")` で図全体をPNG登録できる。範囲を選ぶときだけ `render_pdf_page` で閲覧する。
 image_referencesには返された画像source_id、出典には元PDFのcitation_source_idとページ・図番号を指定する。
 本文切断や原図を短文だけで代替することはしない。Strictの枠と編集可能な図形の制約は維持する。
 構造検査とPowerPoint実機の確認は区別する。

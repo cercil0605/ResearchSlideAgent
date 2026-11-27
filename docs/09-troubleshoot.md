@@ -24,11 +24,15 @@ flowchart TD
 | `ATTACHMENT_ORIGIN_NOT_ALLOWED` | 添付の取得先が許可されていない | `RSA_ATTACHMENT_HOSTS` を確認 |
 | `ATTACHMENT_HTTP_*` / `ATTACHMENT_TIMEOUT` | 添付の取得に失敗 | ChatGPT で添付し直す。ログインの問題ではない |
 | `PDF_DPI_INVALID` / `PDF_REGION_INVALID` | 画像化・切り抜きの指定ミス | 解像度は72〜300、範囲は0〜1 |
+| `FIGURE_ID_INVALID` | `crop_pdf_region(figure=…)` の書き方が違う | `read_paper` の `figures` にある `Fig. 3`・`Table 2` の形で渡す |
+| `FIGURE_NOT_FOUND` | その番号の図題が PDF で見つからない | `read_paper` の一覧を見直す。なければ `render_pdf_page` で見て page と region を渡す |
+| `FIGURE_REGION_UNKNOWN` | 図の範囲を推定できない（表、文字だけのアルゴリズムなど） | `render_pdf_page` で見て page と region を渡す。表は `table_spec` で作る |
+| `PART_INVALID` | `read_paper` の part が範囲外 | 1 から `parts` までを読む |
 | **設計書** | | |
 | `SPEC_VERSION_CONFLICT` | 版番号が古い | `get_project` で最新の版を見てから保存 |
 | `SOURCE_METADATA_MISMATCH` | 引用の著者・年が登録と違う | `set_source_metadata` で論文どおりに設定 |
 | `SOURCE_ALREADY_REFERENCED` | 使用中の資料の著者・年は変えられない | 正しい資料を登録し直して設計書を直す |
-| `FIGURE_NUMBER_REQUIRED` | 切り抜いた図の図題にも引用の locator にも図番号がない | 図題か locator に `Fig. 3`・`Table 2` などを書く |
+| `FIGURE_NUMBER_REQUIRED` | 切り抜いた図の図題・切り抜きの記録（`figure=` で切った図）・引用の locator のどれにも図番号がない。または番号を足すと図題が200字を超える | `crop_pdf_region(figure=…)` で切り直すか、図題か locator に `Fig. 3`・`Table 2` などを書く。長い図題は短くする |
 | `TEMPLATE_CHANGED_RESAVE_REQUIRED` | 正本が更新された | 設計書を保存し直す |
 | **生成** | | |
 | `LAYOUT_REQUIRES_USER_CHANGE` | 収まらないなど、配置の問題 | `output.problems` の全ページ・枠の指摘を直して保存し直す。`output.guidance` は短い説明 |
