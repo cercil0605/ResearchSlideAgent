@@ -176,7 +176,7 @@ quadrantChart
 | 図 | 3つ以下の箱の図、図番号のない図題、同じ図の使い回し、引用に Fig. があるのに図がないページ | `scripts/eval_fidelity.py`（DB を読む） | 済み |
 | 内容 | 数字のうち論文の本文にないもの → 手で確かめた誤りの数 | `scripts/eval_fidelity.py`、そのあと手で確認 | 済み（誤り0） |
 | 内容 | 根拠にページ番号があるページの割合 | `scripts/eval_fidelity.py` | 済み |
-| 内容 | 必ず入れる事項（1論文10項目）が入っているか | 論文ごとに一度だけ一覧を作り、手で照合 | 未 |
+| 内容 | 必ず入れる事項（数値・主張・図表）が入っているか | 論文ごとの正解リスト（`examples/eval/`）と `--answer-key` で数値・図表を自動照合。主張は手で照合 | DDPM のみ（下書き） |
 | 内容 | 主張10個を抜き出し、論文と照合したときの誤り・あいまいさの数 | 手、または LLM 判定（Codex の DDPM 照合と同じ方法） | DDPM 統合版のみ（誤り0、あいまい4） |
 | 往復 | MCP 呼び出しの回数、返事の合計字数、画像の枚数、最後の文脈トークン | クライアントのログ（Codex は `~/.codex/sessions`） | Codex 2回分のみ |
 
@@ -184,8 +184,28 @@ quadrantChart
 
 ```sh
 python scripts/eval_fidelity.py --pptx <出力>/presentation.pptx --pdf <論文>.pdf \
-  --db <データ>/state.sqlite3 --project <project id>
+  --db <データ>/state.sqlite3 --project <project id> \
+  --answer-key examples/eval/ddpm-answer-key.json
 ```
+
+### 正解リスト（DDPM、下書き）
+
+`examples/eval/ddpm-answer-key.json` に、DDPM 論文の正解リストの下書きを置きました（2026-11-24。**オーナーの確認待ち**、`status: draft_pending_owner_review`）。
+
+| 区分 | 件数（うち必須） | 例 | 照合のしかた |
+|---|---|---|---|
+| 数値 | 18（9） | FID 3.17、IS 9.46、NLL ≤3.75、T=1000、Table 2 の 13.22／13.51、LSUN の 7.89・4.90 | スライドの文字に、受け付ける表記のどれかがあるか（自動） |
+| 主張 | 13（8） | 「ノイズ予測の学習（Algorithm 1）」「Lsimple は重みを外し、画質は良いが尤度は良くならない」「尤度は他の尤度モデルに及ばない」 | 人か LLM 判定で、ある・正しい／ある・誤りかあいまい／ない |
+| 図・表 | 7（4） | Fig. 1、Fig. 2、Table 1、Table 2 | 図の図題・引用 locator、表の引用 locator に番号があるか（自動） |
+
+数値の記載ページは、論文の本文と照らして確かめました。どれを「必須」にするかは、オーナーの判断で変えてください。
+
+既存の DDPM 2資料での結果（主張の照合はまだです）：
+
+| 資料 | 数値（全体） | 必須の数値 | 必須の図・表 | 欠けているもの |
+|---|---|---|---|---|
+| DDPM 変更前 | 12／18 | 9／9 | 3／4 | Fig. 2（グラフィカルモデル）、圧縮率、モデルの大きさ、学習ステップなど |
+| DDPM 統合版 | 16／18 | 9／9 | 3／4 | Fig. 2、Table 2 の学習分散の行、train-test の差 |
 
 ### 今の値（ベースライン、2026-11-22）
 
