@@ -76,11 +76,45 @@ async def test_local_tools_register_generate_and_export(local_settings, tmp_path
         assert await asyncio.to_thread(process_one, store, local_settings)
         done = (await session.call_tool("get_job", {"job_id": job["id"]})).structured_content
         assert done["state"] == "completed"
+        assert done["output"]["slide_count"] == len(spec.slides)
         saved_path = Path(done["local_path"])
         assert saved_path == local_settings.output_dir.resolve() / pid / job["id"] / "presentation.pptx"
         assert saved_path.read_bytes()[:2] == b"PK"
         assert done["download_url"] == saved_path.as_uri()
         assert "expires_in" not in done
+
+
+@pytest.mark.asyncio
+async def test_save_and_failed_job_return_all_fit_problems(local_settings):
+    from research_slide_agent.models import SlideSpec
+
+    store = Store(local_settings)
+    mcp = make_mcp(store, local_settings, Auth(local_settings))
+    async with Client(mcp) as session:
+        pid = (await session.call_tool("create_project", {})).structured_content["id"]
+        raw = sample_spec(pid, 2).model_dump()
+        raw["slides"] = [{**raw["slides"][0], "slide_id": f"s{i}", "slide_order": i,
+                          "title": "長い題名" * 40,
+                          "replacements": {"背景の箇条書き": [{"text": "長い説明" * 100}]}}
+                         for i in (1, 2)]
+        spec = SlideSpec.model_validate(raw)
+        saved = await session.call_tool("save_slide_spec", {
+            "presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0})
+        assert not saved.is_error, saved
+        pages = saved.structured_content["authoring_feedback"]["pages"]
+        expected = [{"page": page["page"], "slide_id": page["slide_id"], **problem}
+                    for page in pages for problem in page["fit_problems"]]
+        assert len(expected) == 4
+        jid = (await session.call_tool("enqueue_generation", {"presentation_id": pid})).structured_content["id"]
+        pending = (await session.call_tool("get_job", {"job_id": jid})).structured_content
+        assert pending["output"] is None
+        assert await asyncio.to_thread(process_one, store, local_settings)
+        failed = (await session.call_tool("get_job", {"job_id": jid})).structured_content
+        assert failed["state"] == "failed" and failed["error"] == "LAYOUT_REQUIRES_USER_CHANGE"
+        assert failed["output"]["problems"] == expected
+        assert "背景の箇条書き" in failed["output"]["guidance"]
+        preview = (await session.call_tool("get_preview", {"job_id": jid})).structured_content
+        assert preview["job"]["output"] == failed["output"]
 
 
 @pytest.mark.asyncio

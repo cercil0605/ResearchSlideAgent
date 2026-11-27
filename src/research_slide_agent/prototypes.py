@@ -7,6 +7,7 @@ No dependency on the historical 42-slide extraction recipe.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import math
 import os
@@ -41,6 +42,39 @@ COMPOSITIONS = {
     "table_visual": "method: native table on the left, one image or diagram on the right, points below",
     "two_images": "method: two original images side by side, with captions and explanatory text",
 }
+# Single-spaced line pitch (em), measured on PDFs of generated decks (2026-11-18, docs/verified.md).
+# Body text boxes: PowerPoint 1.09, LibreOffice preview 1.125; 1.1 is the long-standing estimate.
+# 16pt table cells: PowerPoint 1.165 (a three-line row is 63.1pt with 7.2pt insets); the
+# LibreOffice preview draws cells at about 1.45, so wrapped tables look taller there than in PowerPoint.
+TEXT_LINE_PITCH = 1.1
+TABLE_LINE_PITCH = 1.17
+# Table rows grow and push the content below, so cells also count about a quarter em between
+# Japanese and Latin letters or digits (PowerPoint wrapped "end記憶網" a character early).
+LATIN_CJK_GAP = 0.25
+# Japanese line-breaking rules: these never start (or end) a line, so they move with a neighbour.
+_NO_LINE_START = set("、。，．：；？！）」』】〕〉》ーぁぃぅぇぉっゃゅょァィゥェォッャュョ,.:;?!)]}")
+_NO_LINE_END = set("（「『【〔〈《([{")
+OVERFLOW_GUIDANCE = ("preserve required facts; first review wording, prototype and composition "
+                     "(method/text_visual or two_images for figure-led explanations); "
+                     "split at a meaningful boundary only if the explanation still cannot fit readably")
+
+
+# Inches (left, top, width, height) of method body objects per composition; "frame"/"label" are the figure's.
+_SIDE_BY_SIDE = {
+    "frame": (4.85, 1.4, 2.25, 2.45),
+    "label": (4.85, 2.2, 2.25, 0.54),
+    "図題": (4.85, 4.02, 2.25, 0.36),
+    "小見出し：特徴": (0.4, 4.45, 6.7, 0.31),
+    "手法の特徴": (0.4, 4.85, 6.7, 0.55),
+    "手法の説明": (0.4, 1.4, 4.2, 2.65),
+}
+COMPOSITION_BOXES = {
+    "text_visual": _SIDE_BY_SIDE,
+    "table_visual": _SIDE_BY_SIDE,
+    "two_images": {"frame": (0.4, 1.4, 4.4, 2.7), "図題": (0.4, 4.2, 4.4, 0.65)},
+}
+# table_visual places the table at this left/top/width (inches), in place of 手法の説明.
+COMPOSITION_TABLE = (0.4, 1.4, 4.2)
 
 
 def xml(data):
@@ -81,8 +115,25 @@ def _check_content_targets(entry, item):
         raise LayoutError("Content roles must reference explanatory body slots, not titles, headings or captions")
 
 
-def authoring_feedback(template, spec):
-    """Expose inherited headings and actual visual capacity; do not claim semantic review."""
+def _fit_problems(archive, entry, item, slide, images):
+    """Run the generation fit check on one page; images=None skips pages that place original images."""
+    from .engine import LayoutError
+
+    if images is None and item.image_references:
+        return None
+    try:
+        build_slide(archive, entry, item, slide, images or {})
+    except LayoutError as exc:
+        return exc.problems or [{"code": str(exc).split(":", 1)[0], "message": str(exc).split(";", 1)[0]}]
+    except ValueError as exc:  # e.g. an unknown prototype paragraph; generation would reject it too.
+        return [{"code": "INVALID_PAGE", "message": str(exc)[:300]}]
+    return []
+
+
+def authoring_feedback(template, spec, images=None):
+    """Expose inherited headings and actual visual capacity; do not claim semantic review.
+    With images (source_id -> path), every page is also laid out as generation would, so
+    fit_problems lists every overflow before a job is queued."""
     profile = profile_for(template)
     if not profile:
         raise ValueError("Canonical schemas require the canonical template profile")
@@ -90,6 +141,7 @@ def authoring_feedback(template, spec):
     presentation = Presentation(template)
     pages, warnings = [], []
     ordered = sorted(spec.slides, key=lambda s: s.slide_order)
+    archive = ZipFile(io.BytesIO(template.read_bytes()))  # In memory: no handle left open on errors.
     for item in ordered:
         entry = entries.get(item.prototype_id)
         if entry is None:
@@ -142,6 +194,13 @@ def authoring_feedback(template, spec):
         if item.table_spec and "table" not in entry and item.composition != "table_visual":
             warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
                              "guidance": "Select results_table for a native table while keeping section unchanged."})
+        fit = _fit_problems(archive, entry, item, presentation.slides[entry["source_page"] - 1], images)
+        if fit is not None:
+            page["fit_problems"] = fit
+        if fit:
+            warnings.append({"slide_id": item.slide_id, "code": "LAYOUT_WILL_FAIL",
+                             "guidance": "Generation would fail on this page. Revise every item in fit_problems "
+                                         "(wording, composition, text/figure balance) before enqueue_generation."})
         pages.append(page)
     if spec.purpose_mode == "research":
         for previous, item in zip(ordered, ordered[1:]):
@@ -156,6 +215,78 @@ def authoring_feedback(template, spec):
                                              "This warning does not establish that the combined table fits."})
     return {"pages": pages, "warnings": warnings, "content_review": "not_performed",
             "visual_review": "not_performed"}
+
+
+def _slot_font_size(slot, fallback):
+    import re
+
+    sizes = [int(m) / 100 for p in slot["paragraphs"] for r in p["runs"]
+             for m in re.findall(r'\bsz="(\d+)"', r["style_xml"] or "")]
+    return max(sizes) if sizes else fallback
+
+
+def _capacity(width, height, size, margins, paragraph=None, pitch=TEXT_LINE_PITCH):
+    """Room for one paragraph; each further paragraph also costs paragraph_gap_pt."""
+    left, right, top, bottom = margins
+    indent = int(query(paragraph, "./a:pPr/@marL")[0]) if paragraph is not None and query(
+        paragraph, "./a:pPr/@marL") else 0
+    gap = (_space(paragraph, "spcBef", size) + _space(paragraph, "spcAft", size)) if paragraph is not None else 0
+    usable = (width - left - right - indent) / 12700
+    return {"box_inches": [round(width / 914400, 2), round(height / 914400, 2)], "font_pt": size,
+            "full_width_chars_per_line": max(0, int(usable // size)),
+            "lines": max(0, int(((height - top - bottom) / 12700 + 0.5) // (size * pitch))),
+            "paragraph_gap_pt": round(gap, 1)}
+
+
+def capacity_catalog(template):
+    """Approximate room per slot, per composition, and table row limits. The save-time fit check
+    (authoring_feedback.pages[].fit_problems) applies the same estimate to the actual text."""
+    profile = profile_for(template)
+    presentation = Presentation(template)
+    catalog = {}
+    for entry in profile["prototypes"]:
+        slide = presentation.slides[entry["source_page"] - 1]
+        shapes = {s.name: s for s in slide.shapes}
+        compositions = ["canonical", *COMPOSITION_BOXES] if entry["prototype_id"] == "method" else ["canonical"]
+        result = {}
+        for composition in compositions:
+            boxes = COMPOSITION_BOXES.get(composition, {})
+            slots = {}
+            for slot in entry["slots"]:
+                if slot["kind"] == "title" or slot["name"] == entry.get("figure", {}).get("label"):
+                    continue
+                if composition == "table_visual" and slot["name"] == "手法の説明":
+                    continue  # The table takes this area.
+                tf = shapes[slot["name"]].text_frame
+                margins = (tf.margin_left, tf.margin_right, tf.margin_top, tf.margin_bottom)
+                left, top, width, height = slot["box"]
+                if slot["name"] in boxes:
+                    width, height = (round(v * 914400) for v in boxes[slot["name"]][2:])
+                paragraphs = shapes[slot["name"]]._element.xpath("./p:txBody/a:p")
+                slots[slot["name"]] = _capacity(width, height, _slot_font_size(slot, 16), margins,
+                                                xml(E.tostring(paragraphs[0])) if paragraphs else None)
+            table = entry.get("table") if composition == "canonical" else None
+            if table or composition == "table_visual":
+                source = next(e for e in profile["prototypes"] if e["prototype_id"] == "results_table")
+                shape = shapes.get(source["table"]["name"]) or next(
+                    s for s in presentation.slides[source["source_page"] - 1].shapes if s.has_table)
+                header, body = source["table"]["row_heights"][:2]
+                top = round(COMPOSITION_TABLE[1] * 914400) if composition == "table_visual" else shape.top
+                width = round(COMPOSITION_TABLE[2] * 914400) if composition == "table_visual" else shape.width
+                weights = source["table"]["column_widths"]
+                slots["table"] = {
+                    "max_columns": 3,
+                    "max_body_rows": max_table_rows(header, body, table_height(composition, top)),
+                    "row_lines_at_template_height": max(1, int((body / 12700 - 7.2) // (16 * TABLE_LINE_PITCH))),
+                    "full_width_chars_per_line_by_columns": {
+                        str(n): [max(0, int(((width * w / sum(ws)) - 182880) / 12700 // 16))
+                                 for w in ws]
+                        for n, ws in {1: [1], 2: [9, 16], 3: weights}.items()},
+                    "note": "Each extra wrapped line in a cell makes that row taller and lowers max_body_rows.",
+                }
+            result[composition] = slots
+        catalog[entry["prototype_id"]] = result
+    return catalog
 
 
 def prepare(source, output):
@@ -307,15 +438,115 @@ def _space(paragraph, tag, size, default=0):
         size if el.tag.endswith("spcPct") else 1)
 
 
-def check_text_fit(container, width, height, fallback=16, margins=(0, 0, 0, 0), name="text"):
+def _tokens(line):
+    """Unbreakable pieces: one wide glyph, or one Latin word/number, glued by line-breaking rules."""
+    import unicodedata
+
+    tokens, word = [], ""
+
+    def push(token, glue):
+        if tokens and (glue or tokens[-1][-1] in _NO_LINE_END):
+            tokens[-1] += token
+        else:
+            tokens.append(token)
+
+    for ch in line:
+        if unicodedata.east_asian_width(ch) in "WF" or ch.isspace():
+            if word:
+                push(word, word[0] in _NO_LINE_START)
+                word = ""
+            push(ch, ch in _NO_LINE_START)
+        else:
+            word += ch
+            if ch == "-":  # Renderers may break after a hyphen ("End-to-" / "end").
+                push(word, word[0] in _NO_LINE_START)
+                word = ""
+    if word:
+        push(word, word[0] in _NO_LINE_START)
+    return tokens
+
+
+def _wide(ch):
+    import unicodedata
+
+    return unicodedata.east_asian_width(ch) in "WF"
+
+
+def _gap(left, right):
+    """Extra space PowerPoint puts between a Japanese character and an adjacent Latin letter/digit."""
+    return 1 if left.isalnum() and right.isalnum() and _wide(left) != _wide(right) else 0
+
+
+def wrapped_lines(line, size, usable, gap=0.0):
+    """Greedy line count for one soft-break line, as a renderer wraps it (not total width / line width).
+    gap is extra em between Japanese and Latin letters or digits; 0 for text boxes."""
+    from .engine import units
+
+    usable = max(usable, 1)
+    count, used, previous = 1, 0.0, ""
+    for token in _tokens(line):
+        width = (units(token) + gap * sum(_gap(a, b) for a, b in zip(token, token[1:]))) * size
+        if token.isspace():
+            used += width if used else 0
+            previous = token[-1]
+            continue
+        joined = width + (gap * _gap(previous, token[0]) * size if used and previous else 0)
+        if used and used + joined > usable:
+            count, used = count + 1, 0.0
+        else:
+            width = joined
+        if width > usable:  # A word longer than the line breaks between its characters.
+            for ch in token:
+                char = units(ch) * size
+                if used and used + char > usable:
+                    count, used = count + 1, 0.0
+                used += char
+        else:
+            used += width
+        previous = token[-1]
+    return count
+
+
+class _Failures:
+    """Collect LayoutErrors so one response lists every slot, cell, node and label to revise."""
+
+    def __init__(self):
+        self.errors = []
+
+    def attempt(self, check, *args, **kwargs):
+        from .engine import LayoutError
+
+        try:
+            return check(*args, **kwargs)
+        except LayoutError as exc:
+            self.errors.append(exc)
+            return None
+
+    def add(self, exc):
+        self.errors.append(exc)
+
+    def raise_if_any(self):
+        from .engine import LayoutError
+
+        if not self.errors:
+            return
+        heads = [str(exc).split(";", 1)[0] for exc in self.errors]
+        tails = [str(exc).split(";", 1)[1].strip() for exc in self.errors if ";" in str(exc)]
+        raise LayoutError(" / ".join(heads) + ("; " + tails[0] if tails else ""),
+                          [p for exc in self.errors
+                           for p in (exc.problems or [{"code": str(exc).split(":", 1)[0]}])])
+
+
+def check_text_fit(container, width, height, fallback=16, margins=(0, 0, 0, 0), name="text",
+                   pitch=TEXT_LINE_PITCH, gap=0.0):
     """Conservative estimate, with actual pPr spacing and continuation-line indentation."""
-    from .engine import LayoutError, units
+    from .engine import LayoutError
 
     body = query(container, "./a:bodyPr")[0]
     left, right, top, bottom = [int(body.get(k, str(v))) for k, v in
                                zip(("lIns", "rIns", "tIns", "bIns"), margins)]
     available = (height - top - bottom) / 12700
-    required = 0.0
+    required, lines_needed, largest, spacing = 0.0, 0, 0.0, 0.0
     for p in query(container, "./a:p"):
         if not query(p, "./a:r/a:t"):
             continue
@@ -329,18 +560,35 @@ def check_text_fit(container, width, height, fallback=16, margins=(0, 0, 0, 0), 
                 lines.append("")
             elif el.tag == f"{{{NS['a']}}}r":
                 lines[-1] += "".join(query(el, "./a:t/text()"))
-        count = sum(max(1, math.ceil(units(line) * size / max(usable, 1))) for line in lines)
-        required += count * _space(p, "lnSpc", size, size * 1.1)
-        required += _space(p, "spcBef", size) + _space(p, "spcAft", size)
+        count = sum(wrapped_lines(line, size, usable, gap) for line in lines)
+        lines_needed += count
+        line_height = _space(p, "lnSpc", size, size * pitch)
+        largest = max(largest, line_height)
+        required += count * line_height
+        between = _space(p, "spcBef", size) + _space(p, "spcAft", size)
+        required += between
+        spacing += between
     # A final paragraph's after-space does not need a following line.
     ps = query(container, "./a:p")
     if ps:
-        required -= _space(ps[-1], "spcAft", _size(ps[-1], fallback))
+        last = _space(ps[-1], "spcAft", _size(ps[-1], fallback))
+        required -= last
+        spacing -= last
     if required > available + 0.5:
-        raise LayoutError(f"TEXT_OVERFLOW: {name}; preserve required facts; first review wording, prototype and "
-                          "composition (method/text_visual or two_images for figure-led explanations); "
-                          "split at a meaningful boundary only if the explanation still cannot fit readably")
+        # Lines that fit with the same paragraphs; fewer paragraphs also free their spacing.
+        fits = max(0, int((available + 0.5 - spacing) // largest)) if largest else 0
+        paragraphs = len([p for p in ps if query(p, "./a:r/a:t")])
+        problem = {"code": "TEXT_OVERFLOW", "target": name, "lines_needed": lines_needed,
+                   "lines_available": fits, "paragraphs": paragraphs,
+                   "box_inches": [round(width / 914400, 2), round(height / 914400, 2)]}
+        raise LayoutError(f"TEXT_OVERFLOW: {name} (about {lines_needed} lines in {paragraphs} paragraph(s) needed, "
+                          f"{fits} fit); " + OVERFLOW_GUIDANCE, [problem])
     return math.ceil(required * 12700) + top + bottom
+
+
+def max_table_rows(header, body, max_height):
+    """Body rows that fit when every row keeps the template's minimum height."""
+    return max(0, (max_height - header) // body)
 
 
 def clone_table(shape, data, *, max_height):
@@ -360,10 +608,14 @@ def clone_table(shape, data, *, max_height):
         grid.remove(col)
     for width in widths:
         E.SubElement(grid, f"{{{NS['a']}}}gridCol", w=str(width))
-    needed = int(original[0].get("h")) + len(data.rows) * int(original[1].get("h"))
-    if needed > max_height:
-        raise LayoutError("TABLE_OVERFLOW: select a larger composition or split at a meaningful boundary")
-    rows = []
+    header, body = int(original[0].get("h")), int(original[1].get("h"))
+    max_rows = max_table_rows(header, body, max_height)
+    if len(data.rows) > max_rows:
+        raise LayoutError(
+            f"TABLE_OVERFLOW: {len(data.rows)} body rows, at most {max_rows} fit at the template row height; "
+            "select a larger composition or split at a meaningful boundary",
+            [{"code": "TABLE_OVERFLOW", "target": "table", "rows": len(data.rows), "max_body_rows": max_rows}])
+    rows, failures = [], _Failures()
     for index, values in enumerate([data.columns, *data.rows]):
         # Keep the header, each body row, and the final row with its black bottom rule.
         source = original[0] if index == 0 else original[-1] if index == len(data.rows) else original[min(index, len(original) - 2)]
@@ -374,12 +626,21 @@ def clone_table(shape, data, *, max_height):
         for c, (cell, text) in enumerate(zip(query(row, "./a:tc"), values)):
             tx = query(cell, "./a:txBody")[0]
             replace_text(tx, [PrototypeParagraph(text=text)] if text else [])
-            needed = check_text_fit(tx, widths[c], max_height,
-                                    margins=(91440, 91440, 45720, 45720), name=f"table row {index} column {c}")
-            row.set("h", str(max(int(row.get("h")), needed)))
+            needed = failures.attempt(check_text_fit, tx, widths[c], max_height,
+                                      margins=(91440, 91440, 45720, 45720), name=f"table row {index} column {c}",
+                                      pitch=TABLE_LINE_PITCH, gap=LATIN_CJK_GAP)
+            row.set("h", str(max(int(row.get("h")), needed or 0)))
         rows.append(row)
-    if sum(int(row.get("h")) for row in rows) > max_height:
-        raise LayoutError("TABLE_OVERFLOW: select a larger composition or split at a meaningful boundary")
+    failures.raise_if_any()
+    total = sum(int(row.get("h")) for row in rows)
+    if total > max_height:
+        tall = [i for i, row in enumerate(rows[1:], 1) if int(row.get("h")) > body]
+        raise LayoutError(
+            f"TABLE_OVERFLOW: wrapped cells need {total / 914400:.2f} in, {max_height / 914400:.2f} in available "
+            f"(rows taller than one line: {tall}); shorten cells in those rows, use fewer columns' text, "
+            "or split at a meaningful boundary",
+            [{"code": "TABLE_OVERFLOW", "target": "table", "height_needed_inches": round(total / 914400, 2),
+              "height_available_inches": round(max_height / 914400, 2), "wrapped_rows": tall}])
     for row in original:
         tbl.remove(row)
     tbl.extend(rows)
@@ -440,7 +701,9 @@ def _figure(root, item, entry, media):
         if (a.x + a.w >= b.x if horizontal else a.y + a.h >= b.y):
             raise LayoutError("DIAGRAM_DIRECTION: use a forward graph; explain feedback loops separately")
     shape_ids = {node.id: 1000 + i * 2 for i, node in enumerate(diagram.nodes)}
-    connectors = []
+    connectors, placed, failures = [], [], _Failures()
+    labelled = [edge.target for edge in diagram.edges if edge.label]
+    merging = {target for target in labelled if labelled.count(target) > 1}
     for index, edge in enumerate(diagram.edges):
         a, b = positions[edge.source], positions[edge.target]
         x1, y1 = (a.x + a.w, a.y + a.h // 2) if horizontal else (a.x + a.w // 2, a.y + a.h)
@@ -465,15 +728,32 @@ def _figure(root, item, entry, media):
             query(caption, "./p:nvSpPr/p:cNvPr")[0].set("id", str(3000 + index))
             query(caption, "./p:nvSpPr/p:cNvPr")[0].set("name", "rsa:edge-label:" + str(index))
             lw, lh = (x2 - x1, 240000) if horizontal else (700000, 240000)
-            lx, ly = (x1, y2 - lh - 24000) if horizontal else (x2 + 24000, y1 + (y2-y1)//2 + 24000)
-            lw = min(lw, x + w - lx)
+            # Near the target end by default (branches stay apart). Labelled edges merging into one
+            # node share that end, so they start at the source end, where their segments are separate.
+            candidates = ([(x1, y2 - lh - 24000), (x1, y1 - lh - 24000)] if horizontal else
+                          [(x2 + 24000, y1 + (y2-y1)//2 + 24000), (x1 + 24000, y1 + (y2-y1)//2 + 24000)])
+            if edge.target in merging:
+                candidates.reverse()
+            for lx, ly in candidates:
+                width = min(lw, x + w - lx)
+                if not any(lx < px + pw and px < lx + width and ly < py + ph and py < ly + lh
+                           for px, py, pw, ph in placed):
+                    break
+            else:
+                failures.add(LayoutError(f"DIAGRAM_LABEL_OVERLAP: edge {index} label collides with another label; "
+                                         "put the condition in a node or split the diagram",
+                                         [{"code": "DIAGRAM_LABEL_OVERLAP", "target": f"edge {index}"}]))
+                continue
+            lw = width
+            placed.append((lx, ly, lw, lh))
             _diagram_transform(caption, lx, ly, lw, lh)
             tx = query(caption, "./p:txBody")[0]
             replace_text(tx, [PrototypeParagraph(text=edge.label)])
             _diagram_text(tx, 1200)
-            check_text_fit(tx, lw, lh, fallback=12, name="edge " + str(index))
+            failures.attempt(check_text_fit, tx, lw, lh, fallback=12, name="edge " + str(index))
             if lx < x or ly < y or lx + lw > x + w or ly + lh > y + h:
-                raise LayoutError("DIAGRAM_LABEL_OVERFLOW: shorten labels or put conditions in nodes")
+                failures.add(LayoutError(f"DIAGRAM_LABEL_OVERFLOW: edge {index}; shorten labels or put conditions "
+                                         "in nodes", [{"code": "DIAGRAM_LABEL_OVERFLOW", "target": f"edge {index}"}]))
             connectors.append(caption)
     tree.extend(connectors)
     for i, node in enumerate(diagram.nodes):
@@ -498,8 +778,9 @@ def _figure(root, item, entry, media):
         replace_text(tx, [PrototypeParagraph(text=node.text)])
         _diagram_text(tx, 1500)
         size = query(caption, "./p:spPr/a:xfrm/a:ext")[0]
-        check_text_fit(tx, int(size.get("cx")), int(size.get("cy")), fallback=15, name=node.id)
+        failures.attempt(check_text_fit, tx, int(size.get("cx")), int(size.get("cy")), fallback=15, name=node.id)
         tree.extend([box, caption])
+    failures.raise_if_any()
     return []
 
 
@@ -532,21 +813,8 @@ def _apply_composition(archive, root, entry, item):
     if item.composition == "canonical":
         return entry
     entry = deepcopy(entry)
-    boxes = {}
-    if item.composition in {"text_visual", "table_visual"}:
-        boxes = {
-            entry["figure"]["frame"]: (4.85, 1.4, 2.25, 2.45),
-            entry["figure"]["label"]: (4.85, 2.2, 2.25, 0.54),
-            "図題": (4.85, 4.02, 2.25, 0.36),
-            "小見出し：特徴": (0.4, 4.45, 6.7, 0.31),
-            "手法の特徴": (0.4, 4.85, 6.7, 0.55),
-            "手法の説明": (0.4, 1.4, 4.2, 2.65),
-        }
-    elif item.composition == "two_images":
-        boxes = {
-            entry["figure"]["frame"]: (0.4, 1.4, 4.4, 2.7),
-            "図題": (0.4, 4.2, 4.4, 0.65),
-        }
+    boxes = {entry["figure"][key] if key in {"frame", "label"} else key: box
+             for key, box in COMPOSITION_BOXES[item.composition].items()}
     for name, box in boxes.items():
         _diagram_transform(_shape(root, name), *(round(value * 914400) for value in box))
     if item.composition == "table_visual":
@@ -557,11 +825,17 @@ def _apply_composition(archive, root, entry, item):
         query(table, "./p:nvGraphicFramePr/p:cNvPr")[0].set("id", "4000")
         query(table, "./p:nvGraphicFramePr/p:cNvPr")[0].set("name", "rsa:composition-table")
         transform = query(table, "./p:xfrm")[0]
-        query(transform, "./a:off")[0].attrib.update({"x": str(round(0.4 * 914400)), "y": str(round(1.4 * 914400))})
-        query(transform, "./a:ext")[0].set("cx", str(round(4.2 * 914400)))
+        left, top, width = COMPOSITION_TABLE
+        query(transform, "./a:off")[0].attrib.update({"x": str(round(left * 914400)), "y": str(round(top * 914400))})
+        query(transform, "./a:ext")[0].set("cx", str(round(width * 914400)))
         query(root, "./p:cSld/p:spTree")[0].append(table)
         entry["table"] = {"name": "rsa:composition-table"}
     return entry
+
+
+def table_height(composition, top):
+    """Height from the table's top to the line above the explanation below it."""
+    return round((4.35 if composition == "table_visual" else 4.38) * 914400) - top
 
 
 def build_slide(archive, entry, item, slide, media):
@@ -584,6 +858,9 @@ def build_slide(archive, entry, item, slide, media):
                                            for p in replacements["図題"]) for ref in item.image_references):
             raise LayoutError("Image caption must be included in the canonical figure caption slot")
     replacements[entry["title_slot"]] = [PrototypeParagraph(text=item.title)]
+    # Fit failures are collected so one response names every slot, table and diagram to revise.
+    failures = _Failures()
+    attempt = failures.attempt
     for name, slot in slots.items():
         if (item.diagram_spec or item.image_references) and name == entry.get("figure", {}).get("label"):
             continue  # The native visual clones this label's original run styles below.
@@ -601,8 +878,8 @@ def build_slide(archive, entry, item, slide, media):
             geometry = query(shape, "./p:spPr/a:xfrm/a:ext")
             width, height = ((int(geometry[0].get("cx")), int(geometry[0].get("cy"))) if geometry
                              else (original.width, original.height))
-            check_text_fit(tx, width, height, fallback,
-                           (tf.margin_left, tf.margin_right, tf.margin_top, tf.margin_bottom), name)
+            attempt(check_text_fit, tx, width, height, fallback,
+                    (tf.margin_left, tf.margin_right, tf.margin_top, tf.margin_bottom), name)
     if item.table_spec and "table" not in entry:
         raise LayoutError("Select results_table for a native canonical table")
     if "table" in entry:
@@ -610,15 +887,15 @@ def build_slide(archive, entry, item, slide, media):
             raise LayoutError("results_table requires table_spec")
         shape = _shape(root, entry["table"]["name"])
         top = int(query(shape, "./p:xfrm/a:off/@y")[0])
-        bottom = round((4.35 if item.composition == "table_visual" else 4.38) * 914400)
-        clone_table(shape, item.table_spec, max_height=bottom - top)
+        attempt(clone_table, shape, item.table_spec, max_height=table_height(item.composition, top))
     media_item = []
     if item.diagram_spec or item.image_references:
         if "figure" not in entry:
             raise LayoutError("Select a prototype with a figure frame")
         if entry["figure"]["label"] in item.replacements:
             raise LayoutError("Do not replace the sample label when supplying a figure")
-        media_item = _figure(root, item, entry, media)
+        media_item = attempt(_figure, root, item, entry, media) or []
+    failures.raise_if_any()
     for citation in item.citations:
         text = "".join(query(root, ".//a:t/text()"))
         if citation.label not in text:
@@ -663,7 +940,7 @@ def layout_summary(problems):
     """One message naming every failing page; full guidance once, then each page's code and target."""
     first = problems[0][2]
     pages = "; ".join(f"page {page} slide_id={slide_id}: {message.split(';', 1)[0]}"
-                      for page, slide_id, message in problems)
+                      for page, slide_id, message, *_ in problems)
     guidance = first.split(";", 1)[1].strip() if ";" in first else ""
     return f"{pages}" + (f" | guidance: {guidance}" if guidance else "")
 
@@ -704,7 +981,7 @@ def generate_prototypes(template, spec, output, images=None):
                 root, media = build_slide(src, entry, item, prs.slides[entry["source_page"] - 1], images or {})
             except LayoutError as exc:
                 # Keep checking the other slides so one generation reports every page to revise.
-                problems.append((i, item.slide_id, str(exc)))
+                problems.append((i, item.slide_id, str(exc), exc.problems))
                 continue
             part = f"ppt/slides/slide{i}.xml"
             src_rels = posixpath.join(posixpath.dirname(entry["part"]), "_rels",
@@ -733,7 +1010,10 @@ def generate_prototypes(template, spec, output, images=None):
                                        "composition": item.composition, "paper_section": item.paper_section,
                                        "source_page": entry["source_page"], "part": "/" + part})
         if problems:
-            raise LayoutError(layout_summary(problems))
+            raise LayoutError(layout_summary(problems), [
+                {"page": page, "slide_id": slide_id, **detail}
+                for page, slide_id, message, details in problems
+                for detail in (details or [{"code": message.split(":", 1)[0]}])])
         parts["ppt/presentation.xml"] = dump(presentation)
         parts["ppt/_rels/presentation.xml.rels"] = dump(rels)
         parts["docProps/custom.xml"] = _custom_properties(info)

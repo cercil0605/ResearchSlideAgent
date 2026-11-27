@@ -65,8 +65,11 @@ def process_one(store, settings):
         code = "LAYOUT_REQUIRES_USER_CHANGE" if isinstance(exc, LayoutError) else "INVALID_JOB_STATE"
         if job["payload"]["kind"] == "preview":
             code = str(exc).split(":", 1)[0] if str(exc).startswith("PREVIEW_") else "PREVIEW_RENDER_FAILED"
-        store.finish(job["id"], job["lease_token"], "failed", error=code,
-                     output={"guidance": str(exc)[:2000]})
+        output = {"guidance": str(exc)[:2000]}
+        if getattr(exc, "problems", None):
+            # Every failing slot with measured amounts, so one revision can address all of them.
+            output["problems"] = exc.problems
+        store.finish(job["id"], job["lease_token"], "failed", error=code, output=output)
     except (OSError, RuntimeError, subprocess.SubprocessError):
         preview = job["payload"]["kind"] == "preview"
         store.finish(job["id"], job["lease_token"], "failed",

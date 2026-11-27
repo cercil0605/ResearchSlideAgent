@@ -69,7 +69,7 @@ sequenceDiagram
 | AI が送る | サーバーで動くコード | 返るもの |
 |---|---|---|
 | `get_authoring_context()` | `rules.py` の `authoring_context()` が4文書を読む | 4文書の全文とハッシュ |
-| `get_template_info()` | `engine.py` の `template_info()` | 見本ページ11種と、各見本の枠の名前 |
+| `get_template_info()` | `engine.py` の `template_info()` | 見本ページ11種、枠の名前、配置ごとの容量の目安（`slot_capacity`） |
 | `create_project()` | `store.py` の `create()` | `{"id": "a1b2…", "version": 0}`（7日有効） |
 | `register_local_file(path="/Users/kei/Downloads/paper.pdf")` | `server.py` の `read_local_file()`（許可フォルダか確認）→ `files.py` の `validate_file()`（形式・大きさ）→ `store.py` の `register()`（保存） | `{"source_id": "f9e8…", "kind": "pdf"}` |
 
@@ -121,9 +121,11 @@ AI はルールの手順 F01〜F06（骨格 → 粒度 → 図の役割 → 文�
 |---|---|
 | `models.py` の `SlideSpec` | 型の検査（40枚まで、順番が連続、など） |
 | `store.py` の `save_spec()` | 版番号の確認、引用と画像が登録済みの資料か確認、保存 |
-| `prototypes.py` の `authoring_feedback()` | 形の指摘を作る（図がない、見出しが見本のまま、など） |
+| `prototypes.py` の `authoring_feedback()` | 形の指摘と、生成と同じ計算によるはみ出しの指摘を作る |
 
 返ってくるもの：`{"spec_version": 1, "authoring_feedback": {"warnings": [...], "content_review": "not_performed"}}`。AI は指摘を読んで、必要なら直して版2を保存します。
+
+`pages[].fit_problems` には枠ごとの必要行数・入る行数や、表の必要高さ・使える高さが入ります。はみ出しがあっても保存はでき、`LAYOUT_WILL_FAIL` が返ります。AI はこの一覧を直してから生成を頼みます。
 
 ## ④ 作る
 
@@ -141,7 +143,7 @@ flowchart LR
 | AI が送る | 返るもの |
 |---|---|
 | `enqueue_generation()` | `{"id": "job1", "state": "queued"}` |
-| `get_job("job1")` | `completed` と PPTX の場所、または `failed` と理由（例：`page 5 slide_id=page5: TEXT_OVERFLOW …`） |
+| `get_job("job1")` | `completed` と PPTX の場所、または `failed` と `output.guidance`・`output.problems`（ページ・枠ごとの理由と量） |
 
 失敗したら、AI は該当ページの文を短くするか、ページを分けて、③からやり直します。
 
