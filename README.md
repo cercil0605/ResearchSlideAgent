@@ -12,6 +12,22 @@ flowchart LR
 - **考えるのは AI エージェント**（論文を読み、構成と文章を作る）。
 - **このサーバーは考えません**。資料の保存、PPTX の生成、検査だけをします。
 
+### どの AI エージェントで使えるか
+
+| クライアント | 状態 |
+|---|---|
+| Claude Code・Codex CLI・agy（Gemini） | `make setup` で登録できる（local）。論文1本の完走を確認したのは Codex、Claude Code は生成までを確認（[検証状況](docs/verified.md)） |
+| Claude Desktop・Cursor など MCP 対応のもの | 設定ファイルに登録すれば使える見込み（[08](docs/08-operate.md)） |
+| ChatGPT | remote（公開サーバー）経由 |
+
+どのクライアントでも動くように、1回の返事は約2万トークン以内に収めています。また、少ない往復で済むようにしています。
+
+- ルール：2回
+- 論文：1〜3回（`read_paper`）
+- 図：1枚1回（図番号で切り抜く）
+- 修正：変えたページだけ送る（`patch_slides`）
+- 生成：完成まで待って全ページの一覧画像を返す（`enqueue_generation`）
+
 ## 使い始める
 
 Docker だけで動きます。

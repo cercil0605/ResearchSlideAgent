@@ -54,7 +54,7 @@ async def main():
                 )
                 assert not saved.is_error
                 job = (
-                    await client.call_tool("enqueue_generation", {"presentation_id": p["id"]})
+                    await client.call_tool("enqueue_generation", {"presentation_id": p["id"], "wait": False})
                 ).structured_content
                 assert await asyncio.to_thread(process_one, app.state.store, settings)
                 completed = (await client.call_tool("get_job", {"job_id": job["id"]})).structured_content

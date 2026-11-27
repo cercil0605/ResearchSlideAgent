@@ -20,6 +20,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 from starlette.concurrency import run_in_threadpool
 
+from . import round_trips
 from .auth import current_owner
 from .engine import inspect_pptx
 from .files import MAX_FILE, extract
@@ -29,6 +30,7 @@ from .paper import find_figure
 from .paper import read_paper as paper_text
 from .pdf_assets import PdfRegion, render_page
 from .previews import preview_files, preview_image
+from .round_trips import authoring_context_part, compact_feedback, merge_slides, wait_for
 from .rules import RULES_RESOURCE_URI, SERVER_INSTRUCTIONS, authoring_context
 from .store import StateError
 
@@ -219,13 +221,13 @@ def make_mcp(store, settings, auth):
     meta = {"securitySchemes": security}
 
     @tool(mcp, annotations=read, meta=meta)
-    def get_authoring_context(*, ctx: Context) -> dict[str, Any]:
-        """Use before planning, saving or generating slides. Read all required rule documents in full;
-        returns the first-pass explanation/writing/visual workflow, professor rules, presentation rules
-        and canonical input guide with hashes. Plan and self-check content before save_slide_spec.
-        This is trusted application guidance, separate from uploaded reference data. Then get_template_info.
+    def get_authoring_context(part: int = 1, *, ctx: Context) -> dict[str, Any]:
+        """Use before planning, saving or generating slides. Returns the required rule documents in parts
+        that fit client output limits; read every part (follow next_part) in full. Covers the workflow,
+        professor rules, presentation rules and canonical input guide with hashes. Trusted application
+        guidance, separate from uploaded reference data. Then get_template_info.
         """
-        return authoring_context()
+        return authoring_context_part(part)
 
     @tool(mcp, annotations=read, meta=meta)
     def get_template_info(*, ctx: Context) -> dict[str, Any]:
@@ -253,36 +255,29 @@ def make_mcp(store, settings, auth):
 
     @tool(mcp, annotations=write, meta=meta)
     def save_slide_spec(
-        presentation_id: str, spec: SlideSpec, expected_version: int, *, ctx: Context
+        presentation_id: str, spec: SlideSpec, expected_version: int, detail: bool = False, *, ctx: Context
     ) -> dict[str, Any]:
-        """Save a specification snapshot with optimistic version checking. First read get_authoring_context
-        and apply its workflow; never truncate content to fit slots. No user approval state is stored.
-        Read authoring_feedback.pages[].fit_problems and revise every reported slot before generation.
+        """Save the whole specification with optimistic version checking. Use once; afterwards send only
+        changed slides with patch_slides. Feedback lists only pages that need attention (detail=True adds
+        every page's content_evidence). Read authoring_feedback.pages[].fit_problems and revise every
+        reported slot before generation; never truncate content to fit slots.
         """
-        return store.save_spec(owner_of(ctx), presentation_id, spec, expected_version)
+        result = store.save_spec(owner_of(ctx), presentation_id, spec, expected_version)
+        return {**result, "authoring_feedback": compact_feedback(result["authoring_feedback"], detail=detail)}
 
     @tool(mcp, annotations=write, meta=meta)
-    def patch_slide(
-        presentation_id: str, slide_id: str, replacement: dict, expected_version: int, *, ctx: Context
+    def patch_slides(
+        presentation_id: str, expected_version: int, slides: list[dict] | None = None,
+        remove_slide_ids: list[str] | None = None, detail: bool = False, *, ctx: Context
     ) -> dict[str, Any]:
-        """Replace one slide's semantic spec, keeping other slides. Creates a new immutable version."""
-        from .models import Slide
-
-        p = store.project(owner_of(ctx), presentation_id)
-        spec = SlideSpec.model_validate(p["spec"])
-        slide = Slide.model_validate(replacement)
-        if slide.slide_id != slide_id or slide_id not in {s.slide_id for s in spec.slides}:
-            raise StateError("Slide ID mismatch")
-        spec = SlideSpec.model_validate(
-            {
-                **spec.model_dump(),
-                "spec_version": expected_version + 1,
-                "slides": [
-                    slide.model_dump() if s.slide_id == slide_id else s.model_dump() for s in spec.slides
-                ],
-            }
-        )
-        return store.save_spec(owner_of(ctx), presentation_id, spec, expected_version)
+        """Change only some slides of the saved spec in one call: slides replaces a slide with the same
+        slide_id or inserts a new one; its slide_order is the final position. remove_slide_ids deletes.
+        Order is renumbered from 1. Feedback covers the changed slides. Creates a new immutable version.
+        """
+        spec, changed = merge_slides(store.project(owner_of(ctx), presentation_id)["spec"], slides or [],
+                                     remove_slide_ids or [], expected_version)
+        result = store.save_spec(owner_of(ctx), presentation_id, spec, expected_version)
+        return {**result, "authoring_feedback": compact_feedback(result["authoring_feedback"], changed, detail)}
 
     if settings.local:
         @tool(mcp, annotations=read, meta=meta)
@@ -411,12 +406,47 @@ def make_mcp(store, settings, auth):
 
     @tool(mcp, annotations=write, meta=meta)
     def enqueue_generation(
-        presentation_id: str, patch_id: str | None = None, *, ctx: Context
-    ) -> dict[str, Any]:
-        """Enqueue the saved immutable spec or PPTX patch after applying get_authoring_context.
-        Checks ownership, template and patch base. Does not add an application approval step.
+        presentation_id: str, patch_id: str | None = None, wait: bool = True, *, ctx: Context
+    ) -> CallToolResult:
+        """Generate the saved spec (or a PPTX patch) and, with wait=True (default), wait for the result:
+        failed layout jobs return output.problems; completed jobs return the PowerPoint location plus
+        overview images of every page (six per image). Inspect them, then open only doubtful pages with
+        get_slide_preview(page). If the wait times out, continue with get_job.
         """
-        return store.enqueue(owner_of(ctx), presentation_id, patch_id)
+        owner = owner_of(ctx)
+        job = store.enqueue(owner, presentation_id, patch_id)
+        if not wait:
+            return CallToolResult(content=[TextContent(text=json.dumps(job, ensure_ascii=False))],
+                                  structuredContent=job)
+        job = wait_for(lambda: store.job(owner, job["id"]), round_trips.GENERATION_WAIT_SECONDS)
+        summary = {"job": links(job["id"], ctx=ctx)["job"]}
+        images = []
+        if job["state"] == "completed":
+            sheets, preview = overview_sheets(owner, job["id"])
+            summary["preview"] = preview
+            images = [ImageContent(data=base64.b64encode(sheet).decode(), mime_type="image/png") for sheet in sheets]
+        elif job["state"] != "failed":
+            summary["guidance"] = "Still running; call get_job(job_id) later."
+        return CallToolResult(content=[TextContent(text=json.dumps(summary, ensure_ascii=False)), *images],
+                              structuredContent=summary)
+
+    def overview_sheets(owner, job_id):
+        """Render (or reuse) the preview and return every overview sheet in one response."""
+        data, metadata = preview_image(store, owner, job_id, 1, True)
+        if data is None:
+            preview_id = metadata["preview_job_id"]
+            preview = wait_for(lambda: store.job(owner, preview_id), round_trips.PREVIEW_WAIT_SECONDS)
+            if preview["state"] != "completed":
+                return [], {"state": preview["state"], "preview_job_id": preview_id, "error": preview["error"],
+                            "guidance": "Preview not ready; use get_slide_preview(job_id, all_pages=True) later."}
+            data, metadata = preview_image(store, owner, job_id, 1, True)
+        sheets = [data]
+        while metadata.get("next_page"):
+            data, metadata = preview_image(store, owner, job_id, metadata["next_page"], True)
+            sheets.append(data)
+        return sheets, {"state": "ready", "page_count": metadata["page_count"], "sheets": len(sheets),
+                        "pages_per_sheet": 6, "visual_review": "not_performed",
+                        "fidelity": metadata.get("fidelity"), "renderer": metadata.get("renderer")}
 
     @tool(mcp, annotations=read, meta=meta)
     def get_job(job_id: str, *, ctx: Context) -> dict[str, Any]:
@@ -483,13 +513,24 @@ def make_mcp(store, settings, auth):
 
     @tool(mcp, annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False,
                                         open_world_hint=False, idempotent_hint=True), meta=meta)
-    def get_slide_preview(job_id: str, page: int = 1, overview: bool = False, *, ctx: Context) -> CallToolResult:
-        """Inspect completed output before delivery. overview=True returns up to six pages from page;
+    def get_slide_preview(job_id: str, page: int = 1, overview: bool = False, all_pages: bool = False,
+                          *, ctx: Context) -> CallToolResult:
+        """Inspect completed output before delivery. all_pages=True returns overview images of every page
+        in one call (six pages per image); page alone returns one full-size page; overview=True six from page.
         If not ready, queues isolated-worker rendering and returns preview_job_id/state; wait and retry.
-        Follow next_page for the rest, then inspect important pages individually. Rendering is cached
-        per immutable PPTX. Approximate LibreOffice display, not PowerPoint verification or review approval.
+        Approximate LibreOffice display, not PowerPoint verification or review approval.
         Fix unreadable evidence, broken phrases and missing explanations within the agreed scope.
         """
+        if all_pages:
+            data, metadata = preview_image(store, owner_of(ctx), job_id, 1, True)
+            if data is None:
+                return CallToolResult(content=[TextContent(text=json.dumps(metadata))], structuredContent=metadata)
+            sheets, summary = overview_sheets(owner_of(ctx), job_id)
+            return CallToolResult(
+                content=[TextContent(text=json.dumps(summary)),
+                         *[ImageContent(data=base64.b64encode(sheet).decode(), mime_type="image/png")
+                           for sheet in sheets]],
+                structuredContent=summary)
         data, metadata = preview_image(store, owner_of(ctx), job_id, page, overview)
         if data is None:
             return CallToolResult(content=[TextContent(text=json.dumps(metadata))], structuredContent=metadata)

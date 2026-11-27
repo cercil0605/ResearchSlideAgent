@@ -72,7 +72,7 @@ get_template_info.required_content_rolesを満たすか検査する。metricはe
 列幅はサーバーが本文領域へ配分し、長いセルには行高を確保する。4部位などを同じ表に載せられるが、
 行数・文字量が本文領域を超える場合はTABLE_OVERFLOW。欄を広げたり小図にした後も収まらなければ、意味単位で分割する。
 
-save_slide_specとpatch_slideのauthoring_feedbackにはpaper_section、compositionとcontent_evidence（役割ごとの掲載本文・表）を返す。
+save_slide_specとpatch_slidesのauthoring_feedbackは、確認が必要なページだけを返す。detail=trueのときだけ全ページのpaper_section、compositionとcontent_evidence（役割ごとの掲載本文・表）を返す。
 content_review/visual_reviewはnot_performedのまま。対応付けの存在は意味的な正しさや可読性の合格を意味しない。
 制作LLMが各ページの内容と生成後の完成画像を確認し、修正したら新しいjobの画像で再確認する。
 
@@ -161,7 +161,7 @@ edgesなしは指定順の独立した要素を並べる。順序や集約があ
 PPTX生成と構造検査の成功でcompletedになる。`get_job.download_url` を提示する。
 保存時のauthoring_feedbackには、ページの役割・引継ぎ見出し・図の有無・図枠寸法と警告が含まれる。
 これは内容や可読性の自動合格判定ではない。図を置けない見本への指定は生成時にも拒否される。
-生成後はget_slide_previewを使い、overview=trueで6頁ずつ全体を確認してから全ページを個別に見る。
+生成後はenqueue_generationが返す全ページの一覧画像（またはget_slide_preview(all_pages=true)）で全体を確認し、判断できないページだけを個別に見る。
 F07に従い、見た目に加えて題材の説明充足・反復・細分化を点検し、確認内容・修正・残件を短く記録する。
 初回は隔離workerの描画jobを返す。queued/runningなら待って同じ画像取得を繰り返し、失敗時はpreview_job_idでretry_jobする。
 画像はjob内のPPTXのハッシュと対応し、次版には新しいjobを使う。参考PDFは描画後のget_preview.pdf_url。

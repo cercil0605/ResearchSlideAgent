@@ -27,7 +27,7 @@ flowchart LR
 
 ## AI に渡すルール
 
-`get_authoring_context` が、次の4文書を全文で渡します。原本は `plugins/research-slide-agent/skills/research-slides/references/` です。
+`get_authoring_context` が、次の4文書を全文で渡します。1回の返事が Claude Code の MCP 出力上限（約2.5万トークン）を超えないよう、2つの part に分けます（`round_trips.py` の `RULE_PART_TOKENS`）。文書が長すぎるときは `## ` の見出しで区切ります。原本は `plugins/research-slide-agent/skills/research-slides/references/` です。
 
 | 文書 | 中身 |
 |---|---|

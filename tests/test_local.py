@@ -72,7 +72,7 @@ async def test_local_tools_register_generate_and_export(local_settings, tmp_path
         saved = await session.call_tool(
             "save_slide_spec", {"presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0})
         assert not saved.is_error, saved
-        job = (await session.call_tool("enqueue_generation", {"presentation_id": pid})).structured_content
+        job = (await session.call_tool("enqueue_generation", {"presentation_id": pid, "wait": False})).structured_content
         assert await asyncio.to_thread(process_one, store, local_settings)
         done = (await session.call_tool("get_job", {"job_id": job["id"]})).structured_content
         assert done["state"] == "completed"
@@ -105,7 +105,8 @@ async def test_save_and_failed_job_return_all_fit_problems(local_settings):
         expected = [{"page": page["page"], "slide_id": page["slide_id"], **problem}
                     for page in pages for problem in page["fit_problems"]]
         assert len(expected) == 4
-        jid = (await session.call_tool("enqueue_generation", {"presentation_id": pid})).structured_content["id"]
+        jid = (await session.call_tool(
+            "enqueue_generation", {"presentation_id": pid, "wait": False})).structured_content["id"]
         pending = (await session.call_tool("get_job", {"job_id": jid})).structured_content
         assert pending["output"] is None
         assert await asyncio.to_thread(process_one, store, local_settings)
@@ -134,7 +135,7 @@ async def test_rsa_local_runs_over_stdio_with_background_worker(tmp_path):
         saved = await session.call_tool(
             "save_slide_spec", {"presentation_id": pid, "spec": spec.model_dump(), "expected_version": 0})
         assert not saved.is_error, saved
-        job = (await session.call_tool("enqueue_generation", {"presentation_id": pid})).structured_content
+        job = (await session.call_tool("enqueue_generation", {"presentation_id": pid, "wait": False})).structured_content
         for _ in range(300):
             done = (await session.call_tool("get_job", {"job_id": job["id"]})).structured_content
             if done["state"] in {"completed", "failed"}:

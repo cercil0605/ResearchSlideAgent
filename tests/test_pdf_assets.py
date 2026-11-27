@@ -129,7 +129,7 @@ def test_mcp_pdf_crop_to_strict_pptx(settings, monkeypatch):
         spec = SlideSpec.model_validate(raw)
         saved = rpc(client, "save_slide_spec", presentation_id=pid, spec=spec.model_dump(), expected_version=0)
         assert not saved.get("isError"), saved
-        jid = rpc(client, "enqueue_generation", presentation_id=pid)["structuredContent"]["id"]
+        jid = rpc(client, "enqueue_generation", presentation_id=pid, wait=False)["structuredContent"]["id"]
         assert process_one(app.state.store, settings)
         job = app.state.store.job("dev-user", jid)
         assert job["state"] == "completed", job
