@@ -28,6 +28,7 @@ flowchart TD
 | `SPEC_VERSION_CONFLICT` | 版番号が古い | `get_project` で最新の版を見てから保存 |
 | `SOURCE_METADATA_MISMATCH` | 引用の著者・年が登録と違う | `set_source_metadata` で論文どおりに設定 |
 | `SOURCE_ALREADY_REFERENCED` | 使用中の資料の著者・年は変えられない | 正しい資料を登録し直して設計書を直す |
+| `FIGURE_NUMBER_REQUIRED` | 切り抜いた図の図題にも引用の locator にも図番号がない | 図題か locator に `Fig. 3`・`Table 2` などを書く |
 | `TEMPLATE_CHANGED_RESAVE_REQUIRED` | 正本が更新された | 設計書を保存し直す |
 | **生成** | | |
 | `LAYOUT_REQUIRES_USER_CHANGE` | 収まらないなど、配置の問題 | `output.problems` の全ページ・枠の指摘を直して保存し直す。`output.guidance` は短い説明 |

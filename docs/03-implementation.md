@@ -37,7 +37,7 @@ flowchart TD
 | `set_source_metadata` | `store.py` の `source_metadata()` |
 | `read_source` | `files.py` の `extract()` |
 | `render_pdf_page` / `crop_pdf_region` | `pdf_assets.py` の `render_page()` |
-| `save_slide_spec` | `models.py` の型チェック → `store.py` の `save_spec()` → `prototypes.py` の `authoring_feedback()` |
+| `save_slide_spec` | `models.py` の型チェック → `store.py` の `save_spec()`（`figures.py` の `number_captions()` が切り抜き図の図題へ図番号を付ける。なければ `FIGURE_NUMBER_REQUIRED`）→ `prototypes.py` の `authoring_feedback()` |
 | `patch_slide` | `server.py` 内で1枚差し替え → `store.py` の `save_spec()` |
 | `enqueue_generation` / `retry_job` | `store.py` の `enqueue()` / `retry()` |
 | ジョブの実行 | `worker.py` の `process_one()` → `engine.py` の `generate()` → `prototypes.py` の `generate_prototypes()` |

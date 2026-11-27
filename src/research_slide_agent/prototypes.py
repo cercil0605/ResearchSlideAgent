@@ -130,6 +130,12 @@ def _fit_problems(archive, entry, item, slide, images):
     return []
 
 
+def trivial_diagram(diagram):
+    """A chain or list of at most three plain boxes says nothing the body text does not."""
+    return (len(diagram.nodes) <= 3 and not any(edge.label for edge in diagram.edges)
+            and not any(node.kind == "decision" for node in diagram.nodes))
+
+
 def authoring_feedback(template, spec, images=None):
     """Expose inherited headings and actual visual capacity; do not claim semantic review.
     With images (source_id -> path), every page is also laid out as generation would, so
@@ -185,9 +191,16 @@ def authoring_feedback(template, spec, images=None):
             page["visual_frame_inches"] = ([2.25, 2.45] if item.composition in {"text_visual", "table_visual"}
                                             else [4.4, 2.7] if item.composition == "two_images"
                                             else [round(frame.width / 914400, 2), round(frame.height / 914400, 2)])
-        if item.section != "cover" and not visual:
-            warnings.append({"slide_id": item.slide_id, "code": "MISSING_EXPLANATORY_VISUAL",
-                             "guidance": "Use a compatible visual prototype and a meaningful explanation, not decoration."})
+        if "figure" in entry and not (item.diagram_spec or item.image_references):
+            warnings.append({"slide_id": item.slide_id, "code": "EMPTY_FIGURE_FRAME",
+                             "guidance": "This prototype keeps an empty sample frame without a figure. Use a text "
+                                         "prototype (background, objective, experiment, discussion) instead, "
+                                         "or add a figure that carries information the text does not."})
+        if item.diagram_spec and trivial_diagram(item.diagram_spec):
+            warnings.append({"slide_id": item.slide_id, "code": "TRIVIAL_DIAGRAM",
+                             "guidance": "Three or fewer boxes without branches or labels repeat the text. Remove "
+                                         "the diagram, use the paper's figure, or show the real structure "
+                                         "(inputs, branches, feedback, labelled flows)."})
         if (item.diagram_spec or item.image_references) and "figure" not in entry:
             warnings.append({"slide_id": item.slide_id, "code": "VISUAL_LAYOUT_UNSUPPORTED",
                              "guidance": "Select method, results_figure or overview while keeping section unchanged."})
